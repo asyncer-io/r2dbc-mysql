@@ -62,6 +62,7 @@
     <connection>scm:git:git://github.com/asyncerio/r2dbc-mysql.git</connection>
     <developerConnection>scm:git:ssh://github.com:asyncerio/r2dbc-mysql.git</developerConnection>
     <url>https://github.com/asyncerio/r2dbc-mysql/tree/trunk</url>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
