@@ -94,7 +94,7 @@ jobs:
           restore-keys: ${{ runner.os }}-prepare-
 
       - name: Set up maven settings
-        uses: s4u/maven-settings-action@2.8.0
+        uses: s4u/maven-settings-action@v2.8.0
         with:
           servers: |
             [{
