@@ -34,3 +34,15 @@ jobs:
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Cache & Reload Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-prepare-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-prepare-
+
+      - name: Run release prepare command
+        run: |
+          ./mvnw -B -ntp --file pom.xml release:prepare -DpreparationGoals=clean -DskipTests=true
+          ./mvnw -B -ntp clean

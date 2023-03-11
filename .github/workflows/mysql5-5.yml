@@ -28,14 +28,3 @@ jobs:
       - name: Integration test with MySQL 5.5
         run: ./mvnw -B verify -Dmaven.javadoc.skip=true -Dmaven.surefire.skip=true -Dtest.mysql.password=${{ secrets.DB_PASSWORD }} -Dtest.mysql.version=5.5 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
 
-      - name: Cache & Reload Local Maven Repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-prepare-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-prepare-
-
-      - name: Run release prepare command
-        run: |
-          ./mvnw -B -ntp --file pom.xml release:prepare -DpreparationGoals=clean -DskipTests=true
-          ./mvnw -B -ntp clean
