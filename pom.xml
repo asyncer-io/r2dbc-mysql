@@ -60,8 +60,8 @@
   <inceptionYear>2018</inceptionYear>
   <scm>
     <connection>scm:git:git://github.com/asyncerio/r2dbc-mysql.git</connection>
-    <developerConnection>scm:git:ssh://github.com:asyncerio/r2dbc-mysql.git</developerConnection>
-    <url>https://github.com/asyncerio/r2dbc-mysql/tree/trunk</url>
+    <developerConnection>scm:git:ssh://git@github.com/asyncerio/r2dbc-mysql.git</developerConnection>
+    <url>https://github.com/asyncerio/r2dbc-mysql</url>
     <tag>HEAD</tag>
   </scm>
 
