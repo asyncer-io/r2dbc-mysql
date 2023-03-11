@@ -50,4 +50,10 @@ jobs:
       - name: Check if tag is successfully generated
         run: ./.github/scripts/ensure_prepared.sh
 
+      - name: Upload workspace
+        uses: actions/upload-artifact@v3
+        with:
+          name: prepare-workspace
+          path: ${{ github.workspace }}
+
 
