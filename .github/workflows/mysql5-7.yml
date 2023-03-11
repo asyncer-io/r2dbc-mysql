@@ -16,7 +16,7 @@ jobs:
       - name: Shutdown the Default MySQL
         run: sudo service mysql stop
       - name: Set up MySQL 5.7
-        uses: mirromutth/mysql-action@v1.1
+        uses: jchrys/mysql-action@feature/restore-cicd
         with:
           mysql version: 5.7
           mysql database: r2dbc
