@@ -538,8 +538,8 @@ org.example.demo.json.JacksonCodecRegistrar
 The R2DBC MySQL Implementation uses GitHub as issue tracking system to record bugs and feature requests. 
 If you want to raise an issue, please follow the recommendations below:
 
-- Before log a bug, please search the [issue tracker](https://github.com/jchrys/r2dbc-mysql/issues) to see if someone has already reported the problem.
-- If the issue doesn't already exist, [create a new issue](https://github.com/jchrys/r2dbc-mysql/issues/new).
+- Before log a bug, please search the [issue tracker](https://github.com/asyncerio/r2dbc-mysql/issues) to see if someone has already reported the problem.
+- If the issue doesn't already exist, [create a new issue](https://github.com/asyncerio/r2dbc-mysql/issues/new).
 - Please provide as much information as possible with the issue report, we like to know the version of R2DBC MySQL that you are using and JVM version.
 - If you need to paste code, or include a stack trace use Markdown **&#96;&#96;&#96;** escapes before and after your text.
 - If possible try to create a test-case or project that replicates the issue. Attach a link to your code or a compressed file containing your code.

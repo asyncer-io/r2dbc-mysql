@@ -25,7 +25,7 @@
     <packaging>jar</packaging>
 
     <name>Reactive Relational Database Connectivity - MySQL</name>
-    <url>https://github.com/jchrys/r2dbc-mysql</url>
+    <url>https://github.com/asyncerio/r2dbc-mysql</url>
     <description>R2DBC MySQL Implementation</description>
 
     <licenses>
@@ -59,9 +59,9 @@
 
     <inceptionYear>2018</inceptionYear>
     <scm>
-        <connection>scm:git:git://github.com/jchrys/r2dbc-mysql.git</connection>
-        <developerConnection>scm:git:ssh://github.com:jchrys/r2dbc-mysql.git</developerConnection>
-        <url>https://github.com/jchrys/r2dbc-mysql</url>
+        <connection>scm:git:git://github.com/asyncerio/r2dbc-mysql.git</connection>
+        <developerConnection>scm:git:ssh://github.com:asyncerio/r2dbc-mysql.git</developerConnection>
+        <url>https://github.com/asyncerio/r2dbc-mysql/tree/trunk</url>
     </scm>
 
     <properties>
