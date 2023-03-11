@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 #
 # Copyright 2023 asyncer.io projects
 #
