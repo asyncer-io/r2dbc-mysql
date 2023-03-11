@@ -20,7 +20,7 @@
 
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>0.9.77</version>
+  <version>0.9.78-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Reactive Relational Database Connectivity - MySQL</name>
@@ -61,7 +61,7 @@
     <connection>scm:git:git://github.com/asyncerio/r2dbc-mysql.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/asyncerio/r2dbc-mysql.git</developerConnection>
     <url>https://github.com/asyncerio/r2dbc-mysql</url>
-    <tag>r2dbc-mysql-0.9.77</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
