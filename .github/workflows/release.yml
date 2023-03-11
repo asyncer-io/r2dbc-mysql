@@ -46,3 +46,8 @@ jobs:
         run: |
           ./mvnw -B -ntp --file pom.xml release:prepare -DpreparationGoals=clean -DskipTests=true
           ./mvnw -B -ntp clean
+
+      - name: Check if tag is successfully generated
+        run: ./.github/scripts/ensure_prepared.sh
+
+
