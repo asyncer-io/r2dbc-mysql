@@ -84,7 +84,7 @@ jobs:
           git config --global user.email "asyncer-io-bot@users.noreply.github.com"
           git config --global user.name "asyncer-io-bot"
 
-      - name: Install SSH key
+      - name: Install SSH key0
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
