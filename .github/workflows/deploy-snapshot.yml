@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    if: github.repository == 'jchrys/r2dbc-mysql'
+    if: github.repository == 'asyncerio/r2dbc-mysql'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

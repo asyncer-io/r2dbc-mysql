@@ -16,7 +16,7 @@ jobs:
       - name: Shutdown the Default MySQL
         run: sudo service mysql stop
       - name: Set up MySQL 8.0
-        uses: jchrys/mysql-action@v1.1
+        uses: asyncerio/mysql-action@v1.1
         with:
           collation server: utf8mb4_0900_ai_ci
           mysql version: 8.0
