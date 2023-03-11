@@ -21,7 +21,7 @@
 
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>0.9.0.RELEASE-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Reactive Relational Database Connectivity - MySQL</name>
@@ -71,7 +71,7 @@
     <java.version>1.8</java.version>
     <maven.surefire.skip>false</maven.surefire.skip>
 
-    <r2dbc-spi.version>0.9.0</r2dbc-spi.version>
+    <r2dbc-spi.version>0.9.0.RELEASE</r2dbc-spi.version>
     <reactor.version>2020.0.12</reactor.version>
     <assertj.version>3.21.0</assertj.version>
     <jmh.version>1.33</jmh.version>
