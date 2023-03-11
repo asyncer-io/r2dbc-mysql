@@ -116,6 +116,7 @@ jobs:
         working-directory: ./prepare-workspace/
         run: |
             cat <(echo -e "${{ secrets.GPG_PRIVATE_KEY }}") | gpg --batch --import
+            chown -R runner:runner ~/local-staging
             ./mvnw -B -ntp -am clean javadoc:jar package gpg:sign org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/root/local-staging -DskipRemoteStaging=true -DskipTests=true -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" -Dgpg.keyname="${{ secrets.GPG_KEY_NAME }}"
         env:
             GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
