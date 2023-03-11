@@ -19,13 +19,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.miku</groupId>
+    <groupId>io.asyncer</groupId>
     <artifactId>r2dbc-mysql</artifactId>
     <version>0.9.0.BUILD-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Reactive Relational Database Connectivity - MySQL</name>
-    <url>https://github.com/mirromutth/r2dbc-mysql</url>
+    <url>https://github.com/jchrys/r2dbc-mysql</url>
     <description>R2DBC MySQL Implementation</description>
 
     <licenses>
@@ -37,22 +37,31 @@
 
     <developers>
         <developer>
-            <id>mirromutth</id>
-            <name>Mirro Mutth</name>
-            <email>mirromutth(at)gmail.com</email>
-            <url>https://miku.dev</url>
+            <id>jchrys</id>
+            <name>jchrys</name>
+            <email>jchrys(at)me.com</email>
+            <url>https://github.com/jchrys</url>
             <roles>
-                <role>R2DBC MySQL Owner</role>
+                <role>Mainatainer</role>
             </roles>
-            <timezone>+8</timezone>
+        </developer>
+        <developer>
+            <id>mobidick1969</id>
+            <name>Nelson k</name>
+            <email>mobidick(at)gmail.com</email>
+            <url>https://github.com/mobidick1969</url>
+            <roles>
+                <role>Maintainer</role>
+            </roles>
+            <timezone>+9</timezone>
         </developer>
     </developers>
 
     <inceptionYear>2018</inceptionYear>
     <scm>
-        <connection>scm:git:git://github.com/mirromutth/r2dbc-mysql.git</connection>
-        <developerConnection>scm:git:ssh://github.com:mirromutth/r2dbc-mysql.git</developerConnection>
-        <url>https://github.com/mirromutth/r2dbc-mysql</url>
+        <connection>scm:git:git://github.com/jchrys/r2dbc-mysql.git</connection>
+        <developerConnection>scm:git:ssh://github.com:jchrys/r2dbc-mysql.git</developerConnection>
+        <url>https://github.com/jchrys/r2dbc-mysql</url>
     </scm>
 
     <properties>
@@ -264,7 +273,7 @@
                 <version>3.3.1</version>
                 <configuration>
                     <excludePackageNames>
-                        dev.miku.r2dbc.mysql.authentication,dev.miku.r2dbc.mysql.client,dev.miku.r2dbc.mysql.util,dev.miku.r2dbc.mysql.codec.lob,dev.miku.r2dbc.mysql.message
+                        io.asyncer.r2dbc.mysql.authentication,io.asyncer.r2dbc.mysql.client,io.asyncer.r2dbc.mysql.util,io.asyncer.r2dbc.mysql.codec.lob,io.asyncer.r2dbc.mysql.message
                     </excludePackageNames>
                     <links>
                         <link>https://r2dbc.io/spec/${r2dbc-spi.version}/api/</link>

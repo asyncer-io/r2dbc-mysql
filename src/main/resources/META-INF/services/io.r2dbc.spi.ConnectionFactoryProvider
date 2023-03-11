@@ -1,1 +1,1 @@
-dev.miku.r2dbc.mysql.MySqlConnectionFactoryProvider
+io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider
