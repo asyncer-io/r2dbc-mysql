@@ -48,6 +48,6 @@ original pull request but before a merge.
   - Not recommended verbs: Commit, Merge, Revert, Rebase or other git command keywords.
 - Please use English for commit messages, code comments, pull requests, issue tickets and public discussions.
 
-[security-policy]: https://github.com/mirromutth/r2dbc-mysql/security/policy
+[security-policy]: https://github.com/jchrys/r2dbc-mysql/security/policy
 [idea]: https://www.jetbrains.com/idea
 [commit-convention]: https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
