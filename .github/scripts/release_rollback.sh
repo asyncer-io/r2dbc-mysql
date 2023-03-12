@@ -19,6 +19,6 @@ set -e
 TAG=$(grep scm.tag= release.properties | cut -d'=' -f2)
 git remote set-url origin git@github.com:asyncer-io/r2dbc-mysql.git
 git fetch
-git checkout "prepare-deploy"
+git checkout "trunk"
 ./mvnw -B --file pom.xml release:rollback
 git push origin :"$TAG"
