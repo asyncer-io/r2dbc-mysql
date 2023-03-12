@@ -1,18 +1,3 @@
-# Why doesn't it seem so active
-
-Due to COVID-19 and my personal reasons, the progress of this project in 2021 is soooooo slow.
-
-If you ask me "Are u ok? how about u healthy?". Yes, I'm fine. In China, most areas are no longer infected
-with COVID-19. It just...my work plan was severely hindered because of COVID-19.
-
-I trust this will not become a norm. *I'm trying to maintain this project as well as I can*.
-
-**May the dead rest, and hope the living be healthy**
-
-*Donation are not accepted because I'm subscribing JetBrains open source license, thanks.*
-
-Current goal: follow up with 0.9.0 and 0.8.x.
-
 # Reactive Relational Database Connectivity MySQL Implementation
 
 This project contains the [MySQL][m] implementation of the [R2DBC SPI](https://github.com/r2dbc/r2dbc-spi).
@@ -35,6 +20,10 @@ This driver provides the following features:
 - [x] Native ping command that can be verifying when argument is `ValidationDepth.REMOTE`
 - [x] Extensible, e.g. extend built-in `Codec`(s).
 
+## Maintainer
+
+This project is currently being maintained by [@jchrys](https://github.com/jchrys), since the previous owner has been inactive. We are committed to keeping this project up-to-date and improving it in collaboration with the community.
+
 ## Version compatibility / Integration tests states
 
 
@@ -49,7 +38,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 <dependency>
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>0.8.2.RELEASE</version>
+  <version>0.9.0</version>
 </dependency>
 ```
 
@@ -60,7 +49,7 @@ If you'd rather like the latest snapshots of the upcoming major version, use Son
 <dependency>
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>${r2dbc-mysql.version}.BUILD-SNAPSHOT</version>
+  <version>${r2dbc-mysql.version}-SNAPSHOT</version>
 </dependency>
 
 <repository>
@@ -79,7 +68,7 @@ If you'd rather like the latest snapshots of the upcoming major version, use Son
 
 ```groovy
 dependencies {
-    implementation 'io.asyncer:r2dbc-mysql:0.8.2.RELEASE'
+    implementation 'io.asyncer:r2dbc-mysql:0.9.0'
 }
 ```
 
@@ -88,7 +77,7 @@ dependencies {
 ```kotlin
 dependencies {
     // Maybe should to use `compile` instead of `implementation` on the lower version of Gradle.
-    implementation("io.asyncer:r2dbc-mysql:0.8.2.RELEASE")
+    implementation("io.asyncer:r2dbc-mysql:0.9.0")
 }
 ```
 
