@@ -16,7 +16,7 @@ jobs:
       - name: Shutdown the Default MySQL
         run: sudo service mysql stop
       - name: Set up MySQL 5.6
-        uses: asyncerio/mysql-action@trunk
+        uses: asyncer-io/mysql-action@trunk
         with:
           mysql version: 5.6
           mysql database: r2dbc
