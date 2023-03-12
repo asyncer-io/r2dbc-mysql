@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import org.testcontainers.shaded.org.apache.commons.lang.ArrayUtils;
+import org.testcontainers.shaded.org.apache.commons.lang3.ArrayUtils;
 import org.testcontainers.shaded.org.bouncycastle.util.encoders.Hex;
 
 import java.nio.charset.Charset;

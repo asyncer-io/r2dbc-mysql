@@ -329,6 +329,7 @@ final class ReactorNettyClient implements Client {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public Context currentContext() {
             return ReactorNettyClient.this.responseProcessor.currentContext();
         }

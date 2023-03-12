@@ -59,8 +59,7 @@ class FluxDiscardOnCancelTest {
                 }
             })
             .as(OperatorUtils::discardOnCancel)
-            .as(it -> StepVerifier.create(it, 0))
-            .thenRequest(takeSize)
+            .as(it -> StepVerifier.create(it, takeSize))
             .expectNext(0, 1)
             .thenCancel()
             .verify();
@@ -88,8 +87,7 @@ class FluxDiscardOnCancelTest {
                     it.release();
                 }
             })
-            .as(it -> StepVerifier.create(it, 0))
-            .thenRequest(2)
+            .as(it -> StepVerifier.create(it, 2))
             .expectNext(0, 1)
             .thenCancel()
             .verify();
@@ -142,8 +140,7 @@ class FluxDiscardOnCancelTest {
         Flux.fromIterable(() -> items)
             .as(OperatorUtils::discardOnCancel)
             .doOnDiscard(Object.class, discard::add)
-            .as(it -> StepVerifier.create(it, 0))
-            .thenRequest(2)
+            .as(it -> StepVerifier.create(it, 2))
             .expectNext(0, 1)
             .thenCancel()
             .verify();
@@ -156,8 +153,7 @@ class FluxDiscardOnCancelTest {
         Iterator<Integer> items = createItems(4);
 
         Flux.fromIterable(() -> items)
-            .as(it -> StepVerifier.create(it, 0))
-            .thenRequest(2)
+            .as(it -> StepVerifier.create(it, 2))
             .expectNext(0, 1)
             .thenCancel()
             .verify();
@@ -171,8 +167,7 @@ class FluxDiscardOnCancelTest {
 
         Flux.fromIterable(() -> items)
             .as(OperatorUtils::discardOnCancel)
-            .as(it -> StepVerifier.create(it, 0))
-            .thenRequest(2)
+            .as(it -> StepVerifier.create(it, 2))
             .expectNext(0, 1)
             .thenCancel()
             .verify();
