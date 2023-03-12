@@ -16,12 +16,12 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.Parameter;
+import io.asyncer.r2dbc.mysql.MySqlParameter;
 
 /**
- * Base class considers non null values for {@link Parameter} implementations.
+ * Base class considers non null values for {@link MySqlParameter} implementations.
  */
-abstract class AbstractParameter implements Parameter {
+abstract class AbstractMySqlParameter implements MySqlParameter {
 
     @Override
     public final String toString() {

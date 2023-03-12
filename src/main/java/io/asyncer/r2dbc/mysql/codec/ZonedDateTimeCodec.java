@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.asyncer.r2dbc.mysql.Parameter;
+import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
@@ -57,8 +57,8 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
     }
 
     @Override
-    public Parameter encode(Object value, CodecContext context) {
-        return new ZonedDateTimeParameter(allocator, (ZonedDateTime) value, context);
+    public MySqlParameter encode(Object value, CodecContext context) {
+        return new ZonedDateTimeMySqlParameter(allocator, (ZonedDateTime) value, context);
     }
 
     @Override
@@ -82,7 +82,7 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
         return origin == null ? null : ZonedDateTime.of(origin, context.getServerZoneId());
     }
 
-    private static final class ZonedDateTimeParameter extends AbstractParameter {
+    private static final class ZonedDateTimeMySqlParameter extends AbstractMySqlParameter {
 
         private final ByteBufAllocator allocator;
 
@@ -90,8 +90,8 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
 
         private final CodecContext context;
 
-        private ZonedDateTimeParameter(ByteBufAllocator allocator, ZonedDateTime value,
-            CodecContext context) {
+        private ZonedDateTimeMySqlParameter(ByteBufAllocator allocator, ZonedDateTime value,
+                                            CodecContext context) {
             this.allocator = allocator;
             this.value = value;
             this.context = context;
@@ -117,11 +117,11 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof ZonedDateTimeParameter)) {
+            if (!(o instanceof ZonedDateTimeMySqlParameter)) {
                 return false;
             }
 
-            ZonedDateTimeParameter that = (ZonedDateTimeParameter) o;
+            ZonedDateTimeMySqlParameter that = (ZonedDateTimeMySqlParameter) o;
 
             return value.equals(that.value);
         }
