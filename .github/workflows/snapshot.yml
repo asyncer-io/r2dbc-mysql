@@ -35,7 +35,7 @@ jobs:
 
       - name: Import GPG private key and deploy local staging
         run: |
-          ./mvnw -B -ntp -am clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
+          ./mvnw -B -ntp -am clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -D-DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
           
 
       - name: Set up maven settings
@@ -49,7 +49,7 @@ jobs:
             }]
 
       - name: Deploy local staged artifacts
-        run: ./mvnw -B --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DaltStagingDirectory=/home/runner/local-staging
+        run: ./mvnw -B --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DnexusUrl=https://s01.oss.sonatype.org/content/repositories/snapshots -DserverId=ossrh-snapshots -DaltStagingDirectory=/home/runner/local-staging
 
 
 
