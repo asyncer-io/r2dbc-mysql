@@ -1,4 +1,6 @@
 # Reactive Relational Database Connectivity MySQL Implementation
+![Maven Central](https://img.shields.io/maven-central/v/io.asyncer/r2dbc-mysql)
+![LICENSE](https://img.shields.io/github/license/asyncer-io/r2dbc-mysql)
 
 This project contains the [MySQL][m] implementation of the [R2DBC SPI](https://github.com/r2dbc/r2dbc-spi).
 This implementation is not intended to be used directly, but rather to be
@@ -25,7 +27,10 @@ This driver provides the following features:
 This project is currently being maintained by [@jchrys](https://github.com/jchrys), since the previous owner has been inactive. We are committed to keeping this project up-to-date and improving it in collaboration with the community.
 
 ## Version compatibility / Integration tests states
-
+[![MySQL 5.5 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.5/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.5%22)
+[![MySQL 5.6 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.6/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.6%22)
+[![MySQL 5.7 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.7/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.7%22)
+[![MySQL 8.0 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%208.0/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+8.0%22)
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
 
