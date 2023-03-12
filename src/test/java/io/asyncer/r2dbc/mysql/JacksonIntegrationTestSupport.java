@@ -84,8 +84,11 @@ abstract class JacksonIntegrationTestSupport extends IntegrationTestSupport {
     private static Publisher<MySqlResult> insert(MySqlConnection connection) {
         MySqlStatement statement = connection.createStatement("INSERT INTO test VALUES (DEFAULT, ?)");
 
-        for (Bar bar : BARS) {
-            statement.bind(0, bar).add();
+        for (int i = 0; i < BARS.length; ++i) {
+            if (i != 0) {
+                statement.add();
+            }
+            statement.bind(0, BARS[i]);
         }
 
         return statement.execute();
