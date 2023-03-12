@@ -72,17 +72,17 @@
     <maven.surefire.skip>false</maven.surefire.skip>
 
     <r2dbc-spi.version>0.9.0.RELEASE</r2dbc-spi.version>
-    <reactor.version>2020.0.12</reactor.version>
+    <reactor.version>2022.0.4</reactor.version>
     <assertj.version>3.21.0</assertj.version>
-    <jmh.version>1.33</jmh.version>
-    <junit.version>5.8.1</junit.version>
-    <logback.version>1.2.6</logback.version>
+    <jmh.version>1.36</jmh.version>
+    <junit.version>5.9.2</junit.version>
+    <logback.version>1.4.5</logback.version>
     <mockito.version>4.0.0</mockito.version>
-    <mysql.version>8.0.27</mysql.version>
-    <testcontainers.version>1.16.2</testcontainers.version>
+    <mysql.version>8.0.32</mysql.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
     <hikari-cp.version>4.0.3</hikari-cp.version>
-    <spring-framework.version>5.3.12</spring-framework.version>
-    <jackson.version>2.13.0</jackson.version>
+    <spring-framework.version>5.3.25</spring-framework.version>
+    <jackson.version>2.14.2</jackson.version>
     <mbr.version>0.2.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
   </properties>
@@ -253,7 +253,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.0</version>
         <configuration>
           <archive>
             <manifest>
@@ -266,12 +266,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.8.2</version>
+        <version>3.1.0</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.3.1</version>
+        <version>3.5.0</version>
         <configuration>
           <excludePackageNames>
             io.asyncer.r2dbc.mysql.authentication,io.asyncer.r2dbc.mysql.client,io.asyncer.r2dbc.mysql.util,io.asyncer.r2dbc.mysql.codec.lob,io.asyncer.r2dbc.mysql.message
@@ -384,7 +384,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.2.0</version>
+            <version>3.3.0</version>
             <executions>
               <execution>
                 <id>add-source</id>
@@ -417,7 +417,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>run-benchmarks</id>
