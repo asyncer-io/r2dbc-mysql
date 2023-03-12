@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.ConnectionContextTest;
-import io.asyncer.r2dbc.mysql.Parameter;
+import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.Query;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
@@ -68,7 +68,7 @@ interface CodecTestSupport<T> {
             AtomicReference<ByteBuf> buf = new AtomicReference<>();
             ByteBuf sized = sized(binaries[i]);
             try {
-                Parameter parameter = codec.encode(origin[i], context());
+                MySqlParameter parameter = codec.encode(origin[i], context());
                 merge(Flux.from(parameter.publishBinary()))
                     .doOnNext(buf::set)
                     .as(StepVerifier::create)
