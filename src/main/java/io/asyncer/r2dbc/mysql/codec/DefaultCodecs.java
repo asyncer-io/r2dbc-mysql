@@ -23,6 +23,7 @@ import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
 import io.asyncer.r2dbc.mysql.util.InternalArrays;
 import io.netty.buffer.ByteBufAllocator;
+import io.r2dbc.spi.Parameter;
 import reactor.util.annotation.Nullable;
 
 import java.lang.reflect.ParameterizedType;
@@ -169,13 +170,26 @@ final class DefaultCodecs implements Codecs {
         requireNonNull(value, "value must not be null");
         requireNonNull(context, "context must not be null");
 
+        final Object valueToEncode = getValueToEncode(value);
+        if (null == valueToEncode) {
+            return encodeNull();
+        }
+
         for (Codec<?> codec : codecs) {
-            if (codec.canEncode(value)) {
-                return codec.encode(value, context);
+            if (codec.canEncode(valueToEncode)) {
+                return codec.encode(valueToEncode, context);
             }
         }
 
-        throw new IllegalArgumentException("Cannot encode " + value.getClass());
+        throw new IllegalArgumentException("Cannot encode " + valueToEncode.getClass());
+    }
+
+    @Nullable
+    private static Object getValueToEncode(Object value) {
+        if (value instanceof Parameter) {
+            return ((Parameter) value).getValue();
+        }
+        return value;
     }
 
     @Override
