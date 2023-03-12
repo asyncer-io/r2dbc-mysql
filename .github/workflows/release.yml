@@ -112,7 +112,7 @@ jobs:
       - name: create local deploy directory
         run: mkdir -p ~/local-staging
 
-      - name: Import GPG private key and deploy to Sonatype Nexus
+      - name: Import GPG private key and deploy local staging
         working-directory: ./prepare-workspace/
         run: |
             cat <(echo -e "${{ secrets.GPG_PRIVATE_KEY }}") | gpg --batch --import
@@ -121,6 +121,11 @@ jobs:
             GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
             GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
             GPG_KEYNAME: ${{ secrets.GPG_KEY_NAME }}
+
+      - name: Upload to OSSRH
+        working-directory: ./prepare-workspace/
+        run: ./mvnw -B -ntp --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/home/runner/local-staging -DskipStagingRepositoryClose=true
+
 
       - name: Rollback Release
         working-directory: ./prepare-workspace/
