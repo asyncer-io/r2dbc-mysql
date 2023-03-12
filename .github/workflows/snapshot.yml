@@ -1,0 +1,59 @@
+name: Continous Snapshot Delivery
+
+on:
+  push:
+    branch: [ "trunk"]
+
+  workflow_dispatch:
+
+
+
+jobs:
+  stage-snapshot:
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: prepare-deploy
+
+      - name: Set up Java 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # gh runner local caches lts temurins
+          java-version: '8'
+
+      - name: Cache & Reload Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-prepare-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-prepare-
+
+      - name: create local deploy directory
+        run: mkdir -p ~/local-staging
+
+      - name: Import GPG private key and deploy local staging
+        working-directory: ./prepare-workspace/
+        run: |
+          ./mvnw -B -ntp -am clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
+          
+
+      - name: Set up maven settings
+        uses: s4u/maven-settings-action@v2.2.0
+        with:
+          servers: |
+            [{
+              "id": "ossrh-snapshots",
+              "username": "${{ secrets.SONATYPE_USERNAME }}",
+              "password": "${{ secrets.SONATYPE_PASSWORD }}"
+            }]
+
+      - name: Deploy local staged artifacts
+        run: ./mvnw -B --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DaltStagingDirectory=$LOCAL_STAGING_DIR
+
+
+
+
+
+
+
+
