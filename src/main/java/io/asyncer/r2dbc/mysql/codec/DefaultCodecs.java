@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.asyncer.r2dbc.mysql.Parameter;
+import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
@@ -165,7 +165,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Override
-    public Parameter encode(Object value, CodecContext context) {
+    public MySqlParameter encode(Object value, CodecContext context) {
         requireNonNull(value, "value must not be null");
         requireNonNull(context, "context must not be null");
 
@@ -179,8 +179,8 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Override
-    public Parameter encodeNull() {
-        return NullParameter.INSTANCE;
+    public MySqlParameter encodeNull() {
+        return NullMySqlParameter.INSTANCE;
     }
 
     @Nullable

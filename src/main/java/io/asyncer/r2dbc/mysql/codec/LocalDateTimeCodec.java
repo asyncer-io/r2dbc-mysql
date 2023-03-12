@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.asyncer.r2dbc.mysql.Parameter;
+import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
@@ -59,8 +59,8 @@ final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
     }
 
     @Override
-    public Parameter encode(Object value, CodecContext context) {
-        return new LocalDateTimeParameter(allocator, (LocalDateTime) value);
+    public MySqlParameter encode(Object value, CodecContext context) {
+        return new LocalDateTimeMySqlParameter(allocator, (LocalDateTime) value);
     }
 
     @Override
@@ -158,13 +158,13 @@ final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
         return LocalDateTime.of(date, LocalTime.of(hour, minute, second, nano));
     }
 
-    private static final class LocalDateTimeParameter extends AbstractParameter {
+    private static final class LocalDateTimeMySqlParameter extends AbstractMySqlParameter {
 
         private final ByteBufAllocator allocator;
 
         private final LocalDateTime value;
 
-        private LocalDateTimeParameter(ByteBufAllocator allocator, LocalDateTime value) {
+        private LocalDateTimeMySqlParameter(ByteBufAllocator allocator, LocalDateTime value) {
             this.allocator = allocator;
             this.value = value;
         }
@@ -189,11 +189,11 @@ final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof LocalDateTimeParameter)) {
+            if (!(o instanceof LocalDateTimeMySqlParameter)) {
                 return false;
             }
 
-            LocalDateTimeParameter that = (LocalDateTimeParameter) o;
+            LocalDateTimeMySqlParameter that = (LocalDateTimeMySqlParameter) o;
 
             return value.equals(that.value);
         }
