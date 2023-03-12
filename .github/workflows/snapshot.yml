@@ -33,9 +33,9 @@ jobs:
       - name: create local deploy directory
         run: mkdir -p ~/local-staging
 
-      - name: Import GPG private key and deploy local staging
+      - name: deploy local staging
         run: |
-          ./mvnw -B -ntp -am clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -D-DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
+          ./mvnw -B -ntp -am clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
           
 
       - name: Set up maven settings
