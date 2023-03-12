@@ -127,15 +127,16 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void add() {
         T statement = makeInstance(PARAMETRIZED, SIMPLE);
 
-        statement.add();
+        if (!supportsBinding()) {
+            statement.add();
+            statement.add();
+        }
 
         if (supportsBinding()) {
             statement.bind(0, 1);
             statement.bind(1, "");
             statement.add();
         }
-
-        statement.add();
     }
 
     @Test

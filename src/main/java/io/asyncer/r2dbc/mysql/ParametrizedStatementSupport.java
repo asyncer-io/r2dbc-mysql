@@ -190,7 +190,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
             Binding current = this.current;
 
             if (current == null) {
-                return;
+                throw new IllegalStateException("Not all parameter values are provided yet.");
             }
 
             int unbind = current.findUnbind();
