@@ -1,12 +1,13 @@
 name: Continous Snapshot Delivery
 
 on:
-  push:
-    branch: [ "trunk"]
-  pull_request:
   workflow_dispatch:
-
-
+    inputs:
+      Dummy:
+        description: Dummy
+        required: false
+        type: boolean
+    pull_request:
 
 jobs:
   stage-snapshot:
