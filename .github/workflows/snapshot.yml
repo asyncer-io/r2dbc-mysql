@@ -3,7 +3,7 @@ name: Continous Snapshot Delivery
 on:
   push:
     branch: [ "trunk"]
-
+  pull_request:
   workflow_dispatch:
 
 
