@@ -21,7 +21,7 @@
 
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>0.9.0-test-SNAPSHOT</version>
+  <version>0.0.1-DO-NOT-USE-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Reactive Relational Database Connectivity - MySQL</name>
