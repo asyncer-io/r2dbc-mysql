@@ -47,28 +47,6 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 </dependency>
 ```
 
-If you'd rather like the latest snapshots of the upcoming major version, use SonaType Maven snapshot repository and declare the appropriate dependency version.
-
-```xml
-
-<dependency>
-  <groupId>io.asyncer</groupId>
-  <artifactId>r2dbc-mysql</artifactId>
-  <version>${r2dbc-mysql.version}-SNAPSHOT</version>
-</dependency>
-
-<repositories>
-  <repository>
-    <id>sonatype-snapshots</id>
-    <name>SonaType Snapshots</name>
-    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-    <snapshots>
-      <enabled>true</enabled>
-    </snapshots>
-  </repository>
-</repositories>
-```
-
 ## Gradle
 
 ### Groovy DSL
