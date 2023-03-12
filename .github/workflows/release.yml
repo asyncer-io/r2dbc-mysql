@@ -2,13 +2,6 @@ name: release
 
 on:
   workflow_dispatch:
-    inputs:
-      Dummy:
-        description: Dummy
-        required: false
-        type: boolean
-  pull_request:
-
 
 jobs:
   prepare:
