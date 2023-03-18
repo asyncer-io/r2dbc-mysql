@@ -96,8 +96,7 @@ final class ReactorNettyClient implements Client {
             connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl));
         }
 
-        if (InternalLoggerFactory.getInstance(ReactorNettyClient.class).isTraceEnabled()) {
-            // Or just use logger.isTraceEnabled()?
+        if (logger.isTraceEnabled()) {
             logger.debug("Connection tracking logging is enabled");
 
             connection.addHandlerFirst(LoggingHandler.class.getSimpleName(),
