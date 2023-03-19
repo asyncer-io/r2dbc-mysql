@@ -82,7 +82,7 @@
     <hikari-cp.version>4.0.3</hikari-cp.version>
     <spring-framework.version>5.3.25</spring-framework.version>
     <jackson.version>2.14.2</jackson.version>
-    <mbr.version>0.2.0.RELEASE</mbr.version>
+    <mbr.version>0.3.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
   </properties>
 
@@ -441,6 +441,13 @@
       </build>
     </profile>
   </profiles>
+
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
 
   <distributionManagement>
     <repository>
