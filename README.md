@@ -1,5 +1,5 @@
 # Reactive Relational Database Connectivity MySQL Implementation
-![Maven Central](https://img.shields.io/maven-central/v/io.asyncer/r2dbc-mysql)
+![Maven Central](https://img.shields.io/maven-central/v/io.asyncer/r2dbc-mysql?color=blue)
 ![LICENSE](https://img.shields.io/github/license/asyncer-io/r2dbc-mysql)
 
 This project contains the [MySQL][m] implementation of the [R2DBC SPI](https://github.com/r2dbc/r2dbc-spi).
