@@ -16,15 +16,16 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import reactor.util.Logger;
-import reactor.util.Loggers;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Query logger to log queries.
  */
 final class QueryLogger {
 
-    private static final Logger logger = Loggers.getLogger("io.asyncer.r2dbc.mysql.QUERY");
+    private static final Logger logger = LoggerFactory.getLogger("io.asyncer.r2dbc.mysql.QUERY");
 
     static void log(String query) {
         logger.debug("Executing direct query: {}", query);

@@ -14,7 +14,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -78,6 +79,7 @@
     <jackson.version>2.14.2</jackson.version>
     <mbr.version>0.3.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
+    <slf4j.version>2.0.7</slf4j.version>
   </properties>
 
   <dependencyManagement>
@@ -110,6 +112,12 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+        <scope>compile</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -126,6 +134,10 @@
       <groupId>io.r2dbc</groupId>
       <artifactId>r2dbc-spi</artifactId>
       <version>${r2dbc-spi.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
@@ -418,7 +430,7 @@
                   <executable>java</executable>
                   <arguments>
                     <argument>-classpath</argument>
-                    <classpath />
+                    <classpath/>
                     <argument>org.openjdk.jmh.Main</argument>
                     <argument>.*</argument>
                   </arguments>
