@@ -17,10 +17,10 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -28,7 +28,7 @@ import reactor.util.annotation.Nullable;
  */
 abstract class AbstractLobMySqlParameter extends AbstractMySqlParameter {
 
-    private static final Logger logger = Loggers.getLogger(AbstractLobMySqlParameter.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractLobMySqlParameter.class);
 
     @Override
     public final void dispose() {
