@@ -26,7 +26,6 @@ import io.r2dbc.spi.RowMetadata;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
 
@@ -119,12 +118,6 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
     @Override
     public List<ColumnMetadata> getColumnMetadatas() {
         return Collections.singletonList(this);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public Set<String> getColumnNames() {
-        return nameSet;
     }
 
     @Override
