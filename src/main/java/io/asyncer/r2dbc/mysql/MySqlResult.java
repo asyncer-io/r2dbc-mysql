@@ -59,9 +59,9 @@ public final class MySqlResult implements Result {
 
     private static final Consumer<ReferenceCounted> RELEASE = ReferenceCounted::release;
 
-    private static final BiConsumer<Segment, SynchronousSink<Integer>> ROWS_UPDATED = (segment, sink) -> {
+    private static final BiConsumer<Segment, SynchronousSink<Long>> ROWS_UPDATED = (segment, sink) -> {
         if (segment instanceof UpdateCount) {
-            sink.next((int) ((UpdateCount) segment).value());
+            sink.next(((UpdateCount) segment).value());
         } else if (segment instanceof Message) {
             sink.error(((Message) segment).exception());
         } else if (segment instanceof ReferenceCounted) {
@@ -69,7 +69,7 @@ public final class MySqlResult implements Result {
         }
     };
 
-    private static final BiFunction<Integer, Integer, Integer> SUM = Integer::sum;
+    private static final BiFunction<Long, Long, Long> SUM = Long::sum;
 
     private final Flux<Segment> segments;
 
@@ -78,7 +78,7 @@ public final class MySqlResult implements Result {
     }
 
     @Override
-    public Mono<Integer> getRowsUpdated() {
+    public Mono<Long> getRowsUpdated() {
         return segments.handle(ROWS_UPDATED).reduce(SUM);
     }
 

@@ -23,7 +23,6 @@ import io.r2dbc.spi.RowMetadata;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
 
@@ -102,12 +101,6 @@ final class MySqlRowMetadata implements RowMetadata {
     @Override
     public List<MySqlColumnDescriptor> getColumnMetadatas() {
         return InternalArrays.asImmutableList(originMetadata);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public Set<String> getColumnNames() {
-        return nameSet;
     }
 
     @Override
