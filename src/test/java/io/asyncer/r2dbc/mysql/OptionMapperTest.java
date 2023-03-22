@@ -20,8 +20,8 @@ import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.NoSuchOptionException;
 import io.r2dbc.spi.Option;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import reactor.util.annotation.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;

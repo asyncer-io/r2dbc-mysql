@@ -18,7 +18,7 @@
  * An implementation of the Reactive Relational Database Connection API for MySQL servers.
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

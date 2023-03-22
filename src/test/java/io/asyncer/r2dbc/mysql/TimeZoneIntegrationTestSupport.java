@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import reactor.util.annotation.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

@@ -16,12 +16,12 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.Nullable;
 
 /**
  * Base class considers LOB types (i.e. BLOB, CLOB) for {@link AbstractMySqlParameter} implementations.

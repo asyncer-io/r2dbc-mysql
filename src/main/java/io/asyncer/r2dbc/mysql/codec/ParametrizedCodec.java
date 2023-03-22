@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.netty.buffer.ByteBuf;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.ParameterizedType;
 

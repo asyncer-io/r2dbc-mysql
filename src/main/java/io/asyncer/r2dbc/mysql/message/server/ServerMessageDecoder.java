@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;

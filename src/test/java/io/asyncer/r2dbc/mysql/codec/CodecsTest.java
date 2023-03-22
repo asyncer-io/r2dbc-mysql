@@ -24,8 +24,8 @@ import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.r2dbc.spi.Nullability;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

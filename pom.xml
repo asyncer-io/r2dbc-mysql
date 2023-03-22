@@ -80,6 +80,7 @@
     <mbr.version>0.3.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
     <slf4j.version>2.0.7</slf4j.version>
+    <java-annotations.version>24.0.1</java-annotations.version>
   </properties>
 
   <dependencyManagement>
@@ -118,6 +119,12 @@
         <version>${slf4j.version}</version>
         <scope>compile</scope>
       </dependency>
+      <dependency>
+        <groupId>org.jetbrains</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${java-annotations.version}</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -138,6 +145,10 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
     </dependency>
 
     <dependency>

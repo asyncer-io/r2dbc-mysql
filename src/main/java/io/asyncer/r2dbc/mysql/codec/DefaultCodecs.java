@@ -24,7 +24,7 @@ import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
 import io.asyncer.r2dbc.mysql.util.InternalArrays;
 import io.netty.buffer.ByteBufAllocator;
 import io.r2dbc.spi.Parameter;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

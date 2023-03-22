@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.util;
 
-import reactor.util.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Assertion library for {@literal r2dbc-mysql} implementation.

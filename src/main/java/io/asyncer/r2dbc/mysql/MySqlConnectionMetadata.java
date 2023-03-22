@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.ConnectionMetadata;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
 

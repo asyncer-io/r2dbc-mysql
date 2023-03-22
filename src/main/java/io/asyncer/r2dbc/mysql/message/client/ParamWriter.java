@@ -20,9 +20,9 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.Query;
 import io.asyncer.r2dbc.mysql.util.OperatorUtils;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

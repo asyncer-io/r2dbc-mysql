@@ -18,7 +18,7 @@
  * The infrastructure for exchanging messages with the server.
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.client;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

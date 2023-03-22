@@ -54,6 +54,7 @@ import io.netty.util.ReferenceCounted;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import io.r2dbc.spi.TransactionDefinition;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.CoreSubscriber;
@@ -63,7 +64,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.SynchronousSink;
-import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import java.time.Duration;
@@ -194,7 +194,7 @@ final class QueryFlow {
      * @return the messages received in response to the login exchange.
      */
     static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password, ConnectionContext context) {
+                              @Nullable CharSequence password, ConnectionContext context) {
         return client.exchange(new LoginExchangeable(client, sslMode, database, user, password, context))
             .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
             .then(Mono.just(client));

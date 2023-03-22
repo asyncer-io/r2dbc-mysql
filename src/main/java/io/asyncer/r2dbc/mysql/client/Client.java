@@ -22,13 +22,11 @@ import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelOption;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
 import reactor.netty.tcp.TcpClient;
-import reactor.util.Logger;
-import reactor.util.Loggers;
-import reactor.util.annotation.Nullable;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -41,7 +39,6 @@ import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
  * An abstraction that wraps the networking part of exchanging methods.
  */
 public interface Client {
-    Logger logger = Loggers.getLogger(Client.class);
 
     /**
      * Perform an exchange of a request message. Calling this method while a previous exchange is active will
@@ -136,7 +133,8 @@ public interface Client {
         }
 
         if (socketTimeout != null) {
-            logger.warn("Socket timeout is not supported by the underlying connection and will be ignored.");
+            tcpClient = tcpClient.option(ChannelOption.SO_TIMEOUT,
+                Math.toIntExact(socketTimeout.toMillis()));
         }
 
         if (address instanceof InetSocketAddress) {

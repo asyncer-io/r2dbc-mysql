@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.client;
 
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import reactor.util.concurrent.Queues;
 
 import java.util.Queue;
