@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.netty.handler.ssl.SslContextBuilder;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import javax.net.ssl.HostnameVerifier;
 import java.util.Arrays;

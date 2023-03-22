@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
-import reactor.util.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.ParameterizedType;
 

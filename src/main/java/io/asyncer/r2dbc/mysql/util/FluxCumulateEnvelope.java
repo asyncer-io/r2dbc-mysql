@@ -19,13 +19,13 @@ package io.asyncer.r2dbc.mysql.util;
 import io.asyncer.r2dbc.mysql.constant.Envelopes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxOperator;
 import reactor.core.publisher.Operators;
-import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

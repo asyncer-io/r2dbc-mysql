@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import reactor.util.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;

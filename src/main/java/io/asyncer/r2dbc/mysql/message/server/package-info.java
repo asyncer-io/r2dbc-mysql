@@ -18,7 +18,7 @@
  * The messages that are sent from the MySQL server to a MySQL client.
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.message.server;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

@@ -18,7 +18,7 @@
  * The support of LOB (Blob, Clob).
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.codec.lob;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

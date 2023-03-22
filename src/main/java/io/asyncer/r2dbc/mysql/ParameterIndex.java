@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import reactor.util.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A data class considers indexes of a named parameter. Most case of the relation between parameter name and

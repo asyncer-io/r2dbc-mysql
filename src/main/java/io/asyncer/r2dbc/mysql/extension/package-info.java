@@ -17,8 +17,7 @@
 /**
  * Extensions for the MySQL driver.
  */
-
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.extension;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

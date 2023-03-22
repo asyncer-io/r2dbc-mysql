@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.ZoneId;
 

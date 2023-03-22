@@ -18,7 +18,7 @@
  * Data codecs for the type that the service provider understands.
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.codec;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

@@ -34,11 +34,11 @@ import io.r2dbc.spi.Readable;
 import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
+import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
-import reactor.util.annotation.Nullable;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -162,7 +162,7 @@ public final class MySqlResult implements Result {
     }
 
     static MySqlResult toResult(boolean binary, Codecs codecs, ConnectionContext context,
-        @Nullable String generatedKeyName, Flux<ServerMessage> messages) {
+                                @Nullable String generatedKeyName, Flux<ServerMessage> messages) {
         requireNonNull(codecs, "codecs must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(messages, "messages must not be null");

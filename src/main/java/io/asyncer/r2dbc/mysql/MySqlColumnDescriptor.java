@@ -21,7 +21,6 @@ import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
 import io.r2dbc.spi.Nullability;
-import reactor.util.annotation.NonNull;
 
 import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
@@ -88,7 +87,6 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
         return name;
     }
 
-    @NonNull
     @Override
     public MySqlTypeMetadata getNativeTypeMetadata() {
         return typeMetadata;
@@ -99,7 +97,6 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
         return nullability;
     }
 
-    @NonNull
     @Override
     public Integer getPrecision() {
         return (int) size;

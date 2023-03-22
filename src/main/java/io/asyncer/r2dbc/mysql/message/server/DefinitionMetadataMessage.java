@@ -21,7 +21,7 @@ import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.Charset;
 import java.util.Objects;

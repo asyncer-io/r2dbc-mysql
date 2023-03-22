@@ -18,7 +18,7 @@
  * Constants of the MySQL Client/Server Protocol.
  */
 
-@NonNullApi
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.constant;
 
-import reactor.util.annotation.NonNullApi;
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

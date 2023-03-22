@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.util.annotation.Nullable;
 
 /**
  * Base class considers {@link DefinitionMetadataMessage} for {@link DecodeContext} implementations.
