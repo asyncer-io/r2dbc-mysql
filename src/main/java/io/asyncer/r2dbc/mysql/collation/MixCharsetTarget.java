@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.collation;
 
-import reactor.util.annotation.Nullable;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;

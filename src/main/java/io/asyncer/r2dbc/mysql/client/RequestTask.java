@@ -17,10 +17,10 @@
 package io.asyncer.r2dbc.mysql.client;
 
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
+import org.jetbrains.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.MonoSink;
-import reactor.util.annotation.Nullable;
 
 /**
  * A task for execute, propagate errors and release resources.

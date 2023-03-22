@@ -15,10 +15,6 @@
  */
 
 /**
- * Cache supports for query parse and statement preparation.
+ * For internal usage Only.
  */
-
-@NotNullByDefault
-package io.asyncer.r2dbc.mysql.cache;
-
-import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;
+package io.asyncer.r2dbc.mysql.internal;

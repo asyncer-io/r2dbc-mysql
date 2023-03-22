@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.authentication;
 
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;

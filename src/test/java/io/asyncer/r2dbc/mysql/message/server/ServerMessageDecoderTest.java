@@ -20,8 +20,8 @@ import io.asyncer.r2dbc.mysql.ConnectionContextTest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.assertj.core.api.AbstractObjectAssert;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import reactor.util.annotation.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

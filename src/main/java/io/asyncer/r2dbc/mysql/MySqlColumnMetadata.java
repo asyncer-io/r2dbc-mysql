@@ -20,7 +20,6 @@ import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.r2dbc.spi.ColumnMetadata;
-import reactor.util.annotation.NonNull;
 
 /**
  * An abstraction of {@link ColumnMetadata} considers MySQL
@@ -54,7 +53,6 @@ public interface MySqlColumnMetadata extends ColumnMetadata {
      */
     long getNativePrecision();
 
-    @NonNull
     @Override
     default Class<?> getJavaType() {
         return getType().getJavaType();

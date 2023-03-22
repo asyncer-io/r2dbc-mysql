@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import reactor.util.annotation.Nullable;
 
 import java.util.Arrays;
 import java.util.HashSet;
