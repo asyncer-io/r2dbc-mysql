@@ -77,17 +77,17 @@ public interface MySqlAuthProvider {
 
         switch (type) {
             case CACHING_SHA2_PASSWORD:
-                return CachingSha2FastAuthProvider.INSTANCE;
+                return CachingSha2FastAuthProvider.getInstance();
             case MYSQL_NATIVE_PASSWORD:
-                return MySqlNativeAuthProvider.INSTANCE;
+                return MySqlNativeAuthProvider.getInstance();
             case MYSQL_CLEAR_PASSWORD:
-                return MySqlClearAuthProvider.INSTANCE;
+                return MySqlClearAuthProvider.getInstance();
             case SHA256_PASSWORD:
-                return Sha256AuthProvider.INSTANCE;
+                return Sha256AuthProvider.getInstance();
             case MYSQL_OLD_PASSWORD:
-                return OldAuthProvider.INSTANCE;
+                return OldAuthProvider.getInstance();
             case NO_AUTH_PROVIDER:
-                return NoAuthProvider.INSTANCE;
+                return NoAuthProvider.getInstance();
         }
 
         throw new R2dbcPermissionDeniedException("Authentication plugin '" + type + "' not found");
