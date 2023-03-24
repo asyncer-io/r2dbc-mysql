@@ -29,7 +29,9 @@ import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
  */
 final class Sha256AuthProvider implements MySqlAuthProvider {
 
-    static final Sha256AuthProvider INSTANCE = new Sha256AuthProvider();
+    static Sha256AuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     @Override
     public boolean isSslNecessary() {
@@ -57,5 +59,10 @@ final class Sha256AuthProvider implements MySqlAuthProvider {
         return SHA256_PASSWORD;
     }
 
-    private Sha256AuthProvider() { }
+    private Sha256AuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final Sha256AuthProvider INSTANCE = new Sha256AuthProvider();
+    }
 }

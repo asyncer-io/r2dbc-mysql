@@ -29,7 +29,9 @@ import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
  */
 public final class MySqlClearAuthProvider implements MySqlAuthProvider {
 
-    static final MySqlClearAuthProvider INSTANCE = new MySqlClearAuthProvider();
+    static MySqlClearAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     @Override
     public boolean isSslNecessary() {
@@ -57,5 +59,10 @@ public final class MySqlClearAuthProvider implements MySqlAuthProvider {
         return MYSQL_CLEAR_PASSWORD;
     }
 
-    private MySqlClearAuthProvider() { }
+    private MySqlClearAuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final MySqlClearAuthProvider INSTANCE = new MySqlClearAuthProvider();
+    }
 }

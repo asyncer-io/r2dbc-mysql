@@ -27,7 +27,9 @@ import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
  */
 final class NoAuthProvider implements MySqlAuthProvider {
 
-    static final NoAuthProvider INSTANCE = new NoAuthProvider();
+    static NoAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     @Override
     public boolean isSslNecessary() {
@@ -50,5 +52,10 @@ final class NoAuthProvider implements MySqlAuthProvider {
         return NO_AUTH_PROVIDER;
     }
 
-    private NoAuthProvider() { }
+    private NoAuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final NoAuthProvider INSTANCE = new NoAuthProvider();
+    }
 }
