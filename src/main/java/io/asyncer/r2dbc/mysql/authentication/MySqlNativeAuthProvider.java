@@ -27,7 +27,9 @@ import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
  */
 final class MySqlNativeAuthProvider implements MySqlAuthProvider {
 
-    static final MySqlNativeAuthProvider INSTANCE = new MySqlNativeAuthProvider();
+    static MySqlNativeAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     private static final String ALGORITHM = "SHA-1";
 
@@ -65,5 +67,10 @@ final class MySqlNativeAuthProvider implements MySqlAuthProvider {
         return MYSQL_NATIVE_PASSWORD;
     }
 
-    private MySqlNativeAuthProvider() { }
+    private MySqlNativeAuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final MySqlNativeAuthProvider INSTANCE = new MySqlNativeAuthProvider();
+    }
 }

@@ -31,7 +31,9 @@ import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
  */
 final class OldAuthProvider implements MySqlAuthProvider {
 
-    static final OldAuthProvider INSTANCE = new OldAuthProvider();
+    static OldAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     private static final int MAX_SALT_LENGTH = 8;
 
@@ -177,5 +179,10 @@ final class OldAuthProvider implements MySqlAuthProvider {
         return ((firstPart & Integer.MAX_VALUE) << Integer.SIZE) | (secondPart & Integer.MAX_VALUE);
     }
 
-    private OldAuthProvider() { }
+    private OldAuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final OldAuthProvider INSTANCE = new OldAuthProvider();
+    }
 }

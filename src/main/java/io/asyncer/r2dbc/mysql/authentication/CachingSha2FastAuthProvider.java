@@ -28,7 +28,9 @@ import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
  */
 final class CachingSha2FastAuthProvider implements MySqlAuthProvider {
 
-    static final CachingSha2FastAuthProvider INSTANCE = new CachingSha2FastAuthProvider();
+    static CachingSha2FastAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     private static final String ALGORITHM = "SHA-256";
 
@@ -67,5 +69,10 @@ final class CachingSha2FastAuthProvider implements MySqlAuthProvider {
         return CACHING_SHA2_PASSWORD;
     }
 
-    private CachingSha2FastAuthProvider() { }
+    private CachingSha2FastAuthProvider() {
+    }
+
+    private static class LazyHolder {
+        private static final CachingSha2FastAuthProvider INSTANCE = new CachingSha2FastAuthProvider();
+    }
 }
