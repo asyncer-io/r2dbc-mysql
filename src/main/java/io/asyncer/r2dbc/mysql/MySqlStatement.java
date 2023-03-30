@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.Statement;
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 /**
  * A strongly typed implementation of {@link Statement} for the MySQL database.
@@ -64,7 +64,7 @@ public interface MySqlStatement extends Statement {
      * {@inheritDoc}
      */
     @Override
-    Publisher<MySqlResult> execute();
+    Flux<MySqlResult> execute();
 
     /**
      * {@inheritDoc}
