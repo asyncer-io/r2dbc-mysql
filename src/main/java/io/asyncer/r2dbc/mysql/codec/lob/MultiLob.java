@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.codec.lob;
 
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.netty.buffer.ByteBuf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

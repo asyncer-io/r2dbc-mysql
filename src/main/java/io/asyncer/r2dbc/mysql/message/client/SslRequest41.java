@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.Capability;
 import io.asyncer.r2dbc.mysql.constant.Envelopes;
 import io.netty.buffer.ByteBuf;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * The ssl request message on protocol 4.1. It is also first part of {@link HandshakeResponse41}.

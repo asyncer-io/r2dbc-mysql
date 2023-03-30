@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A client prepared query message based on text protocol.

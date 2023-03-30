@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql.message.client;
 
 import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import reactor.core.Disposable;
@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A message to execute a prepared statement once with parameter.

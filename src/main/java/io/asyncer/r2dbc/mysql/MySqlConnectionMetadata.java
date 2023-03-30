@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql;
 import io.r2dbc.spi.ConnectionMetadata;
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Connection metadata for a connection connected to MySQL database.

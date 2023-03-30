@@ -19,8 +19,8 @@ package io.asyncer.r2dbc.mysql.authentication;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
 /**
  * An implementation of {@link MySqlAuthProvider} for type "mysql_native_password".

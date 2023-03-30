@@ -23,7 +23,7 @@ import reactor.core.publisher.Flux;
 
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A message of prepare sql query for get prepared statement ID and information.

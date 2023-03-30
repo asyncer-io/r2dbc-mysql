@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link Row} for support to reading last inserted ID.

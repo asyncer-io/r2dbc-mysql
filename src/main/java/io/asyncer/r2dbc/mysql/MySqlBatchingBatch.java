@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import reactor.core.publisher.Flux;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link MySqlBatch} for executing a collection of statements in a batch against the

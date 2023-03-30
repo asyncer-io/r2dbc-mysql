@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.cache;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * A probabilistic set for estimating the popularity (frequency) of an element within an access frequency

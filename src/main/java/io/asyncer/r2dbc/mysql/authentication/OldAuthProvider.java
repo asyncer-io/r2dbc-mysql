@@ -23,8 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
 /**
  * An implementation of {@link MySqlAuthProvider} for type "mysql_old_password".

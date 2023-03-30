@@ -22,8 +22,8 @@ import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
 import io.r2dbc.spi.Nullability;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link MySqlColumnMetadata}.

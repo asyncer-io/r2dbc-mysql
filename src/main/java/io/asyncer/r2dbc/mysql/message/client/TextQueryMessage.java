@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A plain text SQL query message, it could include multi-statements.

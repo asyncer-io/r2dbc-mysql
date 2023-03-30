@@ -20,8 +20,8 @@ import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
-import io.asyncer.r2dbc.mysql.util.InternalArrays;
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import reactor.core.publisher.Mono;
@@ -35,7 +35,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_STRINGS;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
 /**
  * Codec for {@link Set}{@code <}{@link String}{@code >}, {@link Set}{@code <}{@link Enum}{@code >} and the

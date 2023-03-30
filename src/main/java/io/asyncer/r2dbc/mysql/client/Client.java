@@ -33,7 +33,7 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An abstraction that wraps the networking part of exchanging methods.

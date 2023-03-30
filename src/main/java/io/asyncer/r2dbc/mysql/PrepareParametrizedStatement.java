@@ -23,7 +23,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementation of {@link ParametrizedStatementSupport} based on MySQL prepare query.

@@ -16,15 +16,15 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
-import io.asyncer.r2dbc.mysql.util.InternalArrays;
 import io.r2dbc.spi.RowMetadata;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link RowMetadata} for MySQL database text/binary results.

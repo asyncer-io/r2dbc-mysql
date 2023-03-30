@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql.collation;
 
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link CharsetTarget} that has cached charset.

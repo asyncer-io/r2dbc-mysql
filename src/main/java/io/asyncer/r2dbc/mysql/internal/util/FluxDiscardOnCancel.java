@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql.util;
+package io.asyncer.r2dbc.mysql.internal.util;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxOperator;
 
 /**
- * A decorating operator that replays signals from its source to a {@code CoreSubscriber} and drains the
- * source upon {@link Subscription#cancel() cancel} and drops data signals until termination. Draining data is
- * required to complete a particular request/response window and clear the protocol state as client code
- * expects to start a request/response conversation without any previous response state.
- *
- * @see FluxDiscardOnCancel contains all subscriber implementations for discard on cancel.
+ * A decorating operator that replays signals from its source to a {@link DiscardOnCancelSubscriber} and
+ * drains the source upon {@link Subscription#cancel() cancel} and drops data signals until termination.
+ * Draining data is required to complete a particular request/response window and clear the protocol state as
+ * client code expects to start a request/response conversation without any previous response state.
+ * <p>
+ * This is a slightly altered version of R2DBC SQL Server's implementation:
+ * https://github.com/r2dbc/r2dbc-mssql
  */
-final class FluxDiscardOnCancelFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxDiscardOnCancel<T> extends FluxOperator<T, T> {
 
-    FluxDiscardOnCancelFuseable(Flux<? extends T> source) {
+    FluxDiscardOnCancel(Flux<? extends T> source) {
         super(source);
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super T> actual) {
-        this.source.subscribe(DiscardOnCancelSubscriber.create(actual, true));
+        this.source.subscribe(DiscardOnCancelSubscriber.create(actual, false));
     }
 }

@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.client;
 
-import io.asyncer.r2dbc.mysql.util.AddressUtils;
+import io.asyncer.r2dbc.mysql.internal.util.AddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link HostnameVerifier} for verifying hostname by default.

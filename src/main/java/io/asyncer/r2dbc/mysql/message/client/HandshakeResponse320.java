@@ -24,7 +24,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A handshake response message for protocol version 3.20.

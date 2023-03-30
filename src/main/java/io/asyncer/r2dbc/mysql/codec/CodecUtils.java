@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.jetbrains.annotations.Nullable;

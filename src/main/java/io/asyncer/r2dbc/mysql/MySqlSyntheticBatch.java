@@ -23,7 +23,7 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link MySqlBatch} for executing a collection of statements in one-by-one against the

@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBufUtil;
 import java.util.Arrays;
 
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Change authentication plugin type and salt message.

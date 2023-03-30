@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql.util;
+package io.asyncer.r2dbc.mysql.internal.util;
 
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.netty.util.ReferenceCountUtil;
