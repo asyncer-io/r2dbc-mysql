@@ -17,11 +17,11 @@
 package io.asyncer.r2dbc.mysql.message.server;
 
 import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
@@ -32,7 +32,7 @@ import io.netty.util.ReferenceCountUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementation of {@link FieldReader} for large result which bytes more than {@link Integer#MAX_VALUE},

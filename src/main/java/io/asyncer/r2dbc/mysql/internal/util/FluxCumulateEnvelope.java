@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql.util;
+package io.asyncer.r2dbc.mysql.internal.util;
 
 import io.asyncer.r2dbc.mysql.constant.Envelopes;
 import io.netty.buffer.ByteBuf;

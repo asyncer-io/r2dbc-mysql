@@ -22,7 +22,7 @@ import io.r2dbc.spi.Blob;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
 /**
  * An implementation of {@link Blob} for multi-{@link ByteBuf}s.

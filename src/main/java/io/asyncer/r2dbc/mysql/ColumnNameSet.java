@@ -16,14 +16,22 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import io.asyncer.r2dbc.mysql.util.InternalArrays;
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 
-import java.util.*;
+import java.util.AbstractSet;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link Set}{@code <}{@link String}{@code >} for {@code RowMetadata.getColumnNames}

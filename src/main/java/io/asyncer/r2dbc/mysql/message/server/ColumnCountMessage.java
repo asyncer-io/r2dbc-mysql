@@ -16,10 +16,10 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * A message that is start envelope for {@literal SELECT} query result, {@link #totalColumns}  how many

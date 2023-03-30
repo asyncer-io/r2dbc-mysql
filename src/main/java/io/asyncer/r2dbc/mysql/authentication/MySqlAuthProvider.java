@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An abstraction of the MySQL authorization plugin provider for connection phase. More information for MySQL

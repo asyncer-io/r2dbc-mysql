@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql.util;
+package io.asyncer.r2dbc.mysql.internal.util;
 
 import io.asyncer.r2dbc.mysql.constant.Envelopes;
 import io.netty.buffer.ByteBuf;
@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBufAllocator;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Operator utility.

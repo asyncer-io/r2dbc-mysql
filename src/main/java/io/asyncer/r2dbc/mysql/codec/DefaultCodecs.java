@@ -18,10 +18,10 @@ package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
-import io.asyncer.r2dbc.mysql.util.InternalArrays;
 import io.netty.buffer.ByteBufAllocator;
 import io.r2dbc.spi.Parameter;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link Codecs}.

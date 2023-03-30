@@ -24,8 +24,8 @@ import io.netty.buffer.ByteBufUtil;
 import java.util.Arrays;
 
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
 /**
  * MySQL Handshake Message for handshake protocol version 9.

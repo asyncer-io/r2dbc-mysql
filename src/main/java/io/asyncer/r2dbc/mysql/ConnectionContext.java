@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.ZoneId;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * The MySQL connection context considers the behavior of server or client.

@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
 import java.util.Collections;
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementations of {@link SimpleStatementSupport} based on MySQL prepare query.

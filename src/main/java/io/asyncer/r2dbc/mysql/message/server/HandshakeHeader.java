@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
 
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * The handshake generic header, all protocol versions contains this data whether V9 or V10.

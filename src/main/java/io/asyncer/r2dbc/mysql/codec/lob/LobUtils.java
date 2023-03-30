@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec.lob;
 
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.netty.buffer.ByteBuf;
 import io.r2dbc.spi.Blob;
 import io.r2dbc.spi.Clob;

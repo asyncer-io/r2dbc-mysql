@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
+package io.asyncer.r2dbc.mysql.internal.util;
+
+import io.asyncer.r2dbc.mysql.message.server.ServerMessageDecoder;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.commons.util.ReflectionUtils;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
- * Utility code used throughout the project.
+ * Unit tests for {@link VarIntUtils} protocol.
  */
+class VarIntUtilsTest {
 
-@NotNullByDefault
-package io.asyncer.r2dbc.mysql.util;
-
-import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;
+    @Test
+    void eofHeaderEqualsInt64Code() {
+        short v = (Short) ReflectionUtils.tryToReadFieldValue(ServerMessageDecoder.class, "EOF", null)
+            .getOrThrow(RuntimeException::new);
+        assertEquals(v, VarIntUtils.VAR_INT_8_BYTE_CODE);
+    }
+}

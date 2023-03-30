@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql.client;
 
 import io.asyncer.r2dbc.mysql.ConnectionContext;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.LoginClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.PrepareQueryMessage;
@@ -31,7 +32,6 @@ import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessageDecoder;
 import io.asyncer.r2dbc.mysql.message.server.ServerStatusMessage;
 import io.asyncer.r2dbc.mysql.message.server.SyntheticMetadataMessage;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelDuplexHandler;
@@ -44,7 +44,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Client/server messages encode/decode logic.

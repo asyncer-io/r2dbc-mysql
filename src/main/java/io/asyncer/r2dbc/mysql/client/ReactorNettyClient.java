@@ -18,11 +18,11 @@ package io.asyncer.r2dbc.mysql.client;
 
 import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.MySqlSslConfiguration;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.ExitMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.asyncer.r2dbc.mysql.message.server.WarningMessage;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -49,8 +49,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of client based on the Reactor Netty project.

@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.BitSet;
 
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_BYTES;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
 /**
  * Codec for {@link BitSet}.

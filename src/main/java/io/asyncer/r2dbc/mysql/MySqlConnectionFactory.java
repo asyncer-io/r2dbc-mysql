@@ -35,7 +35,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Predicate;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link ConnectionFactory} for creating connections to a MySQL database.

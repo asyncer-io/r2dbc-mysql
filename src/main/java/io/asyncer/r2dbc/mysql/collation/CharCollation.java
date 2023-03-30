@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.ServerVersion;
 
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Character collation of MySQL.

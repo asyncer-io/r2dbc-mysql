@@ -19,12 +19,12 @@ package io.asyncer.r2dbc.mysql.message.server;
 import io.asyncer.r2dbc.mysql.Capability;
 import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * OK message, it may be a complete signal of command, or a succeed signal for the Connection Phase of

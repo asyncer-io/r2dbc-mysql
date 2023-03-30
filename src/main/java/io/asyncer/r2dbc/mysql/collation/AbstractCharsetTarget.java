@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.collation;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * Base class for {@link CharsetTarget}.

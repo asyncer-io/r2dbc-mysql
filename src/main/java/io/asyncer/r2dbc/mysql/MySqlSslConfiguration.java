@@ -25,8 +25,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_STRINGS;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
 /**
  * MySQL configuration of SSL.

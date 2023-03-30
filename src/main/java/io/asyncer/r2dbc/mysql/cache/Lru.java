@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.cache;
 
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * A minimal implementation of LRU without hashing map.

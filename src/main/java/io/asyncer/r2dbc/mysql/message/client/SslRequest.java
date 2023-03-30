@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql.message.client;
 
 import io.asyncer.r2dbc.mysql.Capability;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An abstraction of {@link ClientMessage} that considers SSL request for handshake.

@@ -17,6 +17,8 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
@@ -24,8 +26,6 @@ import io.asyncer.r2dbc.mysql.message.server.OkMessage;
 import io.asyncer.r2dbc.mysql.message.server.RowMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.asyncer.r2dbc.mysql.message.server.SyntheticMetadataMessage;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link Result} representing the results of a query against the MySQL database.
