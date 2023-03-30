@@ -24,7 +24,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Mixin {@link CharsetTarget} for select the optimal {@link Charset} in multiple {@link CharsetTarget}s.

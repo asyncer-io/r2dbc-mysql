@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.message.client;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.Query;
-import io.asyncer.r2dbc.mysql.util.OperatorUtils;
+import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,7 +29,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A default implementation of {@link ParameterWriter}.

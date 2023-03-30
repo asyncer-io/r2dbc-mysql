@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementation of {@link DecodeContext} for text or binary result.

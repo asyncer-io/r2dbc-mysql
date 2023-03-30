@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.codec;
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.netty.buffer.ByteBufAllocator;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * Codec for primitive types, like {@code int} or {@code double}.

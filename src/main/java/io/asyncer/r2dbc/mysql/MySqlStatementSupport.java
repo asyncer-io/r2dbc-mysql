@@ -19,9 +19,9 @@ package io.asyncer.r2dbc.mysql;
 
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireValidName;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
 
 /**
  * Base class considers generic logic for {@link MySqlStatement} implementations.

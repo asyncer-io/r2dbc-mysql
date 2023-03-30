@@ -45,8 +45,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireValidName;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
 
 /**
  * An implementation of {@link Connection} for connecting to the MySQL database.

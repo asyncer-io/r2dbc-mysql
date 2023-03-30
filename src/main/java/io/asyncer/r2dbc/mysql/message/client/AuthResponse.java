@@ -20,7 +20,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.Arrays;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A message that contains only an authentication, used by full authentication or change authentication

@@ -16,15 +16,15 @@
 
 package io.asyncer.r2dbc.mysql.message;
 
-import io.asyncer.r2dbc.mysql.util.InternalArrays;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.ReferenceCounted;
 
 import java.util.List;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link FieldValue} considers large field value which bytes width/size is greater than

@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.ParameterizedType;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link Row} for MySQL database.

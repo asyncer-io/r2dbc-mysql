@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql.util;
+package io.asyncer.r2dbc.mysql.internal.util;
 
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -31,8 +31,6 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
 
 /**
  * An utility with constants of arrays for reduce temporary objects and ensure immutability, do NOT use it
@@ -56,7 +54,7 @@ public final class InternalArrays {
     @SuppressWarnings("varargs")
     @SafeVarargs
     public static <E> List<E> asImmutableList(E... a) {
-        requireNonNull(a, "array must not be null");
+        AssertUtils.requireNonNull(a, "array must not be null");
 
         switch (a.length) {
             case 0:
@@ -79,7 +77,7 @@ public final class InternalArrays {
     @SuppressWarnings("varargs")
     @SafeVarargs
     public static <E> List<E> toImmutableList(E... a) {
-        requireNonNull(a, "array must not be null");
+        AssertUtils.requireNonNull(a, "array must not be null");
 
         switch (a.length) {
             case 0:
@@ -103,7 +101,7 @@ public final class InternalArrays {
     @SuppressWarnings("varargs")
     @SafeVarargs
     public static <E> Iterator<E> asIterator(E... a) {
-        requireNonNull(a, "array must not be null");
+        AssertUtils.requireNonNull(a, "array must not be null");
 
         if (a.length == 0) {
             return Collections.emptyIterator();

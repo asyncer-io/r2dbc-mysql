@@ -33,9 +33,9 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.util.InternalArrays.EMPTY_STRINGS;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
 /**
  * MySQL configuration of connection.

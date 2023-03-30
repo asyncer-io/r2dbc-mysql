@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCounted;
 

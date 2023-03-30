@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link MySqlAuthProvider} for type "caching_sha2_password" in fast authentication

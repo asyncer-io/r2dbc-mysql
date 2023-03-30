@@ -21,7 +21,7 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.codec.lob.LobUtils;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;

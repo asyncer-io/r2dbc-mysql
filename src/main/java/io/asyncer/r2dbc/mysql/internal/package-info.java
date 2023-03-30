@@ -15,6 +15,14 @@
  */
 
 /**
- * For internal usage Only.
+ * This package is for internal usage only within the r2dbc-mysql project. It contains
+ * utility classes, internal data structures, and other functionality that supports the core
+ * r2dbc-mysql functionalities. The classes in this package are not meant for external use.
+ * <p>
+ * <strong>Important Note:</strong> The contents of this package are subject to change
+ * frequently, even with minor or patch version updates.
+ * Using these classes or interfaces outside of the r2dbc-mysql project is strongly
+ * discouraged, as it may lead to unpredictable behavior and compatibility issues.
  */
+@NotNullByDefault
 package io.asyncer.r2dbc.mysql.internal;

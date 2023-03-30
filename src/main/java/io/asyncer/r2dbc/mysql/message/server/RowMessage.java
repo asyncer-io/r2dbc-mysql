@@ -17,11 +17,11 @@
 package io.asyncer.r2dbc.mysql.message.server;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
-import io.asyncer.r2dbc.mysql.util.NettyBufferUtils;
 import io.netty.util.ReferenceCounted;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A message includes data fields which is a row of result.

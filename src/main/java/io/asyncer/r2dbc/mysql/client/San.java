@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.client;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Subject Alternative Name (aka. SAN, subjectAltName) in SSL.

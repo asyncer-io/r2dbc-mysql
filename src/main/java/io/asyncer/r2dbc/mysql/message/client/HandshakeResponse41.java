@@ -18,7 +18,7 @@ package io.asyncer.r2dbc.mysql.message.client;
 
 import io.asyncer.r2dbc.mysql.Capability;
 import io.asyncer.r2dbc.mysql.ConnectionContext;
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * A handshake response message for protocol version 4.1.

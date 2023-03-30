@@ -16,13 +16,13 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementation of {@link FieldReader} considers field data, which byte width/size is less than or equal

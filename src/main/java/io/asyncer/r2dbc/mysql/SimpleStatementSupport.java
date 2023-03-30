@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Base class of {@link MySqlStatement} considers the simple statement that has no parameter.

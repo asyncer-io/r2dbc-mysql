@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.require;
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * MySQL server version, looks like {@literal "8.0.14"}, or {@literal "8.0.14-rc2"}.

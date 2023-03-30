@@ -16,14 +16,14 @@
 
 package io.asyncer.r2dbc.mysql.message.client;
 
-import io.asyncer.r2dbc.mysql.util.VarIntUtils;
 import io.asyncer.r2dbc.mysql.ConnectionContext;
+import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-import static io.asyncer.r2dbc.mysql.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * Send parameter long data for prepared statements, it should be used by LOB types. (e.g. BLOB, CLOB)
