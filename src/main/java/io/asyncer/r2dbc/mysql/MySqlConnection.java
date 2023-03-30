@@ -416,7 +416,7 @@ public final class MySqlConnection implements Connection, ConnectionState {
     }
 
     @Override
-    public Publisher<Void> setStatementTimeout(Duration timeout) {
+    public Mono<Void> setStatementTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
 
         // TODO: implement me
