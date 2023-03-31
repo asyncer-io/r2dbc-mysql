@@ -304,8 +304,10 @@ public class TransactionIntegrationTest extends IntegrationTestSupport {
 
 
     Mono<IsolationLevel> getIsolationLevel() {
-
-        return connection.createStatement("SELECT @@transaction_isolation").execute()
+        final ServerVersion serverVersion = ServerVersion.parse(connection.getMetadata().getDatabaseVersion());
+        final String sql = serverVersion.isGreaterThanOrEqualTo(ServerVersion.create(5, 7, 20)) ?
+                "SELECT @@transaction_isolation" : "SELECT @@tx_isolation";
+        return connection.createStatement(sql).execute()
                          .flatMap(it -> it.map((row, rowMetadata) -> row.get(0, String.class)))
                          .map(it -> {
 
