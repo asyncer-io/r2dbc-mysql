@@ -119,6 +119,103 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void autoCommitAutomaticallyTurnedOffInTransaction() {
+        complete(connection -> Mono.<Void>fromRunnable(() -> assertThat(connection.isAutoCommit()).isTrue())
+                                   .then(connection.beginTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isFalse())
+                                   .then(connection.commitTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isTrue()));
+    }
+
+    @Test
+    void autoCommitStatusIsRestoredAfterTransaction() {
+        complete(connection -> Mono.<Void>fromRunnable(() -> assertThat(connection.isAutoCommit()).isTrue())
+                                   .then(connection.setAutoCommit(false))
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isFalse())
+                                   .then(connection.beginTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isFalse())
+                                   .then(connection.commitTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isFalse())
+                                   .then(connection.setAutoCommit(true))
+                                   .doOnSuccess(ignored -> assertThat(connection.isAutoCommit()).isTrue()));
+    }
+
+    @Test
+    void createSavepointAndRollbackToSavepoint() {
+        complete(connection -> Mono.from(connection.createStatement(
+                                           "CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))").execute())
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(connection.beginTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (1, 'test1')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (2, 'test2')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(2))
+                                   .then(connection.createSavepoint("test"))
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (3, 'test3')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (4, 'test4')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(4))
+                                   .then(connection.rollbackTransactionToSavepoint("test"))
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(2))
+                                   .then(connection.rollbackTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(0))
+        );
+    }
+
+    @Test
+    void createSavepointAndRollbackEntireTransaction() {
+        complete(connection -> Mono.from(connection.createStatement(
+                                           "CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))").execute())
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(connection.beginTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (1, 'test1')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (2, 'test2')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(2))
+                                   .then(connection.createSavepoint("test"))
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (3, 'test3')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("INSERT INTO test VALUES (4, 'test4')")
+                                                             .execute()))
+                                   .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(4))
+                                   .then(connection.rollbackTransaction())
+                                   .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
+                                   .then(Mono.from(connection.createStatement("SELECT COUNT(*) FROM test").execute()))
+                                   .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class))))
+                                   .doOnSuccess(count -> assertThat(count).isEqualTo(0))
+        );
+    }
+
+    @Test
     void commitTransactionWithoutBegin() {
         complete(MySqlConnection::commitTransaction);
     }
