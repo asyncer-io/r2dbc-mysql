@@ -44,16 +44,6 @@
         <role>Mainatainer</role>
       </roles>
     </developer>
-    <developer>
-      <id>mobidick1969</id>
-      <name>Nelson k</name>
-      <email>mobidick(at)gmail.com</email>
-      <url>https://github.com/mobidick1969</url>
-      <roles>
-        <role>Maintainer</role>
-      </roles>
-      <timezone>+9</timezone>
-    </developer>
   </developers>
 
   <inceptionYear>2018</inceptionYear>
