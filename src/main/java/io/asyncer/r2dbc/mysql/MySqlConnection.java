@@ -26,14 +26,14 @@ import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
 
@@ -53,7 +53,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
  */
 public final class MySqlConnection implements Connection, ConnectionState {
 
-    private static final Logger logger = LoggerFactory.getLogger(MySqlConnection.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(MySqlConnection.class);
 
     private static final int DEFAULT_LOCK_WAIT_TIMEOUT = 50;
 

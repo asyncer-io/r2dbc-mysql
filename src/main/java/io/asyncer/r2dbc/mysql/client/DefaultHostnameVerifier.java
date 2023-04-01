@@ -17,8 +17,8 @@
 package io.asyncer.r2dbc.mysql.client;
 
 import io.asyncer.r2dbc.mysql.internal.util.AddressUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -47,7 +47,7 @@ final class DefaultHostnameVerifier implements HostnameVerifier {
 
     static final DefaultHostnameVerifier INSTANCE = new DefaultHostnameVerifier();
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultHostnameVerifier.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultHostnameVerifier.class);
 
     private static final boolean LOG_DEBUG = logger.isDebugEnabled();
 

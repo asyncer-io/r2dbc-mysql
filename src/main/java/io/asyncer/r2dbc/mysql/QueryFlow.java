@@ -51,12 +51,12 @@ import io.asyncer.r2dbc.mysql.message.server.SyntheticMetadataMessage;
 import io.asyncer.r2dbc.mysql.message.server.SyntheticSslResponseMessage;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import io.r2dbc.spi.TransactionDefinition;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.Flux;
@@ -83,7 +83,7 @@ import java.util.function.Predicate;
  */
 final class QueryFlow {
 
-    static final Logger logger = LoggerFactory.getLogger(QueryFlow.class);
+    static final InternalLogger logger = InternalLoggerFactory.getInstance(QueryFlow.class);
 
     // Metadata EOF message will be not receive in here.
     private static final Predicate<ServerMessage> RESULT_DONE = message -> message instanceof CompleteMessage;
@@ -463,7 +463,7 @@ final class MultiQueryExchangeable extends BaseFluxExchangeable {
  */
 final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
 
-    private static final Logger logger = LoggerFactory.getLogger(PrepareExchangeable.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(PrepareExchangeable.class);
 
     private static final int PREPARE_OR_RESET = 1;
 
@@ -747,7 +747,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
  */
 final class LoginExchangeable extends FluxExchangeable<Void> {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoginExchangeable.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(LoginExchangeable.class);
 
     private static final Map<String, String> ATTRIBUTES = Collections.emptyMap();
 
