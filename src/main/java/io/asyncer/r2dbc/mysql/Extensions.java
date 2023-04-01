@@ -17,8 +17,8 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.extension.Extension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  */
 final class Extensions {
 
-    private static final Logger logger = LoggerFactory.getLogger(Extensions.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(Extensions.class);
 
     private static final Extension[] EMPTY = { };
 

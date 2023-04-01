@@ -27,11 +27,11 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.R2dbcException;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -57,7 +57,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 final class ReactorNettyClient implements Client {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReactorNettyClient.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(ReactorNettyClient.class);
 
     private static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
 
