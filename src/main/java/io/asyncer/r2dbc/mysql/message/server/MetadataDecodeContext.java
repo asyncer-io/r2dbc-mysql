@@ -16,16 +16,16 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class considers {@link DefinitionMetadataMessage} for {@link DecodeContext} implementations.
  */
 abstract class MetadataDecodeContext implements DecodeContext {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetadataDecodeContext.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(MetadataDecodeContext.class);
 
     private final boolean eofDeprecated;
 
