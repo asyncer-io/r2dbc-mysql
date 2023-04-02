@@ -43,7 +43,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 <dependency>
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.3</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 
 ```groovy
 dependencies {
-    implementation 'io.asyncer:r2dbc-mysql:0.9.1'
+    implementation 'io.asyncer:r2dbc-mysql:0.9.3'
 }
 ```
 
@@ -62,7 +62,7 @@ dependencies {
 ```kotlin
 dependencies {
     // Maybe should to use `compile` instead of `implementation` on the lower version of Gradle.
-    implementation("io.asyncer:r2dbc-mysql:0.9.1")
+    implementation("io.asyncer:r2dbc-mysql:0.9.3")
 }
 ```
 
