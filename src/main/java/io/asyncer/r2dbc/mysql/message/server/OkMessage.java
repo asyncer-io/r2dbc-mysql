@@ -111,14 +111,14 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
     @Override
     public String toString() {
         if (warnings == 0) {
-            return "OkMessage{affectedRows=" + affectedRows + ", lastInsertId=" + lastInsertId +
-                ", serverStatuses=" + Integer.toHexString(serverStatuses) + ", information='" + information +
-                "'}";
+            return "OkMessage{affectedRows=" + Long.toUnsignedString(affectedRows) + ", lastInsertId=" + 
+                Long.toUnsignedString(lastInsertId) + ", serverStatuses=" + Integer.toHexString(serverStatuses) + 
+                ", information='" + information + "'}";
         }
 
-        return "OkMessage{affectedRows=" + affectedRows + ", lastInsertId=" + lastInsertId +
-            ", serverStatuses=" + Integer.toHexString(serverStatuses) + ", warnings=" + warnings +
-            ", information='" + information + "'}";
+        return "OkMessage{affectedRows=" + Long.toUnsignedString(affectedRows) + ", lastInsertId=" + 
+            Long.toUnsignedString(lastInsertId) + ", serverStatuses=" + Integer.toHexString(serverStatuses) + 
+            ", warnings=" + warnings + ", information='" + information + "'}";
     }
 
     static boolean isValidSize(int bytes) {
