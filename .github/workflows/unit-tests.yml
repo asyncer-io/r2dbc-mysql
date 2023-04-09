@@ -3,7 +3,7 @@ name: Unit tests
 on: [ pull_request ]
 
 jobs:
-  build:
+  linux-build-java-${{ matrix.version }}:
     runs-on: ubuntu-20.04
     strategy:
       matrix: 
