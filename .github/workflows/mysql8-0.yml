@@ -21,6 +21,6 @@ jobs:
           collation server: utf8mb4_0900_ai_ci
           mysql version: 8.0
           mysql database: r2dbc
-          mysql root password: ${{ secrets.DB_PASSWORD }}
+          mysql root password: r2dbc-password!@
       - name: Integration test with MySQL 8.0
-        run: ./mvnw -B verify -Dmaven.javadoc.skip=true -Dmaven.surefire.skip=true -Dtest.mysql.password=${{ secrets.DB_PASSWORD }} -Dtest.mysql.version=8.0 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
+        run: ./mvnw -B verify -Dmaven.javadoc.skip=true -Dmaven.surefire.skip=true -Dtest.mysql.password=r2dbc-password!@ -Dtest.mysql.version=8.0 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN

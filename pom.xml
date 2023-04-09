@@ -21,7 +21,7 @@
 
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Reactive Relational Database Connectivity - MySQL</name>
@@ -35,17 +35,10 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>jchrys</id>
-      <name>jchrys</name>
-      <email>jchrys(at)me.com</email>
-      <url>https://github.com/jchrys</url>
-      <roles>
-        <role>Mainatainer</role>
-      </roles>
-    </developer>
-  </developers>
+  <organization>
+    <name>asyncer.io</name>
+    <url>https://github.com/asyncer-io/r2dbc-mysql</url>
+  </organization>
 
   <inceptionYear>2018</inceptionYear>
   <scm>
