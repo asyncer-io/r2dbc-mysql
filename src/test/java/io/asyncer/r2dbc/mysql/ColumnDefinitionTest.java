@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,5 +35,27 @@ class ColumnDefinitionTest {
         assertThat(definition.isUnsigned()).isTrue();
         assertThat(definition.isEnum()).isTrue();
         assertThat(definition.isNotNull()).isTrue();
+    }
+
+    @Test
+    void noSet() {
+        ColumnDefinition definition = ColumnDefinition.of(0);
+
+        assertThat(definition.isBinary()).isFalse();
+        assertThat(definition.isSet()).isFalse();
+        assertThat(definition.isUnsigned()).isFalse();
+        assertThat(definition.isEnum()).isFalse();
+        assertThat(definition.isNotNull()).isFalse();
+
+    }
+
+    @Test
+    void isBinaryUsesCollationId() {
+        ColumnDefinition definition = ColumnDefinition.of(-1, CharCollation.BINARY_ID);
+
+        assertThat(definition.isBinary()).isTrue();
+
+        definition = ColumnDefinition.of(-1, ~CharCollation.BINARY_ID);
+        assertThat(definition.isBinary()).isFalse();
     }
 }
