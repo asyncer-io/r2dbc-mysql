@@ -30,22 +30,26 @@ import io.netty.util.ReferenceCounted;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.R2dbcException;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.publisher.SynchronousSink;
 import reactor.netty.Connection;
 import reactor.netty.FutureMono;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -67,12 +71,8 @@ final class ReactorNettyClient implements Client {
 
     private final Sinks.Many<ClientMessage> requests = Sinks.many().unicast().onBackpressureBuffer();
 
-    /**
-     * TODO: use new API.
-     */
-    @SuppressWarnings("deprecation")
-    private final reactor.core.publisher.EmitterProcessor<ServerMessage> responseProcessor =
-        reactor.core.publisher.EmitterProcessor.create(false);
+    private final Sinks.Many<ServerMessage> responseProcessor =
+            Sinks.many().multicast().onBackpressureBuffer(512, false);
 
     private final RequestQueue requestQueue = new RequestQueue();
 
@@ -82,6 +82,8 @@ final class ReactorNettyClient implements Client {
         requireNonNull(connection, "connection must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(ssl, "ssl must not be null");
+        require(responseProcessor.asFlux() instanceof Subscriber,
+                "responseProcessor(" + responseProcessor + ") must be a Subscriber");
 
         this.connection = connection;
         this.context = context;
@@ -146,11 +148,12 @@ final class ReactorNettyClient implements Client {
                 return;
             }
 
-            Flux<T> responses = OperatorUtils.discardOnCancel(responseProcessor
-                    .doOnSubscribe(ignored -> emitNextRequest(request))
-                    .handle(handler)
-                    .doOnTerminate(requestQueue))
-                .doOnDiscard(ReferenceCounted.class, RELEASE);
+            Flux<T> responses = OperatorUtils.discardOnCancel(
+                                                     responseProcessor.asFlux()
+                                                                      .doOnSubscribe(ignored -> emitNextRequest(request))
+                                                                      .handle(handler)
+                                                                      .doOnTerminate(requestQueue))
+                                             .doOnDiscard(ReferenceCounted.class, RELEASE);
 
             requestQueue.submit(RequestTask.wrap(request, sink, responses));
         }).flatMapMany(identity());
@@ -172,13 +175,16 @@ final class ReactorNettyClient implements Client {
             }
 
             Flux<T> responses = responseProcessor
-                .doOnSubscribe(ignored -> exchangeable.subscribe(this::emitNextRequest,
-                    e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST)))
-                .handle(exchangeable)
-                .doOnTerminate(() -> {
-                    exchangeable.dispose();
-                    requestQueue.run();
-                });
+                    .asFlux()
+                    .doOnSubscribe(ignored -> exchangeable.subscribe(
+                            this::emitNextRequest,
+                            e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
+                    )
+                    .handle(exchangeable)
+                    .doOnTerminate(() -> {
+                        exchangeable.dispose();
+                        requestQueue.run();
+                    });
 
             requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
                 .doOnDiscard(ReferenceCounted.class, RELEASE)
@@ -268,7 +274,7 @@ final class ReactorNettyClient implements Client {
 
     private void drainError(R2dbcException e) {
         this.requestQueue.dispose();
-        this.responseProcessor.onError(e);
+        responseProcessor.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST);
     }
 
     private void handleClose() {
@@ -294,13 +300,8 @@ final class ReactorNettyClient implements Client {
         }
 
         @Override
-        public Context currentContext() {
-            return ReactorNettyClient.this.responseProcessor.currentContext();
-        }
-
-        @Override
         public void onSubscribe(Subscription s) {
-            ReactorNettyClient.this.responseProcessor.onSubscribe(s);
+            ((Subscriber<?>) responseProcessor.asFlux()).onSubscribe(s);
         }
 
         @Override
@@ -326,15 +327,20 @@ final class ReactorNettyClient implements Client {
             throw new UnsupportedOperationException();
         }
 
+        @Deprecated
         @Override
-        @SuppressWarnings("deprecation")
         public Context currentContext() {
-            return ReactorNettyClient.this.responseProcessor.currentContext();
+            return Context.empty();
+        }
+
+        @Override
+        public ContextView contextView() {
+            return Context.empty();
         }
 
         @Override
         public void error(Throwable e) {
-            ReactorNettyClient.this.responseProcessor.onError(ClientExceptions.wrap(e));
+            responseProcessor.emitError(ClientExceptions.wrap(e), EmitFailureHandler.FAIL_FAST);
         }
 
         @Override
@@ -352,7 +358,7 @@ final class ReactorNettyClient implements Client {
                 logger.debug("Response: {}", message);
             }
 
-            ReactorNettyClient.this.responseProcessor.onNext(message);
+            responseProcessor.emitNext(message, EmitFailureHandler.FAIL_FAST);
         }
     }
 
