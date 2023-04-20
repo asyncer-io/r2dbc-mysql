@@ -552,6 +552,44 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .doOnNext(it -> assertThat(it).isEqualTo(Collections.singletonList(20))));
     }
 
+    /**
+     * ref: https://github.com/asyncer-io/r2dbc-mysql/issues/91
+     */
+    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.[56](\\.\\d+)?")
+    @Test
+    void testUnionQueryWithJsonColumnDecodedAsString() {
+        complete(connection ->
+                         Flux.from(connection.createStatement(
+                                                     "CREATE TEMPORARY TABLE test1 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
+                                             .execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .thenMany(connection.createStatement("INSERT INTO test1 VALUES(DEFAULT, ?)")
+                                                 .bind(0, "{\"id\":1,\"name\":\"iron man\"}")
+                                                 .execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .doOnNext(it -> assertThat(it).isEqualTo(1))
+                             .thenMany(connection.createStatement(
+                                                         "CREATE TEMPORARY TABLE test2 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
+                                                 .execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .thenMany(connection.createStatement("INSERT INTO test2 VALUES(DEFAULT, ?)")
+                                                 .bind(0,
+                                                       "[{\"id\":2,\"name\":\"bat man\"},{\"id\":3,\"name\":\"super man\"}]")
+                                                 .execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .doOnNext(it -> assertThat(it).isEqualTo(1))
+                             .thenMany(
+                                     connection.createStatement("SELECT value FROM test1 UNION SELECT value FROM test2")
+                                               .execute())
+                             .flatMap(r -> r.map((row, metadata) -> row.get(0, String.class))
+                                            .collectList()
+                                            .doOnNext(it -> assertThat(it).isEqualTo(
+                                                    Arrays.asList("{\"id\": 1, \"name\": \"iron man\"}",
+                                                                  "[{\"id\": 2, \"name\": \"bat man\"}, {\"id\": 3, \"name\": \"super man\"}]"))))
+        );
+
+    }
+
     private static Flux<Integer> extractFirstInteger(Result result) {
         return Flux.from(result.map((row, metadata) -> row.get(0, Integer.class)));
     }
