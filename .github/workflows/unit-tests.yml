@@ -3,18 +3,19 @@ name: Unit tests
 on: [ pull_request ]
 
 jobs:
-  linux-build-java-${{ matrix.version }}:
+  unit-tests-pr:
     runs-on: ubuntu-20.04
     strategy:
       matrix: 
-        version: [8, 11, 17]
+        java-version: [8, 11, 17]
+    name: linux-java-${{ matrix.java-version }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Temurin ${{ matrix.version }}
+      - name: Set up Java ${{ matrix.java-version }}
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: ${{ matrix.version }}
+          java-version: ${{ matrix.java-version }}
           cache: maven
       - name: Unit test with Maven
         run: ./mvnw -B test -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
