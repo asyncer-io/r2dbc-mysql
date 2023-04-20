@@ -178,7 +178,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         int collationId = buf.readUnsignedShortLE();
         long size = buf.readUnsignedIntLE();
         short typeId = buf.readUnsignedByte();
-        ColumnDefinition definition = ColumnDefinition.of(buf.readShortLE());
+        ColumnDefinition definition = ColumnDefinition.of(buf.readShortLE(), collationId);
 
         return new DefinitionMetadataMessage(database, table, originTable, column, originColumn, collationId,
             size, typeId, definition, buf.readUnsignedByte());
