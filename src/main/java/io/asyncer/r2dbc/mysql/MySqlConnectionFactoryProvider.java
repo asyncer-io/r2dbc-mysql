@@ -141,7 +141,10 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * TCP socket timeout
      *
      * @since 0.8.3
+     * @deprecated  This option has been deprecated as of version 0.9.2, because it has no effect and serves no purpose.
+     * Please remove any references to this option from your code, as it will be removed in a future release.
      */
+    @Deprecated
     public static final Option<Duration> SOCKET_TIMEOUT = Option.valueOf("socketTimeout");
 
     /**
