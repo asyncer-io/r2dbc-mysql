@@ -1,13 +1,15 @@
 name: Unit tests
 
-on: [ pull_request ]
+on:
+  pull_request:
+    branches: [ "trunk", "0.9.x" ]
 
 jobs:
   unit-tests-pr:
     runs-on: ubuntu-20.04
     strategy:
-      matrix: 
-        java-version: [8, 11, 17]
+      matrix:
+        java-version: [ 8, 11, 17 ]
     name: linux-java-${{ matrix.java-version }}
     steps:
       - uses: actions/checkout@v3
