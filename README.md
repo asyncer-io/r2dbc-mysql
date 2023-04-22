@@ -112,7 +112,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(PASSWORD, "database-password-in-here") // optional, default null, null means has no password
     .option(DATABASE, "r2dbc") // optional, default null, null means not specifying the database
     .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
-    .option(Option.valueOf("socketTimeout"), Duration.ofSeconds(4)) // optional, default null, null means no timeout
+    .option(Option.valueOf("socketTimeout"), Duration.ofSeconds(4)) // deprecated since 0.9.2, because it has no effect and serves no purpose.
     .option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
     .option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
     .option(Option.valueOf("sslCa"), "/path/to/mysql/ca.pem") // required when sslMode is verify_ca or verify_identity, default null, null means has no server CA cert
