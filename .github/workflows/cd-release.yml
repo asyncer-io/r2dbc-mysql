@@ -63,7 +63,7 @@ jobs:
       - name: Rollback Release
         working-directory: ./prepare-workspace/
         if: ${{ failure() }}
-        run: ./.github/scripts/release_rollback.sh
+        run: ./.github/scripts/release_rollback.sh ${{ github.ref_name }}
 
   stage-release:
     runs-on: ubuntu-latest
