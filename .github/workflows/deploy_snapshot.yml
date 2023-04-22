@@ -16,7 +16,7 @@ name: DEPLOY_SNAPSHOT
 
 on:
   push:
-    branches: [ "trunk" ]
+    branches: [ "trunk", "0.9" ]
 
 
 jobs:
@@ -58,11 +58,3 @@ jobs:
 
       - name: Deploy Local Staged Artifacts
         run: ./mvnw -B --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DaltStagingDirectory=/home/runner/local-staging
-
-
-
-
-
-
-
-

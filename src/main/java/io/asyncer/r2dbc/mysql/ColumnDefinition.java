@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.collation.CharCollation;
+
 /**
  * A flag bitmap considers column definitions.
  */
@@ -53,8 +55,16 @@ public final class ColumnDefinition {
      */
     private final short bitmap;
 
-    private ColumnDefinition(short bitmap) {
+    /**
+     * collation id(or charset number)
+     * <p>
+     * collationId > 0 when protocol version == 4.1, 0 otherwise.
+     */
+    private final int collationId;
+
+    private ColumnDefinition(short bitmap, int collationId) {
         this.bitmap = bitmap;
+        this.collationId = collationId;
     }
 
     /**
@@ -84,7 +94,11 @@ public final class ColumnDefinition {
      * @return if value is binary data.
      */
     public boolean isBinary() {
-        return (bitmap & BINARY) != 0;
+        // Utilize collationId to ascertain whether it is binary or not.
+        // This is necessary since the union of JSON columns, varchar binary, and char binary
+        // results in a bitmap with the BINARY flag set.
+        // see: https://github.com/asyncer-io/r2dbc-mysql/issues/91
+        return collationId == 0 & (bitmap & BINARY) != 0 | collationId == CharCollation.BINARY_ID;
     }
 
     /**
@@ -116,7 +130,7 @@ public final class ColumnDefinition {
 
         ColumnDefinition that = (ColumnDefinition) o;
 
-        return bitmap == that.bitmap;
+        return bitmap == that.bitmap & collationId == that.collationId;
     }
 
     @Override
@@ -126,7 +140,7 @@ public final class ColumnDefinition {
 
     @Override
     public String toString() {
-        return "ColumnDefinition<0x" + Integer.toHexString(bitmap) + '>';
+        return "ColumnDefinition<0x" + Integer.toHexString(bitmap) + ", 0x" + Integer.toHexString(collationId)+ '>';
     }
 
     /**
@@ -137,6 +151,18 @@ public final class ColumnDefinition {
      * @return the {@link ColumnDefinition} without unknown or useless flags.
      */
     public static ColumnDefinition of(int definitions) {
-        return new ColumnDefinition((short) (definitions & ALL_USED));
+        return new ColumnDefinition((short) (definitions & ALL_USED), 0);
+    }
+
+    /**
+     * Creates a {@link ColumnDefinition} with column definitions bitmap. It will unset all unknown or useless
+     * flags.
+     *
+     * @param definitions the column definitions bitmap.
+     * @param collationId the collation id.
+     * @return the {@link ColumnDefinition} without unknown or useless flags.
+     */
+    public static ColumnDefinition of(int definitions, int collationId) {
+        return new ColumnDefinition((short) (definitions & ALL_USED), collationId);
     }
 }
