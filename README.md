@@ -7,6 +7,16 @@ This implementation is not intended to be used directly, but rather to be
 used as the backing implementation for a humane client library to
 delegate to. See [R2DBC Homepage](https://r2dbc.io).
 
+## Spring-framework and R2DBC-SPI Compatibility
+Refer to the table below to determine the appropriate version of r2dbc-mysql for your project.
+
+| spring-boot-starter-data-r2dbc | spring-data-r2dbc | r2dbc-spi     | r2dbc-mysql(recommended)     |
+|--------------------------------|-------------------|---------------|------------------------------|
+| 3.0.*                          | 3.0.*             | 1.0.0.RELEASE | io.asyncer:r2dbc-mysql:1.0.1 |
+| 2.7.*                          | 1.5.*             | 0.9.1.RELEASE | io.asyncer:r2dbc-mysql:0.9.2 |
+| 2.6.* and below                | 1.4.* and below   | 0.8.6.RELEASE | dev.miku:r2dbc-mysql:0.8.2   |
+
+## Supported Features
 This driver provides the following features:
 
 - [x] Unix domain socket.
