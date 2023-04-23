@@ -39,6 +39,17 @@
     <url>https://github.com/asyncer-io/r2dbc-mysql</url>
   </organization>
 
+  <developers>
+    <developer>
+      <id>jchrys</id>
+      <name>jchrys</name>
+      <email>jchrys@me.com</email>
+      <roles>
+        <role>Project Lead</role>
+      </roles>
+    </developer>
+  </developers>
+
   <inceptionYear>2018</inceptionYear>
   <scm>
     <connection>scm:git:git://github.com/asyncer-io/r2dbc-mysql.git</connection>

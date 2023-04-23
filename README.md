@@ -7,6 +7,16 @@ This implementation is not intended to be used directly, but rather to be
 used as the backing implementation for a humane client library to
 delegate to. See [R2DBC Homepage](https://r2dbc.io).
 
+## Spring-framework and R2DBC-SPI Compatibility
+Refer to the table below to determine the appropriate version of r2dbc-mysql for your project.
+
+| spring-boot-starter-data-r2dbc | spring-data-r2dbc | r2dbc-spi     | r2dbc-mysql(recommended)     |
+|--------------------------------|-------------------|---------------|------------------------------|
+| 3.0.*                          | 3.0.*             | 1.0.0.RELEASE | io.asyncer:r2dbc-mysql:1.0.1 |
+| 2.7.*                          | 1.5.*             | 0.9.1.RELEASE | io.asyncer:r2dbc-mysql:0.9.2 |
+| 2.6.* and below                | 1.4.* and below   | 0.8.6.RELEASE | dev.miku:r2dbc-mysql:0.8.2   |
+
+## Supported Features
 This driver provides the following features:
 
 - [x] Unix domain socket.
@@ -27,10 +37,10 @@ This driver provides the following features:
 This project is currently being maintained by [@jchrys](https://github.com/jchrys), since the previous owner has been inactive. We are committed to keeping this project up-to-date and improving it in collaboration with the community.
 
 ## Version compatibility / Integration tests states
-[![MySQL 5.5 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.5/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.5%22)
-[![MySQL 5.6 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.6/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.6%22)
-[![MySQL 5.7 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%205.7/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+5.7%22)
-[![MySQL 8.0 status](https://github.com/asyncer-io/r2dbc-mysql/workflows/MySQL%208.0/badge.svg)](https://github.com/asyncer-io/r2dbc-mysql/actions?query=workflow%3A%22MySQL+8.0%22)
+![MySQL 5.5 status](https://img.shields.io/badge/MySQL%205.5-pass-blue)
+![MySQL 5.6 status](https://img.shields.io/badge/MySQL%205.6-pass-blue)
+![MySQL 5.7 status](https://img.shields.io/badge/MySQL%205.7-pass-blue)
+![MySQL 8.0 status](https://img.shields.io/badge/MySQL%208.0-pass-blue)
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
 
@@ -43,7 +53,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 <dependency>
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -53,7 +63,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 
 ```groovy
 dependencies {
-    implementation 'io.asyncer:r2dbc-mysql:1.0.0'
+    implementation 'io.asyncer:r2dbc-mysql:1.0.1'
 }
 ```
 
@@ -62,7 +72,7 @@ dependencies {
 ```kotlin
 dependencies {
     // Maybe should to use `compile` instead of `implementation` on the lower version of Gradle.
-    implementation("io.asyncer:r2dbc-mysql:1.0.0")
+    implementation("io.asyncer:r2dbc-mysql:1.0.1")
 }
 ```
 
