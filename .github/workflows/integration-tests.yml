@@ -1,0 +1,20 @@
+name: Integration tests
+
+on: [ pull_request ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        version: [5.5, 5.6, 5.7, 8.0]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Temurin for MySql${{ matrix.version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          mysql-version: ${{ matrix.version }}
+          cache: maven
+      - name: Integration test with MySQL ${{ matrix.version }}
+        run: ./mvnw -B verify -Dmaven.javadoc.skip=true -Dmaven.surefire.skip=true -Dtest.mysql.password=r2dbc-password!@ -Dtest.mysql.version=${{ matrix.version }} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
