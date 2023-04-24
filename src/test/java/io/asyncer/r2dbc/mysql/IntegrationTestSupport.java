@@ -19,8 +19,6 @@ package io.asyncer.r2dbc.mysql;
 import io.r2dbc.spi.R2dbcBadGrammarException;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.reactivestreams.Publisher;
 import org.testcontainers.containers.MySQLContainer;
 import reactor.core.publisher.Flux;
@@ -41,14 +39,13 @@ abstract class IntegrationTestSupport {
 
     private final MySqlConnectionFactory connectionFactory;
 
-    private static MySQLContainer<?> container;
+    private static final MySQLContainer<?> container;
 
     IntegrationTestSupport(MySqlConnectionConfiguration configuration) {
         this.connectionFactory = MySqlConnectionFactory.from(configuration);
     }
 
-    @BeforeAll
-    static void setup() {
+    static {
         String password = System.getProperty("test.mysql.password");
         String version = System.getProperty("test.mysql.version");
 
@@ -67,11 +64,6 @@ abstract class IntegrationTestSupport {
                 .withExposedPorts(MySQLContainer.MYSQL_PORT);
 
         container.start();
-    }
-
-    @AfterAll
-    static void destroy() {
-        container.close();
     }
 
     void complete(Function<? super MySqlConnection, Publisher<?>> runner) {
