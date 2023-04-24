@@ -19,7 +19,10 @@ package io.asyncer.r2dbc.mysql;
 import io.r2dbc.spi.R2dbcBadGrammarException;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.reactivestreams.Publisher;
+import org.testcontainers.containers.MySQLContainer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,8 +41,37 @@ abstract class IntegrationTestSupport {
 
     private final MySqlConnectionFactory connectionFactory;
 
+    private static MySQLContainer<?> container;
+
     IntegrationTestSupport(MySqlConnectionConfiguration configuration) {
         this.connectionFactory = MySqlConnectionFactory.from(configuration);
+    }
+
+    @BeforeAll
+    static void setup() {
+        String password = System.getProperty("test.mysql.password");
+        String version = System.getProperty("test.mysql.version");
+
+        if (password == null || password.isEmpty()) {
+            throw new IllegalStateException("Property test.mysql.password must exists and not be empty");
+        }
+
+        if (version == null || version.isEmpty()) {
+            throw new IllegalStateException("Property test.mysql.version must exists and not be empty");
+        }
+
+        container = new MySQLContainer<>("mysql:" + version)
+                .withUsername("root")
+                .withPassword(password)
+                .withDatabaseName("r2dbc")
+                .withExposedPorts(MySQLContainer.MYSQL_PORT);
+
+        container.start();
+    }
+
+    @AfterAll
+    static void destroy() {
+        container.close();
     }
 
     void complete(Function<? super MySqlConnection, Publisher<?>> runner) {
@@ -81,6 +113,7 @@ abstract class IntegrationTestSupport {
             .user("root")
             .password(password)
             .database("r2dbc")
+            .port(container.getMappedPort(MySQLContainer.MYSQL_PORT))
             .autodetectExtensions(autodetectExtensions);
 
         if (serverZoneId != null) {
