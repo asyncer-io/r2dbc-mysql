@@ -47,8 +47,7 @@ abstract class IntegrationTestSupport {
         this.connectionFactory = MySqlConnectionFactory.from(configuration);
     }
 
-    @BeforeAll
-    static void setup() {
+    static {
         String password = System.getProperty("test.mysql.password");
         String version = System.getProperty("test.mysql.version");
 
@@ -67,11 +66,6 @@ abstract class IntegrationTestSupport {
                 .withExposedPorts(MySQLContainer.MYSQL_PORT);
 
         container.start();
-    }
-
-    @AfterAll
-    static void destroy() {
-        container.close();
     }
 
     void complete(Function<? super MySqlConnection, Publisher<?>> runner) {
