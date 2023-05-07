@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.HaMode;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.TlsVersions;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
@@ -42,7 +43,19 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  */
 class MySqlConnectionConfigurationTest {
 
-    private static final String HOST = "localhost";
+    private static final String SINGLE_HOST = "localhost";
+
+    private static final String MULTIPLE_HOST = "host0:3307,host1,host2:3308";
+
+    private static final List<HostAndPort> HOSTS_SINGLE = new ArrayList<HostAndPort>() {{
+        add(new HostAndPort("localhost", 3306));
+    }};
+
+    private static final List<HostAndPort> HOSTS_MULTIPLE = new ArrayList<HostAndPort>() {{
+        add(new HostAndPort("host0", 3307));
+        add(new HostAndPort("host1", 3306));
+        add(new HostAndPort("host2", 3308));
+    }};
 
     private static final String UNIX_SOCKET = "/path/to/mysql.sock";
 
@@ -56,9 +69,11 @@ class MySqlConnectionConfigurationTest {
 
         asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().build());
         asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().build());
-        asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().host(HOST).build());
+        asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().host(SINGLE_HOST).build());
         asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().unixSocket(UNIX_SOCKET).build());
         asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().user(USER).build());
+        asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().user(USER).unixSocket(UNIX_SOCKET).haMode("loadbalance").build());
+        asserted.isThrownBy(() -> MySqlConnectionConfiguration.builder().user(USER).host(SINGLE_HOST).haMode("fallback").build());
     }
 
     @Test
@@ -72,30 +87,99 @@ class MySqlConnectionConfigurationTest {
             }
         }
 
+        for (HaMode mode: HaMode.values()) {
+            if (mode != HaMode.NONE) {
+                assertThatIllegalArgumentException().isThrownBy(() -> unixSocketHaMode(mode.toString()))
+                                                    .withMessageContaining("haMode");
+            } else {
+                assertThat(unixSocketHaMode(HaMode.NONE.toString())).isNotNull();
+            }
+        }
+
         MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
             .unixSocket(UNIX_SOCKET)
             .user(USER)
             .build();
         ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(configuration);
-        asserted.extracting(MySqlConnectionConfiguration::getDomain).isEqualTo(UNIX_SOCKET);
-        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
         asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(false);
+        asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isEqualTo(UNIX_SOCKET);
+        asserted.extracting(MySqlConnectionConfiguration::getHaMode).isEqualTo(HaMode.NONE);
+        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
         asserted.extracting(MySqlConnectionConfiguration::getSsl)
             .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(SslMode.DISABLED);
     }
 
     @Test
-    void hosted() {
+    void singleHosted() {
         MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .build();
         ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(configuration);
-        asserted.extracting(MySqlConnectionConfiguration::getDomain).isEqualTo(HOST);
-        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
         asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(true);
+        asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isNull();
+        asserted.extracting(MySqlConnectionConfiguration::getHosts).asList().isEqualTo(HOSTS_SINGLE);
+        asserted.extracting(MySqlConnectionConfiguration::getHaMode).isEqualTo(HaMode.NONE);
+        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
         asserted.extracting(MySqlConnectionConfiguration::getSsl)
             .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(SslMode.PREFERRED);
+    }
+
+    @Test
+    void multiHostedDefaultHaMode() {
+        MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
+                                                                                 .host(MULTIPLE_HOST)
+                                                                                 .user(USER)
+                                                                                 .build();
+        ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(configuration);
+        asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(true);
+        asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isNull();
+        asserted.extracting(MySqlConnectionConfiguration::getHosts).asList().isEqualTo(HOSTS_MULTIPLE);
+        asserted.extracting(MySqlConnectionConfiguration::getHaMode).isEqualTo(HaMode.FALLBACK);
+        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
+        asserted.extracting(MySqlConnectionConfiguration::getSsl)
+                .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(SslMode.PREFERRED);
+    }
+
+    @Test
+    void multiHostedLoadBalance() {
+        MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
+                                                                                 .host(MULTIPLE_HOST)
+                                                                                 .haMode("loadbalance")
+                                                                                 .user(USER)
+                                                                                 .build();
+        ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(configuration);
+        asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(true);
+        asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isNull();
+        asserted.extracting(MySqlConnectionConfiguration::getHosts).asList().isEqualTo(HOSTS_MULTIPLE);
+        asserted.extracting(MySqlConnectionConfiguration::getHaMode).isEqualTo(HaMode.LOADBALANCE);
+        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
+        asserted.extracting(MySqlConnectionConfiguration::getSsl)
+                .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(SslMode.PREFERRED);
+    }
+
+    @Test
+    void defaultPort() {
+        final List<HostAndPort> hosts = new ArrayList<HostAndPort>();
+        hosts.add(new HostAndPort("host0", 3307));
+        hosts.add(new HostAndPort("host1", 7777));
+        hosts.add(new HostAndPort("host2", 3308));
+
+        MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
+                                                                                 .host(MULTIPLE_HOST)
+                                                                                 .port(7777)
+                                                                                 .haMode("loadbalance")
+                                                                                 .user(USER)
+                                                                                 .build();
+
+        ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(configuration);
+        asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(true);
+        asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isNull();
+        asserted.extracting(MySqlConnectionConfiguration::getHosts).asList().isEqualTo(hosts);
+        asserted.extracting(MySqlConnectionConfiguration::getHaMode).isEqualTo(HaMode.LOADBALANCE);
+        asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
+        asserted.extracting(MySqlConnectionConfiguration::getSsl)
+                .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(SslMode.PREFERRED);
     }
 
     @Test
@@ -105,9 +189,10 @@ class MySqlConnectionConfigurationTest {
         for (SslMode mode : SslMode.values()) {
             ObjectAssert<MySqlConnectionConfiguration> asserted = assertThat(hostedSslMode(mode, sslCa));
 
-            asserted.extracting(MySqlConnectionConfiguration::getDomain).isEqualTo(HOST);
-            asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
             asserted.extracting(MySqlConnectionConfiguration::isHost).isEqualTo(true);
+            asserted.extracting(MySqlConnectionConfiguration::getUnixSocket).isNull();
+            asserted.extracting(MySqlConnectionConfiguration::getHosts).asList().isEqualTo(HOSTS_SINGLE);
+            asserted.extracting(MySqlConnectionConfiguration::getUser).isEqualTo(USER);
             asserted.extracting(MySqlConnectionConfiguration::getSsl)
                 .extracting(MySqlSslConfiguration::getSslMode).isEqualTo(mode);
 
@@ -144,7 +229,7 @@ class MySqlConnectionConfigurationTest {
             throw new IllegalStateException(message);
         };
         MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .sslMode(SslMode.REQUIRED)
             .sslContextBuilderCustomizer(customizer)
@@ -168,7 +253,7 @@ class MySqlConnectionConfigurationTest {
     void autodetectExtensions() {
         List<Extension> list = new ArrayList<>();
         MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .build()
             .getExtensions()
@@ -180,7 +265,7 @@ class MySqlConnectionConfigurationTest {
     void nonAutodetectExtensions() {
         List<Extension> list = new ArrayList<>();
         MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .autodetectExtensions(false)
             .build()
@@ -197,9 +282,17 @@ class MySqlConnectionConfigurationTest {
             .build();
     }
 
+    private static MySqlConnectionConfiguration unixSocketHaMode(String haMode) {
+        return MySqlConnectionConfiguration.builder()
+            .unixSocket(UNIX_SOCKET)
+            .user(USER)
+            .haMode(haMode)
+            .build();
+    }
+
     private static MySqlConnectionConfiguration hostedSslMode(SslMode sslMode, @Nullable String sslCa) {
         return MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .sslMode(sslMode)
             .sslCa(sslCa)
@@ -208,7 +301,7 @@ class MySqlConnectionConfigurationTest {
 
     private static MySqlConnectionConfiguration filledUp() {
         return MySqlConnectionConfiguration.builder()
-            .host(HOST)
+            .host(SINGLE_HOST)
             .user(USER)
             .port(3306)
             .password("database-password-in-here")

@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.HaMode;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
@@ -27,6 +28,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
@@ -50,16 +52,14 @@ public final class MySqlConnectionConfiguration {
     private static final Predicate<String> DEFAULT_SERVER_PREPARE = sql -> false;
 
     /**
-     * {@code true} if {@link #domain} is hostname, otherwise {@link #domain} is unix domain socket path.
-     */
-    private final boolean isHost;
-
-    /**
      * Domain of connecting, may be hostname or unix domain socket path.
      */
-    private final String domain;
+    @Nullable
+    private final String unixSocket;
 
-    private final int port;
+    private final List<HostAndPort> hosts;
+
+    private final HaMode haMode;
 
     private final MySqlSslConfiguration ssl;
 
@@ -94,15 +94,15 @@ public final class MySqlConnectionConfiguration {
 
     private final Extensions extensions;
 
-    private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
-        boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
-        @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
-        String user, @Nullable CharSequence password, @Nullable String database,
-        @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
-        Extensions extensions) {
-        this.isHost = isHost;
-        this.domain = domain;
-        this.port = port;
+    private MySqlConnectionConfiguration(@Nullable String unixSocket, @Nullable String host, int portFallback, @Nullable String haMode, MySqlSslConfiguration ssl,
+                                         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
+                                         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
+                                         String user, @Nullable CharSequence password, @Nullable String database,
+                                         @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
+                                         Extensions extensions) {
+        this.unixSocket = unixSocket;
+        this.hosts = HostAndPort.from(host,  portFallback);
+        this.haMode = HaMode.parse(haMode, unixSocket == null ? hosts.size() : 1);
         this.tcpKeepAlive = tcpKeepAlive;
         this.tcpNoDelay = tcpNoDelay;
         this.connectTimeout = connectTimeout;
@@ -129,15 +129,20 @@ public final class MySqlConnectionConfiguration {
     }
 
     boolean isHost() {
-        return isHost;
+        return unixSocket == null;
     }
 
-    String getDomain() {
-        return domain;
+    @Nullable
+    String getUnixSocket() {
+        return unixSocket;
     }
 
-    int getPort() {
-        return port;
+    List<HostAndPort> getHosts() {
+        return hosts;
+    }
+
+    HaMode getHaMode() {
+        return haMode;
     }
 
     @Nullable
@@ -215,9 +220,8 @@ public final class MySqlConnectionConfiguration {
             return false;
         }
         MySqlConnectionConfiguration that = (MySqlConnectionConfiguration) o;
-        return isHost == that.isHost &&
-            domain.equals(that.domain) &&
-            port == that.port &&
+        return Objects.equals(unixSocket, that.unixSocket) &&
+               Objects.equals(hosts, that.hosts) &&
             ssl.equals(that.ssl) &&
             tcpKeepAlive == that.tcpKeepAlive &&
             tcpNoDelay == that.tcpNoDelay &&
@@ -236,29 +240,29 @@ public final class MySqlConnectionConfiguration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-            connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions);
+        return Objects.hash(unixSocket, hosts, ssl, tcpKeepAlive, tcpNoDelay,
+                            connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
+                            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions);
     }
 
     @Override
     public String toString() {
-        if (isHost) {
-            return "MySqlConnectionConfiguration{, host='" + domain + "', port=" + port + ", ssl=" + ssl +
-                ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
-                connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-                ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
-                ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-                ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                ", extensions=" + extensions + '}';
+        if (unixSocket == null) {
+            return "MySqlConnectionConfiguration{, hosts='{" + Arrays.toString(hosts.toArray()) + "}, ssl=" + ssl +
+                   ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
+                   connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+                   ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
+                   ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
+                   ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+                   ", extensions=" + extensions + '}';
         }
 
-        return "MySqlConnectionConfiguration{, unixSocket='" + domain + "', connectTimeout=" +
-            connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-            ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
-            ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-            ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-            ", extensions=" + extensions + '}';
+        return "MySqlConnectionConfiguration{, unixSocket='" + unixSocket + "', connectTimeout=" +
+               connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+               ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
+               ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
+               ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+               ", extensions=" + extensions + '}';
     }
 
     /**
@@ -269,9 +273,14 @@ public final class MySqlConnectionConfiguration {
         @Nullable
         private String database;
 
-        private boolean isHost = true;
+        @Nullable
+        private String unixSocket;
 
-        private String domain;
+        @Nullable
+        private String host;
+
+        @Nullable
+        private String haMode;
 
         @Nullable
         private CharSequence password;
@@ -337,23 +346,25 @@ public final class MySqlConnectionConfiguration {
         public MySqlConnectionConfiguration build() {
             SslMode sslMode = requireSslMode();
 
-            if (isHost) {
-                requireNonNull(domain, "host must not be null when using TCP socket");
+            if (unixSocket == null) {
+                requireNonNull(host, "host must not be null when using TCP socket");
                 require((sslCert == null && sslKey == null) || (sslCert != null && sslKey != null),
                     "sslCert and sslKey must be both null or both non-null");
             } else {
-                requireNonNull(domain, "unixSocket must not be null when using unix domain socket");
+                requireNonNull(unixSocket, "unixSocket must not be null when using unix domain socket");
                 require(!sslMode.startSsl(), "sslMode must be disabled when using unix domain socket");
+                require(haMode == null || HaMode.NONE.name().equalsIgnoreCase(haMode),
+                        "haMode must be null or 'HaMode.NONE' when using unix domain socket");
             }
 
             int prepareCacheSize = preferPrepareStatement == null ? 0 : this.prepareCacheSize;
 
             MySqlSslConfiguration ssl = MySqlSslConfiguration.create(sslMode, tlsVersion, sslHostnameVerifier,
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
-            return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-                connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
-                preferPrepareStatement, queryCacheSize, prepareCacheSize,
-                Extensions.from(extensions, autodetectExtensions));
+            return new MySqlConnectionConfiguration(unixSocket, host, port, haMode, ssl, tcpKeepAlive, tcpNoDelay,
+                                                    connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
+                                                    preferPrepareStatement, queryCacheSize, prepareCacheSize,
+                                                    Extensions.from(extensions, autodetectExtensions));
         }
 
         /**
@@ -377,8 +388,7 @@ public final class MySqlConnectionConfiguration {
          * @since 0.8.1
          */
         public Builder unixSocket(String unixSocket) {
-            this.domain = requireNonNull(unixSocket, "unixSocket must not be null");
-            this.isHost = false;
+            this.unixSocket = requireNonNull(unixSocket, "unixSocket must not be null");
             return this;
         }
 
@@ -391,8 +401,20 @@ public final class MySqlConnectionConfiguration {
          * @since 0.8.1
          */
         public Builder host(String host) {
-            this.domain = requireNonNull(host, "host must not be null");
-            this.isHost = true;
+            this.host = requireNonNull(host, "host must not be null");
+            return this;
+        }
+
+        /**
+         * configure the high availability mode.
+         *
+         * @param haMode haMode
+         * @return this {@link Builder}.
+         * @throws IllegalArgumentException if {@code haMode} is {@code null}.
+         * @since 1.0.2
+         */
+        public Builder haMode(@Nullable String haMode) {
+            this.haMode = requireNonNull(haMode, "haMode must not be null");
             return this;
         }
 
@@ -783,7 +805,7 @@ public final class MySqlConnectionConfiguration {
             SslMode sslMode = this.sslMode;
 
             if (sslMode == null) {
-                sslMode = isHost ? SslMode.PREFERRED : SslMode.DISABLED;
+                sslMode = unixSocket == null ? SslMode.PREFERRED : SslMode.DISABLED;
             }
 
             return sslMode;

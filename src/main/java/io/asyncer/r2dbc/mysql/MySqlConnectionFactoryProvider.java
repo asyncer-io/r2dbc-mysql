@@ -37,6 +37,7 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PASSWORD;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
+import static io.r2dbc.spi.ConnectionFactoryOptions.PROTOCOL;
 import static io.r2dbc.spi.ConnectionFactoryOptions.SSL;
 import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 
@@ -56,6 +57,13 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * @since 0.8.1
      */
     public static final Option<String> UNIX_SOCKET = Option.valueOf("unixSocket");
+
+    /**
+     * Option to set the haMode.
+     *
+     * @since 1.0.2
+     */
+    public static final Option<String> HA_MODE = Option.valueOf("haMode");
 
     /**
      * Option to set {@link ZoneId} of server. If it is set, driver will ignore the real time zone of
@@ -278,6 +286,12 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::host);
         mapper.optional(PORT).asInt()
             .to(builder::port);
+        mapper.optional(PROTOCOL).asString()
+            .to(builder::haMode)
+            .otherwise(() -> mapper.optional(HA_MODE)
+                                   .asString()
+                                   .to(builder::haMode)
+            );
         mapper.optional(SSL).asBoolean()
             .to(isSsl -> builder.sslMode(isSsl ? SslMode.REQUIRED : SslMode.DISABLED));
         mapper.optional(SSL_MODE).as(SslMode.class, id -> SslMode.valueOf(id.toUpperCase()))

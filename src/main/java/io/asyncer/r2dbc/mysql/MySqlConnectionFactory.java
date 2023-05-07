@@ -75,11 +75,11 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
 
             if (configuration.isHost()) {
                 ssl = configuration.getSsl();
-                address = InetSocketAddress.createUnresolved(configuration.getDomain(),
-                    configuration.getPort());
+                final HostAndPort host = configuration.getHosts().get(0); // TODO: support multiple hosts
+                address = InetSocketAddress.createUnresolved(host.getHost(), host.getPort());
             } else {
                 ssl = MySqlSslConfiguration.disabled();
-                address = new DomainSocketAddress(configuration.getDomain());
+                address = new DomainSocketAddress(configuration.getUnixSocket());
             }
 
             String database = configuration.getDatabase();
