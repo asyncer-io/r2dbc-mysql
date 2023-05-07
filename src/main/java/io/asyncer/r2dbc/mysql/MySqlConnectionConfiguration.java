@@ -248,13 +248,13 @@ public final class MySqlConnectionConfiguration {
     @Override
     public String toString() {
         if (unixSocket == null) {
-            return "MySqlConnectionConfiguration{, hosts='{" + Arrays.toString(hosts.toArray()) + "}, ssl=" + ssl +
-                   ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
-                   connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-                   ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
-                   ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-                   ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                   ", extensions=" + extensions + '}';
+            return "MySqlConnectionConfiguration{, hosts='{" + Arrays.toString(hosts.toArray()) + "}, haMode=" +
+                   haMode + ", ssl=" + ssl + ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive +
+                   ", connectTimeout=" + connectTimeout + ", socketTimeout=" + socketTimeout +
+                   ", serverZoneId=" + serverZoneId + ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' +
+                   ", password=" + password + ", database='" + database +
+                   "', preferPrepareStatement=" + preferPrepareStatement + ", queryCacheSize=" + queryCacheSize +
+                   ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions + '}';
         }
 
         return "MySqlConnectionConfiguration{, unixSocket='" + unixSocket + "', connectTimeout=" +
