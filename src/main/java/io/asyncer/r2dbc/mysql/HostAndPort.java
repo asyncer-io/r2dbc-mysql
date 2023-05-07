@@ -26,8 +26,8 @@ public class HostAndPort {
             if (tmpHost.contains(":")) {
                 hostAddresses.add(
                         new HostAndPort(
-                                tmpHost.substring(0, tmpHost.indexOf(":")),
-                                Integer.parseInt(tmpHost.substring(tmpHost.indexOf(":") + 1))));
+                                tmpHost.substring(0, tmpHost.indexOf(':')),
+                                Integer.parseInt(tmpHost.substring(tmpHost.indexOf(':') + 1))));
             } else {
                 hostAddresses.add(new HostAndPort(tmpHost, portFallback));
             }
