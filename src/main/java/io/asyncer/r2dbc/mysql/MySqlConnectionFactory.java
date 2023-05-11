@@ -53,11 +53,11 @@ public final class MySqlConnectionFactory implements ConnectionFactory, Closeabl
 
     @Override
     public Mono<MySqlConnection> create() {
-    	if (client != null) {
-            return client;
-    	} else {
+    	if (client == null) {
     		throw new MySqlR2dbcNonTransientResourceException("This connection factory is closed.");
     	}
+    	
+    	return client;
     }
 
     @Override
