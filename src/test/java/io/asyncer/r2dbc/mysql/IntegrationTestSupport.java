@@ -46,20 +46,11 @@ abstract class IntegrationTestSupport {
     }
 
     static {
-        String password = System.getProperty("test.mysql.password");
-        String version = System.getProperty("test.mysql.version");
-
-        if (password == null || password.isEmpty()) {
-            throw new IllegalStateException("Property test.mysql.password must exists and not be empty");
-        }
-
-        if (version == null || version.isEmpty()) {
-            throw new IllegalStateException("Property test.mysql.version must exists and not be empty");
-        }
+        String version = System.getProperty("test.mysql.version", "8");
 
         container = new MySQLContainer<>("mysql:" + version)
                 .withUsername("root")
-                .withPassword(password)
+                .withPassword("r2dbc-password!@")
                 .withDatabaseName("r2dbc")
                 .withExposedPorts(MySQLContainer.MYSQL_PORT);
 
