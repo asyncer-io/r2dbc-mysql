@@ -156,7 +156,7 @@ final class ReactorNettyClient implements Client {
                                              .doOnDiscard(ReferenceCounted.class, RELEASE);
 
             requestQueue.submit(RequestTask.wrap(request, sink, responses));
-        }).flatMapMany(identity());
+        }).flatMapMany(Function.identity());
     }
 
     @Override
@@ -189,7 +189,7 @@ final class ReactorNettyClient implements Client {
             requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
                 .doOnDiscard(ReferenceCounted.class, RELEASE)
                 .doOnCancel(exchangeable::dispose)));
-        }).flatMapMany(identity());
+        }).flatMapMany(Function.identity());
     }
 
     @Override
@@ -208,7 +208,7 @@ final class ReactorNettyClient implements Client {
                     logger.error("Exit message sending failed due to {}, force closing", result);
                 }
             })));
-        }).flatMap(identity()).onErrorResume(e -> {
+        }).flatMap(Function.identity()).onErrorResume(e -> {
             logger.error("Exit message sending failed, force closing", e);
             return Mono.empty();
         }).then(forceClose());
@@ -286,11 +286,6 @@ final class ReactorNettyClient implements Client {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> Function<T, T> identity() {
-        return (Function<T, T>) Identity.INSTANCE;
-    }
-
     private final class ResponseSubscriber implements CoreSubscriber<Object> {
 
         private final ResponseSink sink;
@@ -359,16 +354,6 @@ final class ReactorNettyClient implements Client {
             }
 
             responseProcessor.emitNext(message, EmitFailureHandler.FAIL_FAST);
-        }
-    }
-
-    private static final class Identity implements Function<Object, Object> {
-
-        private static final Identity INSTANCE = new Identity();
-
-        @Override
-        public Object apply(Object o) {
-            return o;
         }
     }
 }
