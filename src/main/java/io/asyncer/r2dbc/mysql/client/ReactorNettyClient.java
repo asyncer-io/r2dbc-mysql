@@ -286,8 +286,6 @@ final class ReactorNettyClient implements Client {
         }
     }
 
-    @SuppressWarnings("unchecked")
-
     private final class ResponseSubscriber implements CoreSubscriber<Object> {
 
         private final ResponseSink sink;
