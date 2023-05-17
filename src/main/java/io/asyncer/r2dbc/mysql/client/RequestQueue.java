@@ -83,20 +83,12 @@ final class RequestQueue extends ActiveStatus implements Runnable {
     }
 
     /**
-     * Submit an exchange task. If the queue is inactive, it will execute directly instead of queuing.
-     * Otherwise it will be queuing.
+     * Submit an exchange task.
      *
      * @param task the exchange task includes request messages sending and response messages processor.
      * @param <T> the type argument of {@link RequestTask}.
      */
     <T> void submit(RequestTask<T> task) {
-        if (STATUS_UPDATER.compareAndSet(this, IDLE, ACTIVE)) {
-            // Fast path for general way.
-            task.run();
-            return;
-        }
-
-        // Check dispose after fast path failed.
         int status = this.status;
 
         if (status == DISPOSE) {
