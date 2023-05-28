@@ -38,6 +38,8 @@ final class RequestTask<T> {
 
     private final T supplier;
 
+    private volatile boolean isCancelled;
+
     private RequestTask(@Nullable Disposable disposable, MonoSink<T> sink, T supplier) {
         this.disposable = disposable;
         this.sink = sink;
@@ -54,26 +56,43 @@ final class RequestTask<T> {
      * @param e cancelled by which error
      */
     void cancel(Throwable e) {
-        if (disposable != null) {
-            disposable.dispose();
-        }
+        cancel0();
         sink.error(e);
     }
 
-    static <T> RequestTask<T> wrap(ClientMessage message, MonoSink<T> sink, T supplier) {
-        if (message instanceof Disposable) {
-            return new RequestTask<>((Disposable) message, sink, supplier);
-        }
+    boolean isCancelled() {
+        return isCancelled;
+    }
 
-        return new RequestTask<>(null, sink, supplier);
+    private void cancel0() {
+        if (disposable != null) {
+            disposable.dispose();
+        }
+        isCancelled = true;
+    }
+
+    static <T> RequestTask<T> wrap(ClientMessage message, MonoSink<T> sink, T supplier) {
+        final RequestTask<T> task;
+        if (message instanceof Disposable) {
+            task = new RequestTask<>((Disposable) message, sink, supplier);
+        } else {
+            task = new RequestTask<>(null, sink, supplier);
+
+        }
+        sink.onCancel(() -> task.cancel0());
+        return task;
     }
 
     static <T> RequestTask<T> wrap(Flux<? extends ClientMessage> messages, MonoSink<T> sink, T supplier) {
-        return new RequestTask<>(new DisposableFlux(messages), sink, supplier);
+        final RequestTask<T> task =  new RequestTask<>(new DisposableFlux(messages), sink, supplier);
+        sink.onCancel(() -> task.cancel0());
+        return task;
     }
 
     static <T> RequestTask<T> wrap(MonoSink<T> sink, T supplier) {
-        return new RequestTask<>(null, sink, supplier);
+        final RequestTask<T> task = new RequestTask<>(null, sink, supplier);
+        sink.onCancel(() -> task.cancel0());
+        return task;
     }
 
     private static final class DisposableFlux implements Disposable {
