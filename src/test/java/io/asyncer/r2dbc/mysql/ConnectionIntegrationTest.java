@@ -234,6 +234,17 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void errorShouldBePropagated() {
+        illegalArgument(connection -> Flux.merge(
+                                           connection.createStatement("SELECT '1 Result' as result, SLEEP(1)").execute(),
+                                           connection.createStatement("SELECT '2 Result' as result").execute(),
+                                           connection.createStatement("SELECT '3 Result' as result").execute())
+                                   .flatMap(r -> r.map((row, meta) -> row.get(0, Integer.class)))
+        );
+    }
+
+
+    @Test
     void batchCrud() {
         // TODO: spilt it to multiple test cases and move it to BatchIntegrationTest
         String isEven = "id % 2 = 0";
