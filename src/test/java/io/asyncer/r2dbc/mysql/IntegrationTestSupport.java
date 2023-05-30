@@ -50,6 +50,10 @@ abstract class IntegrationTestSupport {
         process(runner).verifyError(R2dbcBadGrammarException.class);
     }
 
+    void illegalArgument(Function<? super MySqlConnection, Publisher<?>> runner) {
+        process(runner).expectError(IllegalArgumentException.class).verify(Duration.ofSeconds(3));
+    }
+
     Mono<MySqlConnection> create() {
         return connectionFactory.create();
     }
