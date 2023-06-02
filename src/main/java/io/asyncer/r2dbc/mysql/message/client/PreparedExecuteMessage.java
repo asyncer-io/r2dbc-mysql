@@ -27,7 +27,6 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
@@ -58,8 +57,6 @@ public final class PreparedExecuteMessage implements ClientMessage, Disposable {
     private static final int TIMES = 1;
 
     private static final byte EXECUTE_FLAG = 0x17;
-
-    private static final Consumer<MySqlParameter> DISPOSE = MySqlParameter::dispose;
 
     private final int statementId;
 
@@ -131,7 +128,7 @@ public final class PreparedExecuteMessage implements ClientMessage, Disposable {
                 writeTypes(buf, size);
 
                 Flux<ByteBuf> parameters = OperatorUtils.discardOnCancel(Flux.fromArray(values))
-                    .doOnDiscard(MySqlParameter.class, DISPOSE)
+                    .doOnDiscard(MySqlParameter.class, MySqlParameter::dispose)
                     .concatMap(MySqlParameter::publishBinary);
 
                 return Flux.just(buf).concatWith(parameters);
