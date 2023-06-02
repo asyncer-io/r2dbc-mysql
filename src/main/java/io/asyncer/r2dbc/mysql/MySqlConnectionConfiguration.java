@@ -47,8 +47,6 @@ public final class MySqlConnectionConfiguration {
      */
     private static final int DEFAULT_PORT = 3306;
 
-    private static final Predicate<String> DEFAULT_SERVER_PREPARE = sql -> false;
-
     /**
      * {@code true} if {@link #domain} is hostname, otherwise {@link #domain} is unix domain socket path.
      */
@@ -685,7 +683,7 @@ public final class MySqlConnectionConfiguration {
          * @since 0.8.1
          */
         public Builder useServerPrepareStatement() {
-            return useServerPrepareStatement(DEFAULT_SERVER_PREPARE);
+            return useServerPrepareStatement((sql) -> false);
         }
 
         /**

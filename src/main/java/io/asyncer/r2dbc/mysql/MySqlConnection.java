@@ -76,36 +76,6 @@ public final class MySqlConnection implements Connection, ConnectionState {
 
     private static final ServerVersion TX_LEVEL_8X = ServerVersion.create(8, 0, 0);
 
-    /**
-     * Convert initialize result to {@link InitData}.
-     */
-    private static final Function<MySqlResult, Publisher<InitData>> INIT_HANDLER = r ->
-        r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
-            convertLockWaitTimeout(row.get(1, Long.class)),
-            row.get(2, String.class), null));
-
-    private static final Function<MySqlResult, Publisher<InitData>> FULL_INIT = r -> r.map((row, meta) -> {
-        IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
-        long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
-        String product = row.get(2, String.class);
-        String systemTimeZone = row.get(3, String.class);
-        String timeZone = row.get(4, String.class);
-        ZoneId zoneId;
-
-        if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
-            if (systemTimeZone == null || systemTimeZone.isEmpty()) {
-                logger.warn("MySQL does not return any timezone, trying to use system default timezone");
-                zoneId = ZoneId.systemDefault();
-            } else {
-                zoneId = convertZoneId(systemTimeZone);
-            }
-        } else {
-            zoneId = convertZoneId(timeZone);
-        }
-
-        return new InitData(level, lockWaitTimeout, product, zoneId);
-    });
-
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
         if (message instanceof ErrorMessage) {
             ErrorMessage msg = (ErrorMessage) message;
@@ -456,9 +426,9 @@ public final class MySqlConnection implements Connection, ConnectionState {
 
         if (context.shouldSetServerZoneId()) {
             query.append(",@@system_time_zone AS s,@@time_zone AS t");
-            handler = FULL_INIT;
+            handler = MySqlConnection::fullInit;
         } else {
-            handler = INIT_HANDLER;
+            handler = MySqlConnection::init;
         }
 
         return new TextSimpleStatement(client, codecs, context, query.toString())
@@ -475,6 +445,36 @@ public final class MySqlConnection implements Connection, ConnectionState {
                 return new MySqlConnection(client, context, codecs, data.level, data.lockWaitTimeout,
                     queryCache, prepareCache, data.product, prepare);
             });
+    }
+
+    private static Publisher<InitData> init(MySqlResult r) {
+        return r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
+            convertLockWaitTimeout(row.get(1, Long.class)),
+            row.get(2, String.class), null));
+    }
+
+    private static Publisher<InitData> fullInit(MySqlResult r) {
+        return r.map((row, meta) -> {
+            IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
+            long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
+            String product = row.get(2, String.class);
+            String systemTimeZone = row.get(3, String.class);
+            String timeZone = row.get(4, String.class);
+            ZoneId zoneId;
+
+            if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
+                if (systemTimeZone == null || systemTimeZone.isEmpty()) {
+                    logger.warn("MySQL does not return any timezone, trying to use system default timezone");
+                    zoneId = ZoneId.systemDefault();
+                } else {
+                    zoneId = convertZoneId(systemTimeZone);
+                }
+            } else {
+                zoneId = convertZoneId(timeZone);
+            }
+
+            return new InitData(level, lockWaitTimeout, product, zoneId);
+        });
     }
 
     /**

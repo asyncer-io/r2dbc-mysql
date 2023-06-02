@@ -46,7 +46,6 @@ import reactor.util.context.ContextView;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
@@ -62,8 +61,6 @@ final class ReactorNettyClient implements Client {
     private static final boolean DEBUG_ENABLED = logger.isDebugEnabled();
 
     private static final boolean INFO_ENABLED = logger.isInfoEnabled();
-
-    private static final Consumer<ReferenceCounted> RELEASE = ReferenceCounted::release;
 
     private final Connection connection;
 
@@ -153,7 +150,7 @@ final class ReactorNettyClient implements Client {
                                                                       .doOnSubscribe(ignored -> emitNextRequest(request))
                                                                       .handle(handler)
                                                                       .doOnTerminate(requestQueue))
-                                             .doOnDiscard(ReferenceCounted.class, RELEASE);
+                                             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
 
             requestQueue.submit(RequestTask.wrap(request, sink, responses));
         }).flatMapMany(Function.identity());
@@ -187,7 +184,7 @@ final class ReactorNettyClient implements Client {
                     });
 
             requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
-                .doOnDiscard(ReferenceCounted.class, RELEASE)
+                .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
                 .doOnCancel(exchangeable::dispose)));
         }).flatMapMany(Function.identity());
     }
