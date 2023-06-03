@@ -77,7 +77,7 @@ interface FieldReader extends ReferenceCounted {
 
         if (totalSize <= Integer.MAX_VALUE) {
             // The buffers will be cleared by ByteBufCombiner.composite().
-            ByteBuf combined = ByteBufCombiner.composite(buffers);
+            ByteBuf combined = NettyBufferUtils.composite(buffers);
             try {
                 return new NormalFieldReader(combined);
             } catch (Throwable e) {

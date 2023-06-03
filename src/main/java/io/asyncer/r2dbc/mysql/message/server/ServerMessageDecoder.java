@@ -90,11 +90,12 @@ public final class ServerMessageDecoder {
         ConnectionContext context, DecodeContext decodeContext) {
         if (decodeContext instanceof ResultDecodeContext) {
             return decodeResult(buffers, context, (ResultDecodeContext) decodeContext);
-        } else if (decodeContext instanceof FetchDecodeContext) {
+        }
+        if (decodeContext instanceof FetchDecodeContext) {
             return decodeFetch(buffers, context);
         }
 
-        ByteBuf combined = ByteBufCombiner.composite(buffers);
+        ByteBuf combined = NettyBufferUtils.composite(buffers);
 
         try {
             if (decodeContext instanceof CommandDecodeContext) {
@@ -159,7 +160,7 @@ public final class ServerMessageDecoder {
         }
 
         if (decodeContext.isInMetadata()) {
-            ByteBuf combined = ByteBufCombiner.composite(buffers);
+            ByteBuf combined = NettyBufferUtils.composite(buffers);
             try {
                 return decodeInMetadata(combined, header, context, decodeContext);
             } finally {
@@ -309,7 +310,7 @@ public final class ServerMessageDecoder {
             // 0xFF is not header of var integer,
             // not header of text result null (0xFB) and
             // not header of column metadata (0x03 + "def")
-            ByteBuf combined = ByteBufCombiner.composite(buffers);
+            ByteBuf combined = NettyBufferUtils.composite(buffers);
             try {
                 return ErrorMessage.decode(combined);
             } finally {
@@ -329,7 +330,7 @@ public final class ServerMessageDecoder {
             int byteSize = firstBuf.readableBytes();
 
             if (OkMessage.isValidSize(byteSize)) {
-                ByteBuf combined = ByteBufCombiner.composite(buffers);
+                ByteBuf combined = NettyBufferUtils.composite(buffers);
 
                 try {
                     return OkMessage.decode(combined, context);
@@ -337,7 +338,7 @@ public final class ServerMessageDecoder {
                     combined.release();
                 }
             } else if (EofMessage.isValidSize(byteSize)) {
-                ByteBuf combined = ByteBufCombiner.composite(buffers);
+                ByteBuf combined = NettyBufferUtils.composite(buffers);
 
                 try {
                     return EofMessage.decode(combined);
