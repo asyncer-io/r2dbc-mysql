@@ -17,16 +17,61 @@
 package io.asyncer.r2dbc.mysql.internal.util;
 
 import io.asyncer.r2dbc.mysql.message.FieldValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 
 import java.util.List;
+
 
 /**
  * An internal utility considers the use of safe release buffers (array or {@link List}). It uses standard
  * netty {@link ReferenceCountUtil#safeRelease} to suppress release errors.
  */
 public final class NettyBufferUtils {
+
+    /**
+     * Combine {@link ByteBuf}s through composite buffer.
+     * <p>
+     * This method would release all {@link ByteBuf}s when any exception throws.
+     *
+     * @param parts The {@link ByteBuf}s want to be wrap, it can not be empty, and it will be cleared.
+     * @return A {@link ByteBuf} holds the all bytes of given {@code parts}, it may be a read-only buffer.
+     */
+    public static ByteBuf composite(final List<ByteBuf> parts) {
+        final int size = parts.size();
+
+        switch (size) {
+        case 0:
+            throw new IllegalStateException("No buffer available");
+        case 1:
+            try {
+                return parts.get(0);
+            } finally {
+                parts.clear();
+            }
+        default:
+            CompositeByteBuf composite = null;
+
+            try {
+                composite = parts.get(0).alloc().compositeBuffer(size);
+                // Auto-releasing failed parts
+                return composite.addComponents(true, parts);
+            } catch (Throwable e) {
+                if (composite == null) {
+                    // Alloc failed, release parts.
+                    releaseAll(parts);
+                } else {
+                    // Also release success parts.
+                    composite.release();
+                }
+                throw e;
+            } finally {
+                parts.clear();
+            }
+        }
+    }
 
     public static void releaseAll(ReferenceCounted[] parts) {
         for (ReferenceCounted counted : parts) {
