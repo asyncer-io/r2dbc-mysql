@@ -30,7 +30,9 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 final class CachingSha2FullAuthProvider implements MySqlAuthProvider {
 
-    static final CachingSha2FullAuthProvider INSTANCE = new CachingSha2FullAuthProvider();
+    static CachingSha2FullAuthProvider getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     @Override
     public boolean isSslNecessary() {
@@ -60,4 +62,8 @@ final class CachingSha2FullAuthProvider implements MySqlAuthProvider {
     }
 
     private CachingSha2FullAuthProvider() { }
+
+    private static class LazyHolder {
+        private static final CachingSha2FullAuthProvider INSTANCE = new CachingSha2FullAuthProvider();
+    }
 }
