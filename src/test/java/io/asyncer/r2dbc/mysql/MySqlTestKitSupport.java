@@ -79,8 +79,9 @@ abstract class MySqlTestKitSupport implements TestKit<String> {
     private static JdbcTemplate jdbc(MySqlConnectionConfiguration configuration) {
         HikariDataSource source = new HikariDataSource();
 
-        source.setJdbcUrl(String.format("jdbc:mysql://%s:%d/%s", configuration.getDomain(),
-            configuration.getPort(), configuration.getDatabase()));
+        final HostAndPort host = configuration.getHosts().get(0);  // TODO: support multiple hosts
+        source.setJdbcUrl(String.format("jdbc:mysql://%s:%d/%s", host.getHost(),
+            host.getPort(), configuration.getDatabase()));
         source.setUsername(configuration.getUser());
         source.setPassword(Optional.ofNullable(configuration.getPassword())
             .map(Object::toString).orElse(null));

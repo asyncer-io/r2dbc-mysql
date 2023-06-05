@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.HaMode;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -80,6 +81,12 @@ class MySqlConnectionFactoryProviderTest {
     }
 
     @Test
+    void validMultiHostUrl() throws UnsupportedEncodingException {
+        assertThat(ConnectionFactories.get("r2dbcs:mysql://root:pswd@host0:3307,host1,host2"))
+                .isExactlyInstanceOf(MySqlConnectionFactory.class);
+    }
+
+    @Test
     void urlSslModeInUnixSocket() throws UnsupportedEncodingException {
         Assert<?, SslMode> that = assertThat(SslMode.DISABLED);
 
@@ -96,6 +103,26 @@ class MySqlConnectionFactoryProviderTest {
                     "&sslMode=" + mode.name().toLowerCase()));
 
             that.isEqualTo(configuration.getSsl().getSslMode());
+        }
+    }
+
+    @Test
+    void haModeInUnixSocket() throws UnsupportedEncodingException {
+        Assert<?, HaMode> that = assertThat(HaMode.NONE);
+
+        MySqlConnectionConfiguration configuration = MySqlConnectionFactoryProvider.setup(
+                ConnectionFactoryOptions.parse("r2dbcs:mysql://root@localhost:3306?unixSocket=" +
+                                               URLEncoder.encode("/path/to/mysql.sock", "UTF-8")));
+
+        that.isEqualTo(configuration.getHaMode());
+
+        for (HaMode mode : HaMode.values()) {
+            configuration = MySqlConnectionFactoryProvider.setup(
+                    ConnectionFactoryOptions.parse("r2dbc:mysql://root@localhost:3306?" +
+                                                   "unixSocket=" + URLEncoder.encode("/path/to/mysql.sock", "UTF-8") +
+                                                   "&haMode=" + mode.name().toLowerCase()));
+
+            that.isEqualTo(configuration.getHaMode());
         }
     }
 
@@ -147,9 +174,11 @@ class MySqlConnectionFactoryProviderTest {
 
         MySqlConnectionConfiguration configuration = MySqlConnectionFactoryProvider.setup(options);
 
-        assertThat(configuration.getDomain()).isEqualTo("127.0.0.1");
+        assertThat(configuration.getUnixSocket()).isNull();
+        assertThat(configuration.getHosts()).hasSize(1);
+        assertThat(configuration.getHosts().get(0).getHost()).isEqualTo("127.0.0.1");
+        assertThat(configuration.getHosts().get(0).getPort()).isEqualTo(3307);
         assertThat(configuration.isHost()).isTrue();
-        assertThat(configuration.getPort()).isEqualTo(3307);
         assertThat(configuration.getUser()).isEqualTo("root");
         assertThat(configuration.getPassword()).isEqualTo("123456");
         assertThat(configuration.getConnectTimeout()).isEqualTo(Duration.ofSeconds(3));
@@ -247,7 +276,7 @@ class MySqlConnectionFactoryProviderTest {
             .build();
         MySqlConnectionConfiguration configuration = MySqlConnectionFactoryProvider.setup(options);
 
-        domain.isEqualTo(configuration.getDomain());
+        domain.isEqualTo(configuration.getUnixSocket());
         isHost.isEqualTo(configuration.isHost());
         sslMode.isEqualTo(configuration.getSsl().getSslMode());
 
@@ -259,7 +288,7 @@ class MySqlConnectionFactoryProviderTest {
                 .option(Option.valueOf("sslMode"), mode.name().toLowerCase())
                 .build());
 
-            domain.isEqualTo(configuration.getDomain());
+            domain.isEqualTo(configuration.getUnixSocket());
             isHost.isEqualTo(configuration.isHost());
             sslMode.isEqualTo(configuration.getSsl().getSslMode());
         }
@@ -289,9 +318,9 @@ class MySqlConnectionFactoryProviderTest {
             .option(Option.valueOf("tcpNoDelay"), "true")
             .build());
 
-        assertThat(configuration.getDomain()).isEqualTo("/path/to/mysql.sock");
+        assertThat(configuration.getUnixSocket()).isEqualTo("/path/to/mysql.sock");
         assertThat(configuration.isHost()).isFalse();
-        assertThat(configuration.getPort()).isEqualTo(3306);
+        assertThat(configuration.getHosts()).isEmpty();
         assertThat(configuration.getUser()).isEqualTo("root");
         assertThat(configuration.getPassword()).isEqualTo("123456");
         assertThat(configuration.getConnectTimeout()).isEqualTo(Duration.ofSeconds(3));
