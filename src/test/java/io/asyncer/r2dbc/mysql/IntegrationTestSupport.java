@@ -20,6 +20,7 @@ import io.r2dbc.spi.R2dbcBadGrammarException;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
+import org.testcontainers.containers.MySQLContainer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,8 +39,22 @@ abstract class IntegrationTestSupport {
 
     private final MySqlConnectionFactory connectionFactory;
 
+    private static final MySQLContainer<?> container;
+
     IntegrationTestSupport(MySqlConnectionConfiguration configuration) {
         this.connectionFactory = MySqlConnectionFactory.from(configuration);
+    }
+
+    static {
+        String version = System.getProperty("test.mysql.version", "8");
+
+        container = new MySQLContainer<>("mysql:" + version)
+                .withUsername("root")
+                .withPassword("r2dbc-password!@")
+                .withDatabaseName("r2dbc")
+                .withExposedPorts(MySQLContainer.MYSQL_PORT);
+
+        container.start();
     }
 
     void complete(Function<? super MySqlConnection, Publisher<?>> runner) {
@@ -85,6 +100,7 @@ abstract class IntegrationTestSupport {
             .user("root")
             .password(password)
             .database("r2dbc")
+            .port(container.getMappedPort(MySQLContainer.MYSQL_PORT))
             .autodetectExtensions(autodetectExtensions);
 
         if (serverZoneId != null) {
