@@ -65,7 +65,7 @@
     <maven.surefire.skip>false</maven.surefire.skip>
 
     <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
-    <reactor.version>2022.0.0</reactor.version>
+    <reactor.version>2022.0.9</reactor.version>
     <assertj.version>3.21.0</assertj.version>
     <jmh.version>1.36</jmh.version>
     <junit.version>5.9.2</junit.version>
