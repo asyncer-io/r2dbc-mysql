@@ -41,6 +41,8 @@ This project is currently being maintained by [@jchrys](https://github.com/jchry
 ![MySQL 5.6 status](https://img.shields.io/badge/MySQL%205.6-pass-blue)
 ![MySQL 5.7 status](https://img.shields.io/badge/MySQL%205.7-pass-blue)
 ![MySQL 8.0 status](https://img.shields.io/badge/MySQL%208.0-pass-blue)
+![MySQL 8.1 status](https://img.shields.io/badge/MySQL%208.1-pass-blue)
+
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
 
