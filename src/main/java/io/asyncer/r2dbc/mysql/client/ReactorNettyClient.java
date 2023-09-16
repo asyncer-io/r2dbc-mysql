@@ -64,11 +64,9 @@ final class ReactorNettyClient implements Client {
 
     private static final int ST_CONNECTED = 0;
 
-    private static final int ST_CLOSE_REQUESTED = 1;
+    private static final int ST_CLOSING = 1;
 
-    private static final int ST_CLOSING = 2;
-
-    private static final int ST_CLOSED = 3;
+    private static final int ST_CLOSED = 2;
 
     private static final AtomicIntegerFieldUpdater<ReactorNettyClient> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(ReactorNettyClient.class, "state");
@@ -210,11 +208,7 @@ final class ReactorNettyClient implements Client {
                         return;
                     }
 
-                    if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSE_REQUESTED)) {
-                        logger.debug("Close request accepted");
-                    } else {
-                        logger.debug("Close request accepted (duplicated)");
-                    }
+                    logger.debug("Close request accepted");
 
                     requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
                         Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
@@ -222,7 +216,7 @@ final class ReactorNettyClient implements Client {
                         if (result != Sinks.EmitResult.OK) {
                             logger.error("Exit message sending failed due to {}, force closing", result);
                         } else {
-                            if (STATE_UPDATER.compareAndSet(this, ST_CLOSE_REQUESTED, ST_CLOSING)) {
+                            if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
                                 logger.debug("Exit message sent");
                             } else {
                                 logger.debug("Exit message sent (duplicated / connection already closed)");
