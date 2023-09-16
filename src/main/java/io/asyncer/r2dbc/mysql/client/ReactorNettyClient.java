@@ -44,7 +44,7 @@ import reactor.netty.FutureMono;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -62,6 +62,19 @@ final class ReactorNettyClient implements Client {
 
     private static final boolean INFO_ENABLED = logger.isInfoEnabled();
 
+    private static final int ST_CONNECTED = 0;
+
+    private static final int ST_CLOSE_REQUESTED = 1;
+
+    private static final int ST_CLOSING = 2;
+
+    private static final int ST_CLOSED = 3;
+
+    private static final AtomicIntegerFieldUpdater<ReactorNettyClient> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(ReactorNettyClient.class, "state");
+
+    private volatile int state = ST_CONNECTED;
+
     private final Connection connection;
 
     private final ConnectionContext context;
@@ -72,8 +85,6 @@ final class ReactorNettyClient implements Client {
             Sinks.many().multicast().onBackpressureBuffer(512, false);
 
     private final RequestQueue requestQueue = new RequestQueue();
-
-    private final AtomicBoolean closing = new AtomicBoolean();
 
     ReactorNettyClient(Connection connection, MySqlSslConfiguration ssl, ConnectionContext context) {
         requireNonNull(connection, "connection must not be null");
@@ -88,7 +99,7 @@ final class ReactorNettyClient implements Client {
         // Note: encoder/decoder should before reactor bridge.
         connection.addHandlerLast(EnvelopeSlicer.NAME, new EnvelopeSlicer())
             .addHandlerLast(MessageDuplexCodec.NAME,
-                new MessageDuplexCodec(context, this.closing, this.requestQueue));
+                new MessageDuplexCodec(context));
 
         if (ssl.getSslMode().startSsl()) {
             connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl));
@@ -191,24 +202,40 @@ final class ReactorNettyClient implements Client {
 
     @Override
     public Mono<Void> close() {
-        return Mono.<Mono<Void>>create(sink -> {
-            if (!closing.compareAndSet(false, true)) {
-                // client is closing or closed
-                sink.success();
-                return;
-            }
+        return Mono
+                .<Mono<Void>>create(sink -> {
+                    if (state == ST_CLOSED) {
+                        logger.debug("Close request ignored (connection already closed)");
+                        sink.success();
+                        return;
+                    }
 
-            requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
-                Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
+                    if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSE_REQUESTED)) {
+                        logger.debug("Close request accepted");
+                    } else {
+                        logger.debug("Close request accepted (duplicated)");
+                    }
 
-                if (result != Sinks.EmitResult.OK) {
-                    logger.error("Exit message sending failed due to {}, force closing", result);
-                }
-            })));
-        }).flatMap(Function.identity()).onErrorResume(e -> {
-            logger.error("Exit message sending failed, force closing", e);
-            return Mono.empty();
-        }).then(forceClose());
+                    requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
+                        Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
+
+                        if (result != Sinks.EmitResult.OK) {
+                            logger.error("Exit message sending failed due to {}, force closing", result);
+                        } else {
+                            if (STATE_UPDATER.compareAndSet(this, ST_CLOSE_REQUESTED, ST_CLOSING)) {
+                                logger.debug("Exit message sent");
+                            } else {
+                                logger.debug("Exit message sent (duplicated / connection already closed)");
+                            }
+                        }
+                    })));
+                })
+                .flatMap(Function.identity())
+                .onErrorResume(e -> {
+                    logger.error("Exit message sending failed, force closing", e);
+                    return Mono.empty();
+                })
+                .then(forceClose());
     }
 
     @Override
@@ -223,7 +250,7 @@ final class ReactorNettyClient implements Client {
 
     @Override
     public boolean isConnected() {
-        return !closing.get() && connection.channel().isOpen();
+        return state < ST_CLOSED && connection.channel().isOpen();
     }
 
     @Override
@@ -239,7 +266,7 @@ final class ReactorNettyClient implements Client {
     @Override
     public String toString() {
         return String.format("ReactorNettyClient(%s){connectionId=%d}",
-            this.closing.get() ? "closing or closed" : "activating", context.getConnectionId());
+            isConnected() ? "activating" : "clsoing or closed", context.getConnectionId());
     }
 
     private void emitNextRequest(ClientMessage request) {
@@ -275,10 +302,19 @@ final class ReactorNettyClient implements Client {
     }
 
     private void handleClose() {
-        if (this.closing.compareAndSet(false, true)) {
-            logger.warn("Connection has been closed by peer");
+        final int oldState = state;
+        if (oldState == ST_CLOSED) {
+            logger.debug("Connection already closed");
+            return;
+        }
+
+        STATE_UPDATER.set(this, ST_CLOSED);
+
+        if (oldState != ST_CLOSING) {
+            logger.debug("Connection has been closed by peer");
             drainError(ClientExceptions.unexpectedClosed());
         } else {
+            logger.debug("Connection has been closed");
             drainError(ClientExceptions.expectedClosed());
         }
     }
