@@ -443,6 +443,8 @@ public final class MySqlConnectionConfiguration {
          * @param socketTimeout the socket timeout, or {@code null} if has no timeout.
          * @return this {@link Builder}.
          * @since 0.8.6
+         * @deprecated This option has been deprecated as of version 0.9.2, because it has no effect and
+         * serves no purpose.
          */
         public Builder socketTimeout(@Nullable Duration socketTimeout) {
             this.socketTimeout = socketTimeout;
