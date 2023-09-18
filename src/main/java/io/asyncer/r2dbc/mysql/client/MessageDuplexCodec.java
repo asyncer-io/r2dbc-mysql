@@ -42,8 +42,6 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import reactor.core.publisher.Flux;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -59,16 +57,10 @@ final class MessageDuplexCodec extends ChannelDuplexHandler {
 
     private final ConnectionContext context;
 
-    private final AtomicBoolean closing;
-
-    private final RequestQueue requestQueue;
-
     private final ServerMessageDecoder decoder = new ServerMessageDecoder();
 
-    MessageDuplexCodec(ConnectionContext context, AtomicBoolean closing, RequestQueue requestQueue) {
+    MessageDuplexCodec(ConnectionContext context) {
         this.context = requireNonNull(context, "context must not be null");
-        this.closing = requireNonNull(closing, "closing must not be null");
-        this.requestQueue = requireNonNull(requestQueue, "requestQueue must not be null");
     }
 
     @Override
@@ -129,14 +121,6 @@ final class MessageDuplexCodec extends ChannelDuplexHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         decoder.dispose();
-        requestQueue.dispose();
-
-        // Server has closed the connection without us wanting to close it
-        // Typically happens if we send data asynchronously (i.e. previous command didn't complete).
-        if (closing.compareAndSet(false, true)) {
-            logger.warn("Connection has been closed by peer");
-        }
-
         ctx.fireChannelInactive();
     }
 
