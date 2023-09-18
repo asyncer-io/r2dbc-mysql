@@ -305,10 +305,10 @@ final class ReactorNettyClient implements Client {
         STATE_UPDATER.set(this, ST_CLOSED);
 
         if (oldState != ST_CLOSING) {
-            logger.debug("Connection has been closed by peer");
+            logger.warn("Connection unexpectedly closed");
             drainError(ClientExceptions.unexpectedClosed());
         } else {
-            logger.debug("Connection has been closed");
+            logger.debug("Connection closed");
             drainError(ClientExceptions.expectedClosed());
         }
     }
