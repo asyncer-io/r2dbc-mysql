@@ -26,8 +26,11 @@ import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.extension.CodecRegistrar;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.unix.DomainSocketAddress;
+import io.r2dbc.spi.Closeable;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
+import io.r2dbc.spi.R2dbcNonTransientResourceException;
+
 import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
@@ -40,9 +43,9 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * An implementation of {@link ConnectionFactory} for creating connections to a MySQL database.
  */
-public final class MySqlConnectionFactory implements ConnectionFactory {
+public final class MySqlConnectionFactory implements ConnectionFactory, Closeable {
 
-    private final Mono<MySqlConnection> client;
+    private volatile Mono<MySqlConnection> client;
 
     private MySqlConnectionFactory(Mono<MySqlConnection> client) {
         this.client = client;
@@ -50,7 +53,11 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
 
     @Override
     public Mono<MySqlConnection> create() {
-        return client;
+    	if (client == null) {
+    		throw new MySqlR2dbcNonTransientResourceException("This connection factory is closed.");
+    	}
+    	
+    	return client;
     }
 
     @Override
@@ -93,7 +100,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             int prepareCacheSize = configuration.getPrepareCacheSize();
 
             return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
-                context, configuration.getConnectTimeout(), configuration.getSocketTimeout())
+                context, configuration.getConnectTimeout(), null)
                 .flatMap(client -> QueryFlow.login(client, sslMode, database, user, password, context))
                 .flatMap(client -> {
                     ByteBufAllocator allocator = client.getByteBufAllocator();
@@ -107,6 +114,15 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                         prepareCache, prepare);
                 });
         }));
+    }
+    
+    @Override
+    public Mono<Void> close() {
+    	return Mono.defer(() -> {
+    		this.client = null;
+    		
+        	return Mono.empty();
+    	});
     }
 
     private static final class LazyQueryCache {
@@ -131,6 +147,13 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 }
             }
             return cache;
+        }
+    }
+    
+    class MySqlR2dbcNonTransientResourceException extends R2dbcNonTransientResourceException {
+
+        MySqlR2dbcNonTransientResourceException(String reason) {
+            super(reason);
         }
     }
 }
