@@ -24,6 +24,7 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.Option;
 import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -34,7 +35,9 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.PASSWORD_SUPPLIER;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.USE_SERVER_PREPARE_STATEMENT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
@@ -390,6 +393,20 @@ class MySqlConnectionFactoryProviderTest {
                 .option(USE_SERVER_PREPARE_STATEMENT, NotPredicate.class.getPackage() + "NonePredicate")
                 .build()));
     }
+
+    @Test
+    void validPasswordSupplier() {
+        final Supplier<Mono<String>> passwordSupplier = () -> Mono.just("123456");
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+            .option(DRIVER, "mysql")
+            .option(HOST, "127.0.0.1")
+            .option(USER, "root")
+            .option(PASSWORD_SUPPLIER, passwordSupplier)
+            .build();
+
+        assertThat(ConnectionFactories.get(options)).isExactlyInstanceOf(MySqlConnectionFactory.class);
+    }
+
 }
 
 final class MockException extends RuntimeException {
