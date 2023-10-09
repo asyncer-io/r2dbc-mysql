@@ -21,7 +21,7 @@ import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.jetbrains.annotations.Nullable;
-import reactor.core.publisher.Mono;
+import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.net.Socket;
@@ -33,7 +33,6 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -93,14 +92,14 @@ public final class MySqlConnectionConfiguration {
     private final int prepareCacheSize;
 
     private final Extensions extensions;
-    private final Supplier<Mono<String>> passwordSupplier;
+    private final Publisher<String> passwordSupplier;
 
     private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
-        Extensions extensions, @Nullable Supplier<Mono<String>> passwordSupplier) {
+        Extensions extensions, @Nullable Publisher<String> passwordSupplier) {
         this.isHost = isHost;
         this.domain = domain;
         this.port = port;
@@ -208,7 +207,7 @@ public final class MySqlConnectionConfiguration {
         return extensions;
     }
 
-    Supplier<Mono<String>> getPasswordSupplier() {
+    Publisher<String> getPasswordSupplier() {
         return passwordSupplier;
     }
 
@@ -336,7 +335,7 @@ public final class MySqlConnectionConfiguration {
         private final List<Extension> extensions = new ArrayList<>();
 
         @Nullable
-        private Supplier<Mono<String>> passwordSupplier;
+        private Publisher<String> passwordSupplier;
 
         /**
          * Builds an immutable {@link MySqlConnectionConfiguration} with current options.
@@ -795,7 +794,7 @@ public final class MySqlConnectionConfiguration {
          * @param passwordSupplier function to retrieve password before making connection.
          * @return this {@link Builder}.
          */
-        public Builder passwordSupplier(Supplier<Mono<String>> passwordSupplier) {
+        public Builder passwordSupplier(Publisher<String> passwordSupplier) {
             this.passwordSupplier = passwordSupplier;
             return this;
         }

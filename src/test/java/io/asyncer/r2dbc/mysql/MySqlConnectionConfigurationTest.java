@@ -194,15 +194,14 @@ class MySqlConnectionConfigurationTest {
 
     @Test
     void validPasswordSupplier() {
-        final Supplier<Mono<String>> passwordSupplier = () -> Mono.just("123456");
-        MySqlConnectionConfiguration.builder()
+        final Mono<String> passwordSupplier = Mono.just("123456");
+        Mono.from(MySqlConnectionConfiguration.builder()
                 .host(HOST)
                 .user(USER)
                 .passwordSupplier(passwordSupplier)
                 .autodetectExtensions(false)
                 .build()
-                .getPasswordSupplier()
-                .get()
+                .getPasswordSupplier())
             .as(StepVerifier::create)
             .expectNext("123456")
             .verifyComplete();

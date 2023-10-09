@@ -24,6 +24,7 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.Option;
 import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import javax.net.ssl.HostnameVerifier;
@@ -396,7 +397,7 @@ class MySqlConnectionFactoryProviderTest {
 
     @Test
     void validPasswordSupplier() {
-        final Supplier<Mono<String>> passwordSupplier = () -> Mono.just("123456");
+        final Publisher<String> passwordSupplier = Mono.just("123456");
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
             .option(DRIVER, "mysql")
             .option(HOST, "127.0.0.1")

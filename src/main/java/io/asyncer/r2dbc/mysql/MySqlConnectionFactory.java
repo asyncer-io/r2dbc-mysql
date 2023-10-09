@@ -30,13 +30,13 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
@@ -94,9 +94,9 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
-            Supplier<Mono<String>> passwordSupplier = configuration.getPasswordSupplier();
+            Publisher<String> passwordSupplier = configuration.getPasswordSupplier();
             if (Objects.nonNull(passwordSupplier)) {
-                return passwordSupplier.get()
+                return Mono.from(passwordSupplier)
                         .flatMap(token -> getMySqlConnection(
                             configuration, queryCache,
                             ssl, address,
