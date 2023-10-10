@@ -25,6 +25,8 @@ import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.api.ThrowableTypeAssert;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.Duration;
 import java.time.ZoneId;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -187,6 +190,21 @@ class MySqlConnectionConfigurationTest {
             .getExtensions()
             .forEach(Extension.class, list::add);
         assertThat(list).isEmpty();
+    }
+
+    @Test
+    void validPasswordSupplier() {
+        final Mono<String> passwordSupplier = Mono.just("123456");
+        Mono.from(MySqlConnectionConfiguration.builder()
+                .host(HOST)
+                .user(USER)
+                .passwordSupplier(passwordSupplier)
+                .autodetectExtensions(false)
+                .build()
+                .getPasswordSupplier())
+            .as(StepVerifier::create)
+            .expectNext("123456")
+            .verifyComplete();
     }
 
     private static MySqlConnectionConfiguration unixSocketSslMode(SslMode sslMode) {

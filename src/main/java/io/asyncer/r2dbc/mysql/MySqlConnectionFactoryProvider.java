@@ -23,6 +23,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
+import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.time.Duration;
@@ -203,6 +204,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      */
     public static final Option<Boolean> AUTODETECT_EXTENSIONS = Option.valueOf("autodetectExtensions");
 
+    /**
+     * Password Supplier function can be used to retrieve password before creating a connection.
+     * This can be used with Amazon RDS Aurora IAM authentication, wherein it requires token to be generated.
+     * The token is valid for 15 minutes, and this token will be used as password.
+     *
+     */
+    public static final Option<Publisher<String>> PASSWORD_SUPPLIER = Option.valueOf("passwordSupplier");
+
     @Override
     public ConnectionFactory create(ConnectionFactoryOptions options) {
         requireNonNull(options, "connectionFactoryOptions must not be null");
@@ -261,6 +270,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::socketTimeout);
         mapper.optional(DATABASE).asString()
             .to(builder::database);
+        mapper.optional(PASSWORD_SUPPLIER).as(Publisher.class)
+            .to(builder::passwordSupplier);
 
         return builder.build();
     }
