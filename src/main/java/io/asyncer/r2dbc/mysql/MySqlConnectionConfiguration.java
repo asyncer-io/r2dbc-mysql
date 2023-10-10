@@ -239,14 +239,15 @@ public final class MySqlConnectionConfiguration {
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
-            extensions.equals(that.extensions);
+            extensions.equals(that.extensions) &&
+            Objects.equals(passwordSupplier, that.passwordSupplier);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
             connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions);
+            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordSupplier);
     }
 
     @Override
@@ -258,7 +259,7 @@ public final class MySqlConnectionConfiguration {
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
                 ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                ", extensions=" + extensions + '}';
+                ", extensions=" + extensions + ", passwordSupplier="+ passwordSupplier + '}';
         }
 
         return "MySqlConnectionConfiguration{, unixSocket='" + domain + "', connectTimeout=" +
@@ -266,7 +267,7 @@ public final class MySqlConnectionConfiguration {
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
             ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-            ", extensions=" + extensions + '}';
+            ", extensions=" + extensions +  ", passwordSupplier="+ passwordSupplier + '}';
     }
 
     /**
