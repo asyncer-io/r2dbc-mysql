@@ -21,6 +21,7 @@ import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.jetbrains.annotations.Nullable;
+import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.net.Socket;
@@ -92,12 +93,15 @@ public final class MySqlConnectionConfiguration {
 
     private final Extensions extensions;
 
+    @Nullable
+    private final Publisher<String> passwordSupplier;
+
     private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
-        Extensions extensions) {
+        Extensions extensions, @Nullable Publisher<String> passwordSupplier) {
         this.isHost = isHost;
         this.domain = domain;
         this.port = port;
@@ -115,6 +119,7 @@ public final class MySqlConnectionConfiguration {
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
         this.extensions = extensions;
+        this.passwordSupplier = passwordSupplier;
     }
 
     /**
@@ -204,6 +209,11 @@ public final class MySqlConnectionConfiguration {
         return extensions;
     }
 
+    @Nullable
+    Publisher<String> getPasswordSupplier() {
+        return passwordSupplier;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -229,14 +239,15 @@ public final class MySqlConnectionConfiguration {
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
-            extensions.equals(that.extensions);
+            extensions.equals(that.extensions) &&
+            Objects.equals(passwordSupplier, that.passwordSupplier);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
             connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions);
+            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordSupplier);
     }
 
     @Override
@@ -248,7 +259,7 @@ public final class MySqlConnectionConfiguration {
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
                 ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                ", extensions=" + extensions + '}';
+                ", extensions=" + extensions + ", passwordSupplier="+ passwordSupplier + '}';
         }
 
         return "MySqlConnectionConfiguration{, unixSocket='" + domain + "', connectTimeout=" +
@@ -256,7 +267,7 @@ public final class MySqlConnectionConfiguration {
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
             ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-            ", extensions=" + extensions + '}';
+            ", extensions=" + extensions +  ", passwordSupplier="+ passwordSupplier + '}';
     }
 
     /**
@@ -327,6 +338,9 @@ public final class MySqlConnectionConfiguration {
 
         private final List<Extension> extensions = new ArrayList<>();
 
+        @Nullable
+        private Publisher<String> passwordSupplier;
+
         /**
          * Builds an immutable {@link MySqlConnectionConfiguration} with current options.
          *
@@ -351,7 +365,7 @@ public final class MySqlConnectionConfiguration {
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
                 connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
                 preferPrepareStatement, queryCacheSize, prepareCacheSize,
-                Extensions.from(extensions, autodetectExtensions));
+                Extensions.from(extensions, autodetectExtensions), passwordSupplier);
         }
 
         /**
@@ -776,6 +790,16 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder extendWith(Extension extension) {
             this.extensions.add(requireNonNull(extension, "extension must not be null"));
+            return this;
+        }
+
+        /**
+         * Registers a password supplier function.
+         * @param passwordSupplier function to retrieve password before making connection.
+         * @return this {@link Builder}.
+         */
+        public Builder passwordSupplier(Publisher<String> passwordSupplier) {
+            this.passwordSupplier = passwordSupplier;
             return this;
         }
 
