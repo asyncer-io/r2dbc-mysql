@@ -125,9 +125,9 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             final SslMode sslMode,
             final ConnectionContext context,
             final Extensions extensions,
-            final Predicate<String> prepare,
+            @Nullable final Predicate<String> prepare,
             final int prepareCacheSize,
-            final CharSequence password) {
+            @Nullable final CharSequence password) {
         return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
                 context, configuration.getConnectTimeout(), configuration.getSocketTimeout())
             .flatMap(client -> QueryFlow.login(client, sslMode, database, user, password, context))

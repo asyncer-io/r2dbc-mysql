@@ -92,6 +92,8 @@ public final class MySqlConnectionConfiguration {
     private final int prepareCacheSize;
 
     private final Extensions extensions;
+
+    @Nullable
     private final Publisher<String> passwordSupplier;
 
     private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
@@ -207,6 +209,7 @@ public final class MySqlConnectionConfiguration {
         return extensions;
     }
 
+    @Nullable
     Publisher<String> getPasswordSupplier() {
         return passwordSupplier;
     }

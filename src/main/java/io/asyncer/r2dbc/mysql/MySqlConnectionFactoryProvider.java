@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
