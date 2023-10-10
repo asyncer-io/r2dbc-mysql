@@ -139,6 +139,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(Option.valueOf("tcpKeepAlive"), true) // optional, default false
     .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
     .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
+    .option(Option.valueOf("passwordPublisher"), Mono.just("password")) // optional, default null, null means has no passwordPublisher (since 1.0.5 / 0.9.6)
     .build();
 ConnectionFactory connectionFactory = ConnectionFactories.get(options);
 
@@ -186,6 +187,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .tcpNoDelay(true) // optional, controls TCP No Delay, default is false
     .autodetectExtensions(false) // optional, controls extension auto-detect, default is true
     .extendWith(MyExtension.INSTANCE) // optional, manual extend an extension into extensions, default using auto-detect
+    .passwordPublisher(Mono.just("password")) // optional, default null, null means has no password publisher (since 1.0.5 / 0.9.6)
     .build();
 ConnectionFactory connectionFactory = MySqlConnectionFactory.from(configuration);
 
@@ -233,6 +235,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | zeroDateOption | Any value of `ZeroDateOption` | Optional, default `USE_NULL` | The option indicates "zero date" handling, see following notice |
 | autodetectExtensions | `true` or `false` | Optional, default is `true` | Controls auto-detect `Extension`s |
 | useServerPrepareStatement | `true`, `false` or `Predicate<String>` | Optional, default is `false` | See following notice |
+| passwordPublisher | A `Publisher<String>` | Optional, default is `null` | The password publisher, see following notice |
 
 - `SslMode` Considers security level and verification for SSL, make sure the database server supports SSL before you want change SSL mode to `REQUIRED` or higher. **The Unix Domain Socket only offers "DISABLED" available**
   - `DISABLED` I don't care about security and don't want to pay the overhead for encryption
@@ -258,6 +261,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
   - It is **NOT** RECOMMENDED, enable the `autodetectExtensions` is the best way for extensions
   - The `Extensions` will not remove duplicates, make sure it would be not extended twice or more
   - The auto-detected `Extension`s will not affect manual extends and will not remove duplicates
+- `passwordPublisher` Every time the client attempts to authenticate, it will use the password provided by the `passwordPublisher`.(Since `1.0.5` / `0.9.6`) e.g., You can employ this method for IAM-based authentication when connecting to an AWS Aurora RDS database.
 
 Should use `enum` in [Programmatic](#programmatic-configuration) configuration that not like discovery configurations, except `TlsVersions` (All elements of `TlsVersions` will be always `String` which is case-sensitive).
 

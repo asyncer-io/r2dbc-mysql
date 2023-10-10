@@ -205,12 +205,12 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Boolean> AUTODETECT_EXTENSIONS = Option.valueOf("autodetectExtensions");
 
     /**
-     * Password Supplier function can be used to retrieve password before creating a connection.
+     * Password Publisher function can be used to retrieve password before creating a connection.
      * This can be used with Amazon RDS Aurora IAM authentication, wherein it requires token to be generated.
      * The token is valid for 15 minutes, and this token will be used as password.
      *
      */
-    public static final Option<Publisher<String>> PASSWORD_SUPPLIER = Option.valueOf("passwordSupplier");
+    public static final Option<Publisher<String>> PASSWORD_PUBLISHER = Option.valueOf("passwordPublisher");
 
     @Override
     public ConnectionFactory create(ConnectionFactoryOptions options) {
@@ -270,8 +270,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::socketTimeout);
         mapper.optional(DATABASE).asString()
             .to(builder::database);
-        mapper.optional(PASSWORD_SUPPLIER).as(Publisher.class)
-            .to(builder::passwordSupplier);
+        mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
+              .to(builder::passwordPublisher);
 
         return builder.build();
     }
