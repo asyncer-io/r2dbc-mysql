@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -198,10 +197,10 @@ class MySqlConnectionConfigurationTest {
         Mono.from(MySqlConnectionConfiguration.builder()
                 .host(HOST)
                 .user(USER)
-                .passwordSupplier(passwordSupplier)
+                .passwordPublisher(passwordSupplier)
                 .autodetectExtensions(false)
                 .build()
-                .getPasswordSupplier())
+                .getPasswordPublisher())
             .as(StepVerifier::create)
             .expectNext("123456")
             .verifyComplete();

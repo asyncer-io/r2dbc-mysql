@@ -94,14 +94,14 @@ public final class MySqlConnectionConfiguration {
     private final Extensions extensions;
 
     @Nullable
-    private final Publisher<String> passwordSupplier;
+    private final Publisher<String> passwordPublisher;
 
     private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
-        Extensions extensions, @Nullable Publisher<String> passwordSupplier) {
+        Extensions extensions, @Nullable Publisher<String> passwordPublisher) {
         this.isHost = isHost;
         this.domain = domain;
         this.port = port;
@@ -119,7 +119,7 @@ public final class MySqlConnectionConfiguration {
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
         this.extensions = extensions;
-        this.passwordSupplier = passwordSupplier;
+        this.passwordPublisher = passwordPublisher;
     }
 
     /**
@@ -210,8 +210,8 @@ public final class MySqlConnectionConfiguration {
     }
 
     @Nullable
-    Publisher<String> getPasswordSupplier() {
-        return passwordSupplier;
+    Publisher<String> getPasswordPublisher() {
+        return passwordPublisher;
     }
 
     @Override
@@ -240,34 +240,34 @@ public final class MySqlConnectionConfiguration {
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
             extensions.equals(that.extensions) &&
-            Objects.equals(passwordSupplier, that.passwordSupplier);
+            Objects.equals(passwordPublisher, that.passwordPublisher);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-            connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordSupplier);
+                            connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
+                            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordPublisher);
     }
 
     @Override
     public String toString() {
         if (isHost) {
             return "MySqlConnectionConfiguration{, host='" + domain + "', port=" + port + ", ssl=" + ssl +
-                ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
-                connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-                ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
-                ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-                ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                ", extensions=" + extensions + ", passwordSupplier="+ passwordSupplier + '}';
+                   ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
+                   connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+                   ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
+                   ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
+                   ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+                   ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
         }
 
         return "MySqlConnectionConfiguration{, unixSocket='" + domain + "', connectTimeout=" +
-            connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-            ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
-            ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-            ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-            ", extensions=" + extensions +  ", passwordSupplier="+ passwordSupplier + '}';
+               connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+               ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
+               ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
+               ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+               ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
     }
 
     /**
@@ -339,7 +339,7 @@ public final class MySqlConnectionConfiguration {
         private final List<Extension> extensions = new ArrayList<>();
 
         @Nullable
-        private Publisher<String> passwordSupplier;
+        private Publisher<String> passwordPublisher;
 
         /**
          * Builds an immutable {@link MySqlConnectionConfiguration} with current options.
@@ -365,7 +365,7 @@ public final class MySqlConnectionConfiguration {
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
                 connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
                 preferPrepareStatement, queryCacheSize, prepareCacheSize,
-                Extensions.from(extensions, autodetectExtensions), passwordSupplier);
+                Extensions.from(extensions, autodetectExtensions), passwordPublisher);
         }
 
         /**
@@ -794,12 +794,12 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Registers a password supplier function.
-         * @param passwordSupplier function to retrieve password before making connection.
+         * Registers a password publisher function.
+         * @param passwordPublisher function to retrieve password before making connection.
          * @return this {@link Builder}.
          */
-        public Builder passwordSupplier(Publisher<String> passwordSupplier) {
-            this.passwordSupplier = passwordSupplier;
+        public Builder passwordPublisher(Publisher<String> passwordPublisher) {
+            this.passwordPublisher = passwordPublisher;
             return this;
         }
 

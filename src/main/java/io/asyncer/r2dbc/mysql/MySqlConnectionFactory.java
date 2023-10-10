@@ -94,9 +94,9 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
-            Publisher<String> passwordSupplier = configuration.getPasswordSupplier();
-            if (Objects.nonNull(passwordSupplier)) {
-                return Mono.from(passwordSupplier)
+            Publisher<String> passwordPublisher = configuration.getPasswordPublisher();
+            if (Objects.nonNull(passwordPublisher)) {
+                return Mono.from(passwordPublisher)
                         .flatMap(token -> getMySqlConnection(
                             configuration, queryCache,
                             ssl, address,
