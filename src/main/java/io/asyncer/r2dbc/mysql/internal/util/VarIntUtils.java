@@ -47,6 +47,17 @@ public final class VarIntUtils {
 
     private static final int MEDIUM_SIZE = MEDIUM_BYTES * Byte.SIZE;
 
+    /**
+     * Reads a length encoded integer from the given buffers. Notice that a length encoded integer can be
+     * greater than {@link Long#MAX_VALUE}. In this case it should be used as an unsigned long. If we need
+     * assume the result as a smaller integer, add code comment to explain it.
+     * <p>
+     * Note: it will change {@code firstPart} and {@code secondPart} readerIndex if necessary.
+     *
+     * @param firstPart the first part of a readable buffer include a part of the var integer.
+     * @param secondPart the second part of a readable buffer include subsequent part of the var integer.
+     * @return A var integer read from buffer.
+     */
     public static long crossReadVarInt(ByteBuf firstPart, ByteBuf secondPart) {
         requireNonNull(firstPart, "firstPart must not be null");
         requireNonNull(secondPart, "secondPart must not be null");
@@ -87,6 +98,10 @@ public final class VarIntUtils {
     }
 
     /**
+     * Reads a length encoded integer from the given buffer. Notice that a length encoded integer can be
+     * greater than {@link Long#MAX_VALUE}. In this case it should be used as an unsigned long. If we need
+     * assume the result as a smaller integer, add code comment to explain it.
+     * <p>
      * Note: it will change {@code buf} readerIndex.
      *
      * @param buf a readable buffer include a var integer.

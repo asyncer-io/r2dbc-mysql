@@ -105,6 +105,7 @@ final class NormalFieldReader implements FieldReader {
     }
 
     private static ByteBuf readVarIntSizedRetained(ByteBuf buf) {
+        // Normal field will NEVER be greater than Integer.MAX_VALUE.
         int size = (int) VarIntUtils.readVarInt(buf);
         if (size == 0) {
             // Use EmptyByteBuf, new buffer no need to be retained.
