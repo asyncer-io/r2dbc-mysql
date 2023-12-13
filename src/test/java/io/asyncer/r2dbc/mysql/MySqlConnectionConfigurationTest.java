@@ -230,6 +230,7 @@ class MySqlConnectionConfigurationTest {
             .port(3306)
             .password("database-password-in-here")
             .database("r2dbc")
+            .createDatabaseIfNotExist(true)
             .tcpKeepAlive(true)
             .tcpNoDelay(true)
             .connectTimeout(Duration.ofSeconds(3))
