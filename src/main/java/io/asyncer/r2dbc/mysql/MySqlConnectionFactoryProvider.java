@@ -163,6 +163,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Boolean> TCP_NO_DELAY = Option.valueOf("tcpNoDelay");
 
     /**
+     * Enable/Disable database creation if not exist.
+     *
+     * @since 1.0.6
+     */
+    public static final Option<Boolean> CREATE_DATABASE_IF_NOT_EXIST =
+        Option.valueOf("createDatabaseIfNotExist");
+
+    /**
      * Enable server preparing for parametrized statements and prefer server preparing simple statements.
      * <p>
      * The value can be a {@link Boolean}. If it is {@code true}, driver will use server preparing for
@@ -270,8 +278,10 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::socketTimeout);
         mapper.optional(DATABASE).asString()
             .to(builder::database);
+        mapper.optional(CREATE_DATABASE_IF_NOT_EXIST).asBoolean()
+            .to(builder::createDatabaseIfNotExist);
         mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
-              .to(builder::passwordPublisher);
+            .to(builder::passwordPublisher);
 
         return builder.build();
     }
