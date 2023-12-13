@@ -99,12 +99,12 @@ final class LargeFieldReader extends AbstractReferenceCounted implements FieldRe
             fieldSize = VarIntUtils.readVarInt(currentBuf);
         }
 
-        // Refresh non empty buffer because current buffer has been read.
+        // Refresh non-empty buffer because current buffer has been read.
         currentBuf = nonEmptyBuffer();
 
         List<ByteBuf> results = readSlice(currentBuf, fieldSize);
 
-        if (fieldSize > Integer.MAX_VALUE) {
+        if (Long.compareUnsigned(fieldSize, Integer.MAX_VALUE) > 0) {
             return retainedLargeField(results);
         }
 
@@ -130,26 +130,30 @@ final class LargeFieldReader extends AbstractReferenceCounted implements FieldRe
      * list instead of a single buffer.
      *
      * @param current the current {@link ByteBuf} in {@link #buffers}.
-     * @param length  the length of read.
+     * @param length  the length of read, it can be an unsigned long.
      * @return result buffer list, should NEVER retain any buffer.
      */
     private List<ByteBuf> readSlice(ByteBuf current, long length) {
         ByteBuf buf = current;
         List<ByteBuf> results = new ArrayList<>(Math.max(
-            (int) Math.min((length / Envelopes.MAX_ENVELOPE_SIZE) + 2, Byte.MAX_VALUE), 10));
+            (int) Math.min(Long.divideUnsigned(length, Envelopes.MAX_ENVELOPE_SIZE) + 2, Byte.MAX_VALUE),
+            10
+        ));
         long totalSize = 0;
         int bufReadable;
 
         // totalSize + bufReadable <= length
-        while (totalSize <= length - (bufReadable = buf.readableBytes())) {
+        while (Long.compareUnsigned(totalSize, length - (bufReadable = buf.readableBytes())) <= 0) {
             totalSize += bufReadable;
             // No need readSlice because currentBufIndex will be increment after List pushed.
             results.add(buf);
             buf = this.buffers[++this.currentBufIndex];
         }
 
-        if (length > totalSize) {
-            // need bytes = length - `results` real length = length - (totalSize - `buf` length)
+        // totalSize < length
+        if (Long.compareUnsigned(length, totalSize) > 0) {
+            // need bytes = length - `results` length = length - totalSize
+            // length - totalSize should be an int due to while loop above.
             results.add(buf.readSlice((int) (length - totalSize)));
         } // else results has filled by prev buffer, and currentBufIndex is unread for now.
 

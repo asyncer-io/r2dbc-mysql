@@ -173,7 +173,8 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         String column = readVarIntSizedString(buf, charset);
         String originColumn = readVarIntSizedString(buf, charset);
 
-        VarIntUtils.readVarInt(buf); // skip constant 0x0c encoded by var integer
+        // Skip constant 0x0c encoded by var integer
+        VarIntUtils.readVarInt(buf);
 
         int collationId = buf.readUnsignedShortLE();
         long size = buf.readUnsignedIntLE();
@@ -185,7 +186,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
     }
 
     private static String readVarIntSizedString(ByteBuf buf, Charset charset) {
-        // JVM can NOT support string which length upper than maximum of int32
+        // JVM does NOT support strings longer than Integer.MAX_VALUE
         int bytes = (int) VarIntUtils.readVarInt(buf);
 
         if (bytes == 0) {
