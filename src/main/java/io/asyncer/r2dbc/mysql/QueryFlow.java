@@ -888,6 +888,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
         builder.disableDatabasePinned();
         builder.disableCompression();
+        // TODO: support LOAD DATA LOCAL INFILE
         builder.disableLoadDataInfile();
         builder.disableIgnoreAmbiguitySpace();
         builder.disableInteractiveTimeout();
