@@ -66,7 +66,7 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     TimeZoneIntegrationTestSupport(@Nullable Predicate<String> preferPrepared) {
-        super(configuration(false, SERVER_ZONE, preferPrepared));
+        super(configuration("r2dbc", false, false, SERVER_ZONE, preferPrepared));
     }
 
     @Test
