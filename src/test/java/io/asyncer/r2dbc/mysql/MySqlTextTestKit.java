@@ -22,6 +22,6 @@ package io.asyncer.r2dbc.mysql;
 class MySqlTextTestKit extends MySqlTestKitSupport {
 
     MySqlTextTestKit() {
-        super(IntegrationTestSupport.configuration(false, null, null));
+        super(IntegrationTestSupport.configuration("r2dbc", false, false, null, null));
     }
 }
