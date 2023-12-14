@@ -26,6 +26,8 @@ public final class Capability {
 
     /**
      * Can use long password.
+     * <p>
+     * TODO: Reinterpret it as {@code CLIENT_MYSQL} to support MariaDB 10.2 and above.
      */
     private static final int LONG_PASSWORD = 1;
 

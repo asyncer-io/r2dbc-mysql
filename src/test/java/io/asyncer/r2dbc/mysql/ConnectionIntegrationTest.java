@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ConnectionIntegrationTest extends IntegrationTestSupport {
 
     ConnectionIntegrationTest() {
-        super(configuration(false, null, null));
+        super(configuration("r2dbc", false, false, null, null));
     }
 
     @Test

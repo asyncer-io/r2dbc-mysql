@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class PrepareQueryIntegrationTest extends QueryIntegrationTestSupport {
 
     PrepareQueryIntegrationTest() {
-        super(configuration(false, null, sql -> true));
+        super(configuration("r2dbc", false, false, null, sql -> true));
     }
 
     @Test
