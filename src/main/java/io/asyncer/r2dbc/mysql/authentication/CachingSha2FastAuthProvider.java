@@ -61,7 +61,7 @@ final class CachingSha2FastAuthProvider implements MySqlAuthProvider {
 
     @Override
     public MySqlAuthProvider next() {
-        return CachingSha2FullAuthProvider.INSTANCE;
+        return CachingSha2FullAuthProvider.getInstance();
     }
 
     @Override

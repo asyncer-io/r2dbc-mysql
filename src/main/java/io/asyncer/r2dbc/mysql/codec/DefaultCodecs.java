@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.r2dbc.spi.Parameter;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.concurrent.GuardedBy;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
@@ -314,9 +315,12 @@ final class DefaultCodecs implements Codecs {
         };
     }
 
-    static final class Builder extends ArrayList<Codec<?>> implements CodecsBuilder {
+    static final class Builder implements CodecsBuilder {
 
         private final ByteBufAllocator allocator;
+
+        @GuardedBy("this")
+        private final ArrayList<Codec<?>> codecs = new ArrayList<>();
 
         Builder(ByteBufAllocator allocator) {
             this.allocator = allocator;
@@ -325,15 +329,15 @@ final class DefaultCodecs implements Codecs {
         @Override
         public CodecsBuilder addFirst(Codec<?> codec) {
             synchronized (this) {
-                if (isEmpty()) {
-                    Codec<?>[] codecs = defaultCodecs(allocator);
+                if (codecs.isEmpty()) {
+                    Codec<?>[] defaultCodecs = defaultCodecs(allocator);
 
-                    ensureCapacity(codecs.length + 1);
+                    codecs.ensureCapacity(defaultCodecs.length + 1);
                     // Add first.
-                    add(codec);
-                    addAll(InternalArrays.asImmutableList(codecs));
+                    codecs.add(codec);
+                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs));
                 } else {
-                    add(0, codec);
+                    codecs.add(0, codec);
                 }
             }
             return this;
@@ -342,10 +346,10 @@ final class DefaultCodecs implements Codecs {
         @Override
         public CodecsBuilder addLast(Codec<?> codec) {
             synchronized (this) {
-                if (isEmpty()) {
-                    addAll(InternalArrays.asImmutableList(defaultCodecs(allocator)));
+                if (codecs.isEmpty()) {
+                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs(allocator)));
                 }
-                add(codec);
+                codecs.add(codec);
             }
             return this;
         }
@@ -354,13 +358,13 @@ final class DefaultCodecs implements Codecs {
         public Codecs build() {
             synchronized (this) {
                 try {
-                    if (isEmpty()) {
+                    if (codecs.isEmpty()) {
                         return new DefaultCodecs(defaultCodecs(allocator));
                     }
-                    return new DefaultCodecs(toArray(new Codec<?>[0]));
+                    return new DefaultCodecs(codecs.toArray(new Codec<?>[0]));
                 } finally {
-                    clear();
-                    trimToSize();
+                    codecs.clear();
+                    codecs.trimToSize();
                 }
             }
         }

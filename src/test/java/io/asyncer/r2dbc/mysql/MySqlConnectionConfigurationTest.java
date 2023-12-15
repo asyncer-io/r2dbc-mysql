@@ -25,6 +25,8 @@ import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.api.ThrowableTypeAssert;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.Duration;
 import java.time.ZoneId;
@@ -189,6 +191,21 @@ class MySqlConnectionConfigurationTest {
         assertThat(list).isEmpty();
     }
 
+    @Test
+    void validPasswordSupplier() {
+        final Mono<String> passwordSupplier = Mono.just("123456");
+        Mono.from(MySqlConnectionConfiguration.builder()
+                .host(HOST)
+                .user(USER)
+                .passwordPublisher(passwordSupplier)
+                .autodetectExtensions(false)
+                .build()
+                .getPasswordPublisher())
+            .as(StepVerifier::create)
+            .expectNext("123456")
+            .verifyComplete();
+    }
+
     private static MySqlConnectionConfiguration unixSocketSslMode(SslMode sslMode) {
         return MySqlConnectionConfiguration.builder()
             .unixSocket(UNIX_SOCKET)
@@ -213,6 +230,7 @@ class MySqlConnectionConfigurationTest {
             .port(3306)
             .password("database-password-in-here")
             .database("r2dbc")
+            .createDatabaseIfNotExist(true)
             .tcpKeepAlive(true)
             .tcpNoDelay(true)
             .connectTimeout(Duration.ofSeconds(3))

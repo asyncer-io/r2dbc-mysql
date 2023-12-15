@@ -65,22 +65,29 @@ final class RequestQueue extends ActiveStatus implements Runnable {
      */
     @Override
     public void run() {
-        RequestTask<?> task = queue.poll();
+        for (;;) {
+            RequestTask<?> task = queue.poll();
+            final int status = this.status;
 
-        if (task == null) {
-            // Queue was empty, set it to idle if it is not disposed.
-            STATUS_UPDATER.compareAndSet(this, ACTIVE, IDLE);
-        } else {
-            int status = this.status;
-
-            if (status == DISPOSE) {
+            if (task == null) {
+                // Queue was empty, set it to idle if it is not disposed.
+                if (status != ACTIVE || STATUS_UPDATER.compareAndSet(this, ACTIVE, IDLE) && queue.isEmpty()) {
+                    return;
+                }
+            } else if (status == DISPOSE) {
                 // Cancel and no need clear queue because it should be cleared by other one.
                 task.cancel(requireDisposed());
+                return;
             } else {
                 task.run();
+                // The execution of a canceled task would result in a stall of the request queue.
+                // refer: https://github.com/asyncer-io/r2dbc-mysql/issues/114
+                if (!task.isCancelled()) {
+                    return;
             }
         }
     }
+}
 
     /**
      * Submit an exchange task. If the queue is inactive, it will execute directly instead of queuing.
@@ -90,13 +97,6 @@ final class RequestQueue extends ActiveStatus implements Runnable {
      * @param <T> the type argument of {@link RequestTask}.
      */
     <T> void submit(RequestTask<T> task) {
-        if (STATUS_UPDATER.compareAndSet(this, IDLE, ACTIVE)) {
-            // Fast path for general way.
-            task.run();
-            return;
-        }
-
-        // Check dispose after fast path failed.
         int status = this.status;
 
         if (status == DISPOSE) {

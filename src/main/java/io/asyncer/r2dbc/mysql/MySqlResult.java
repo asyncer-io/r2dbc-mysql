@@ -42,7 +42,6 @@ import reactor.core.publisher.SynchronousSink;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -57,20 +56,6 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class MySqlResult implements Result {
 
-    private static final Consumer<ReferenceCounted> RELEASE = ReferenceCounted::release;
-
-    private static final BiConsumer<Segment, SynchronousSink<Long>> ROWS_UPDATED = (segment, sink) -> {
-        if (segment instanceof UpdateCount) {
-            sink.next(((UpdateCount) segment).value());
-        } else if (segment instanceof Message) {
-            sink.error(((Message) segment).exception());
-        } else if (segment instanceof ReferenceCounted) {
-            ReferenceCountUtil.safeRelease(segment);
-        }
-    };
-
-    private static final BiFunction<Long, Long, Long> SUM = Long::sum;
-
     private final Flux<Segment> segments;
 
     private MySqlResult(Flux<Segment> segments) {
@@ -79,7 +64,15 @@ public final class MySqlResult implements Result {
 
     @Override
     public Mono<Long> getRowsUpdated() {
-        return segments.handle(ROWS_UPDATED).reduce(SUM);
+        return segments.<Long>handle((segment, sink) -> {
+            if (segment instanceof UpdateCount) {
+                sink.next(((UpdateCount) segment).value());
+            } else if (segment instanceof Message) {
+                sink.error(((Message) segment).exception());
+            } else if (segment instanceof ReferenceCounted) {
+                ReferenceCountUtil.safeRelease(segment);
+            }
+        }).reduce(Long::sum);
     }
 
     @Override
@@ -168,7 +161,7 @@ public final class MySqlResult implements Result {
         requireNonNull(messages, "messages must not be null");
 
         return new MySqlResult(OperatorUtils.discardOnCancel(messages)
-            .doOnDiscard(ReferenceCounted.class, RELEASE)
+            .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
             .handle(new MySqlSegments(binary, codecs, context, generatedKeyName)));
     }
 
@@ -220,10 +213,6 @@ public final class MySqlResult implements Result {
 
         @Override
         public ReferenceCounted touch(Object hint) {
-            if (this.fields.length == 0) {
-                return this;
-            }
-
             for (FieldValue field : this.fields) {
                 field.touch(hint);
             }

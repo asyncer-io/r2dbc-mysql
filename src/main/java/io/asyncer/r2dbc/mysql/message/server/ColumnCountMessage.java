@@ -40,6 +40,7 @@ public final class ColumnCountMessage implements ServerMessage {
     }
 
     static ColumnCountMessage decode(ByteBuf buf) {
+        // JVM does NOT support arrays longer than Integer.MAX_VALUE
         return new ColumnCountMessage(Math.toIntExact(VarIntUtils.readVarInt(buf)));
     }
 

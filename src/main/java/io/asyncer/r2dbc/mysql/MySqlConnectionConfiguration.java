@@ -21,6 +21,7 @@ import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.jetbrains.annotations.Nullable;
+import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.net.Socket;
@@ -46,8 +47,6 @@ public final class MySqlConnectionConfiguration {
      * Default MySQL port.
      */
     private static final int DEFAULT_PORT = 3306;
-
-    private static final Predicate<String> DEFAULT_SERVER_PREPARE = sql -> false;
 
     /**
      * {@code true} if {@link #domain} is hostname, otherwise {@link #domain} is unix domain socket path.
@@ -85,6 +84,8 @@ public final class MySqlConnectionConfiguration {
 
     private final String database;
 
+    private final boolean createDatabaseIfNotExist;
+
     @Nullable
     private final Predicate<String> preferPrepareStatement;
 
@@ -94,12 +95,18 @@ public final class MySqlConnectionConfiguration {
 
     private final Extensions extensions;
 
-    private MySqlConnectionConfiguration(boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
+    @Nullable
+    private final Publisher<String> passwordPublisher;
+
+    private MySqlConnectionConfiguration(
+        boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
-        @Nullable Predicate<String> preferPrepareStatement, int queryCacheSize, int prepareCacheSize,
-        Extensions extensions) {
+        boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
+        int queryCacheSize, int prepareCacheSize, Extensions extensions,
+        @Nullable Publisher<String> passwordPublisher
+    ) {
         this.isHost = isHost;
         this.domain = domain;
         this.port = port;
@@ -113,10 +120,12 @@ public final class MySqlConnectionConfiguration {
         this.user = requireNonNull(user, "user must not be null");
         this.password = password;
         this.database = database == null || database.isEmpty() ? "" : database;
+        this.createDatabaseIfNotExist = createDatabaseIfNotExist;
         this.preferPrepareStatement = preferPrepareStatement;
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
         this.extensions = extensions;
+        this.passwordPublisher = passwordPublisher;
     }
 
     /**
@@ -189,6 +198,10 @@ public final class MySqlConnectionConfiguration {
         return database;
     }
 
+    boolean isCreateDatabaseIfNotExist() {
+        return createDatabaseIfNotExist;
+    }
+
     @Nullable
     Predicate<String> getPreferPrepareStatement() {
         return preferPrepareStatement;
@@ -204,6 +217,11 @@ public final class MySqlConnectionConfiguration {
 
     Extensions getExtensions() {
         return extensions;
+    }
+
+    @Nullable
+    Publisher<String> getPasswordPublisher() {
+        return passwordPublisher;
     }
 
     @Override
@@ -228,37 +246,41 @@ public final class MySqlConnectionConfiguration {
             user.equals(that.user) &&
             Objects.equals(password, that.password) &&
             database.equals(that.database) &&
+            createDatabaseIfNotExist == that.createDatabaseIfNotExist &&
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
-            extensions.equals(that.extensions);
+            extensions.equals(that.extensions) &&
+            Objects.equals(passwordPublisher, that.passwordPublisher);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-            connectTimeout, socketTimeout, serverZoneId, zeroDateOption, user, password, database,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions);
+        return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
+            socketTimeout, serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
+            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordPublisher);
     }
 
     @Override
     public String toString() {
         if (isHost) {
-            return "MySqlConnectionConfiguration{, host='" + domain + "', port=" + port + ", ssl=" + ssl +
+            return "MySqlConnectionConfiguration{host='" + domain + "', port=" + port + ", ssl=" + ssl +
                 ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
                 connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
-                ", zeroDateOption=" + zeroDateOption + ", user='" + user + '\'' + ", password=" + password +
-                ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-                ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-                ", extensions=" + extensions + '}';
+                ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
+                ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
+                ", preferPrepareStatement=" + preferPrepareStatement + ", queryCacheSize=" + queryCacheSize +
+                ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions +
+                ", passwordPublisher=" + passwordPublisher + '}';
         }
 
-        return "MySqlConnectionConfiguration{, unixSocket='" + domain + "', connectTimeout=" +
+        return "MySqlConnectionConfiguration{unixSocket='" + domain + "', connectTimeout=" +
             connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
-            ", database='" + database + "', preferPrepareStatement=" + preferPrepareStatement +
-            ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
-            ", extensions=" + extensions + '}';
+            ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
+            ", preferPrepareStatement=" + preferPrepareStatement + ", queryCacheSize=" + queryCacheSize +
+            ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions +
+            ", passwordPublisher=" + passwordPublisher + '}';
     }
 
     /**
@@ -268,6 +290,8 @@ public final class MySqlConnectionConfiguration {
 
         @Nullable
         private String database;
+
+        private boolean createDatabaseIfNotExist;
 
         private boolean isHost = true;
 
@@ -329,6 +353,9 @@ public final class MySqlConnectionConfiguration {
 
         private final List<Extension> extensions = new ArrayList<>();
 
+        @Nullable
+        private Publisher<String> passwordPublisher;
+
         /**
          * Builds an immutable {@link MySqlConnectionConfiguration} with current options.
          *
@@ -352,8 +379,8 @@ public final class MySqlConnectionConfiguration {
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
                 connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
-                preferPrepareStatement, queryCacheSize, prepareCacheSize,
-                Extensions.from(extensions, autodetectExtensions));
+                createDatabaseIfNotExist, preferPrepareStatement, queryCacheSize, prepareCacheSize,
+                Extensions.from(extensions, autodetectExtensions), passwordPublisher);
         }
 
         /**
@@ -365,6 +392,19 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder database(@Nullable String database) {
             this.database = database;
+            return this;
+        }
+
+        /**
+         * Configure to create the database given in the configuration if it does not yet exist.  Default to
+         * {@code false}.
+         *
+         * @param enabled to discover and register extensions.
+         * @return this {@link Builder}.
+         * @since 1.0.6
+         */
+        public Builder createDatabaseIfNotExist(boolean enabled) {
+            this.createDatabaseIfNotExist = enabled;
             return this;
         }
 
@@ -445,6 +485,8 @@ public final class MySqlConnectionConfiguration {
          * @param socketTimeout the socket timeout, or {@code null} if has no timeout.
          * @return this {@link Builder}.
          * @since 0.8.6
+         * @deprecated This option has been deprecated as of version 1.0.1, because it has no effect and
+         * serves no purpose.
          */
         public Builder socketTimeout(@Nullable Duration socketTimeout) {
             this.socketTimeout = socketTimeout;
@@ -685,7 +727,7 @@ public final class MySqlConnectionConfiguration {
          * @since 0.8.1
          */
         public Builder useServerPrepareStatement() {
-            return useServerPrepareStatement(DEFAULT_SERVER_PREPARE);
+            return useServerPrepareStatement((sql) -> false);
         }
 
         /**
@@ -776,6 +818,16 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder extendWith(Extension extension) {
             this.extensions.add(requireNonNull(extension, "extension must not be null"));
+            return this;
+        }
+
+        /**
+         * Registers a password publisher function.
+         * @param passwordPublisher function to retrieve password before making connection.
+         * @return this {@link Builder}.
+         */
+        public Builder passwordPublisher(Publisher<String> passwordPublisher) {
+            this.passwordPublisher = passwordPublisher;
             return this;
         }
 

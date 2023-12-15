@@ -29,10 +29,12 @@ import io.netty.channel.unix.DomainSocketAddress;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import org.jetbrains.annotations.Nullable;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -83,6 +85,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             }
 
             String database = configuration.getDatabase();
+            boolean createDbIfNotExist = configuration.isCreateDatabaseIfNotExist();
             String user = configuration.getUser();
             CharSequence password = configuration.getPassword();
             SslMode sslMode = ssl.getSslMode();
@@ -91,22 +94,63 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
+            Publisher<String> passwordPublisher = configuration.getPasswordPublisher();
 
-            return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
-                context, configuration.getConnectTimeout(), configuration.getSocketTimeout())
-                .flatMap(client -> QueryFlow.login(client, sslMode, database, user, password, context))
-                .flatMap(client -> {
-                    ByteBufAllocator allocator = client.getByteBufAllocator();
-                    CodecsBuilder builder = Codecs.builder(allocator);
-                    PrepareCache prepareCache = Caches.createPrepareCache(prepareCacheSize);
+            if (Objects.nonNull(passwordPublisher)) {
+                return Mono.from(passwordPublisher).flatMap(token -> getMySqlConnection(
+                    configuration, queryCache,
+                    ssl, address,
+                    database, createDbIfNotExist,
+                    user, sslMode, context,
+                    extensions, prepare,
+                    prepareCacheSize, token
+                ));
+            }
 
-                    extensions.forEach(CodecRegistrar.class, registrar ->
-                        registrar.register(allocator, builder));
-
-                    return MySqlConnection.init(client, builder.build(), context, queryCache.get(),
-                        prepareCache, prepare);
-                });
+            return getMySqlConnection(
+                configuration, queryCache,
+                ssl, address,
+                database, createDbIfNotExist,
+                user, sslMode, context,
+                extensions, prepare,
+                prepareCacheSize, password
+            );
         }));
+    }
+
+    private static Mono<MySqlConnection> getMySqlConnection(
+            final MySqlConnectionConfiguration configuration,
+            final LazyQueryCache queryCache,
+            final MySqlSslConfiguration ssl,
+            final SocketAddress address,
+            final String database,
+            final boolean createDbIfNotExist,
+            final String user,
+            final SslMode sslMode,
+            final ConnectionContext context,
+            final Extensions extensions,
+            @Nullable final Predicate<String> prepare,
+            final int prepareCacheSize,
+            @Nullable final CharSequence password) {
+        return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
+                context, configuration.getConnectTimeout(), configuration.getSocketTimeout())
+            .flatMap(client -> {
+                // Lazy init database after handshake/login
+                String db = createDbIfNotExist ? "" : database;
+                return QueryFlow.login(client, sslMode, db, user, password, context);
+            })
+            .flatMap(client -> {
+                ByteBufAllocator allocator = client.getByteBufAllocator();
+                CodecsBuilder builder = Codecs.builder(allocator);
+                PrepareCache prepareCache = Caches.createPrepareCache(prepareCacheSize);
+                String db = createDbIfNotExist ? database : "";
+
+                extensions.forEach(CodecRegistrar.class, registrar ->
+                    registrar.register(allocator, builder));
+
+                return MySqlConnection.init(client, builder.build(), context, db, queryCache.get(),
+                    prepareCache, prepare);
+            });
     }
 
     private static final class LazyQueryCache {

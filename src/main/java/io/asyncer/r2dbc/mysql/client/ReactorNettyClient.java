@@ -44,9 +44,8 @@ import reactor.netty.FutureMono;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
@@ -63,7 +62,16 @@ final class ReactorNettyClient implements Client {
 
     private static final boolean INFO_ENABLED = logger.isInfoEnabled();
 
-    private static final Consumer<ReferenceCounted> RELEASE = ReferenceCounted::release;
+    private static final int ST_CONNECTED = 0;
+
+    private static final int ST_CLOSING = 1;
+
+    private static final int ST_CLOSED = 2;
+
+    private static final AtomicIntegerFieldUpdater<ReactorNettyClient> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(ReactorNettyClient.class, "state");
+
+    private volatile int state = ST_CONNECTED;
 
     private final Connection connection;
 
@@ -75,8 +83,6 @@ final class ReactorNettyClient implements Client {
             Sinks.many().multicast().onBackpressureBuffer(512, false);
 
     private final RequestQueue requestQueue = new RequestQueue();
-
-    private final AtomicBoolean closing = new AtomicBoolean();
 
     ReactorNettyClient(Connection connection, MySqlSslConfiguration ssl, ConnectionContext context) {
         requireNonNull(connection, "connection must not be null");
@@ -91,7 +97,7 @@ final class ReactorNettyClient implements Client {
         // Note: encoder/decoder should before reactor bridge.
         connection.addHandlerLast(EnvelopeSlicer.NAME, new EnvelopeSlicer())
             .addHandlerLast(MessageDuplexCodec.NAME,
-                new MessageDuplexCodec(context, this.closing, this.requestQueue));
+                new MessageDuplexCodec(context));
 
         if (ssl.getSslMode().startSsl()) {
             connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl));
@@ -153,10 +159,10 @@ final class ReactorNettyClient implements Client {
                                                                       .doOnSubscribe(ignored -> emitNextRequest(request))
                                                                       .handle(handler)
                                                                       .doOnTerminate(requestQueue))
-                                             .doOnDiscard(ReferenceCounted.class, RELEASE);
+                                             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
 
             requestQueue.submit(RequestTask.wrap(request, sink, responses));
-        }).flatMapMany(identity());
+        }).flatMapMany(Function.identity());
     }
 
     @Override
@@ -187,31 +193,43 @@ final class ReactorNettyClient implements Client {
                     });
 
             requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
-                .doOnDiscard(ReferenceCounted.class, RELEASE)
+                .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
                 .doOnCancel(exchangeable::dispose)));
-        }).flatMapMany(identity());
+        }).flatMapMany(Function.identity());
     }
 
     @Override
     public Mono<Void> close() {
-        return Mono.<Mono<Void>>create(sink -> {
-            if (!closing.compareAndSet(false, true)) {
-                // client is closing or closed
-                sink.success();
-                return;
-            }
+        return Mono
+                .<Mono<Void>>create(sink -> {
+                    if (state == ST_CLOSED) {
+                        logger.debug("Close request ignored (connection already closed)");
+                        sink.success();
+                        return;
+                    }
 
-            requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
-                Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
+                    logger.debug("Close request accepted");
 
-                if (result != Sinks.EmitResult.OK) {
-                    logger.error("Exit message sending failed due to {}, force closing", result);
-                }
-            })));
-        }).flatMap(identity()).onErrorResume(e -> {
-            logger.error("Exit message sending failed, force closing", e);
-            return Mono.empty();
-        }).then(forceClose());
+                    requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
+                        Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
+
+                        if (result != Sinks.EmitResult.OK) {
+                            logger.error("Exit message sending failed due to {}, force closing", result);
+                        } else {
+                            if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
+                                logger.debug("Exit message sent");
+                            } else {
+                                logger.debug("Exit message sent (duplicated / connection already closed)");
+                            }
+                        }
+                    })));
+                })
+                .flatMap(Function.identity())
+                .onErrorResume(e -> {
+                    logger.error("Exit message sending failed, force closing", e);
+                    return Mono.empty();
+                })
+                .then(forceClose());
     }
 
     @Override
@@ -226,7 +244,7 @@ final class ReactorNettyClient implements Client {
 
     @Override
     public boolean isConnected() {
-        return !closing.get() && connection.channel().isOpen();
+        return state < ST_CLOSED && connection.channel().isOpen();
     }
 
     @Override
@@ -242,7 +260,7 @@ final class ReactorNettyClient implements Client {
     @Override
     public String toString() {
         return String.format("ReactorNettyClient(%s){connectionId=%d}",
-            this.closing.get() ? "closing or closed" : "activating", context.getConnectionId());
+            isConnected() ? "activating" : "clsoing or closed", context.getConnectionId());
     }
 
     private void emitNextRequest(ClientMessage request) {
@@ -278,17 +296,21 @@ final class ReactorNettyClient implements Client {
     }
 
     private void handleClose() {
-        if (this.closing.compareAndSet(false, true)) {
-            logger.warn("Connection has been closed by peer");
+        final int oldState = state;
+        if (oldState == ST_CLOSED) {
+            logger.debug("Connection already closed");
+            return;
+        }
+
+        STATE_UPDATER.set(this, ST_CLOSED);
+
+        if (oldState != ST_CLOSING) {
+            logger.warn("Connection unexpectedly closed");
             drainError(ClientExceptions.unexpectedClosed());
         } else {
+            logger.debug("Connection closed");
             drainError(ClientExceptions.expectedClosed());
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> Function<T, T> identity() {
-        return (Function<T, T>) Identity.INSTANCE;
     }
 
     private final class ResponseSubscriber implements CoreSubscriber<Object> {
@@ -359,16 +381,6 @@ final class ReactorNettyClient implements Client {
             }
 
             responseProcessor.emitNext(message, EmitFailureHandler.FAIL_FAST);
-        }
-    }
-
-    private static final class Identity implements Function<Object, Object> {
-
-        private static final Identity INSTANCE = new Identity();
-
-        @Override
-        public Object apply(Object o) {
-            return o;
         }
     }
 }

@@ -22,7 +22,7 @@ package io.asyncer.r2dbc.mysql;
 class MySqlPrepareTestKit extends MySqlTestKitSupport {
 
     MySqlPrepareTestKit() {
-        super(IntegrationTestSupport.configuration(false, null, sql -> true));
+        super(IntegrationTestSupport.configuration("r2dbc", false, false, null, sql -> true));
     }
 
     @Override

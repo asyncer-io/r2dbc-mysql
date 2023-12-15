@@ -21,6 +21,7 @@ import io.asyncer.r2dbc.mysql.cache.QueryCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
+import io.asyncer.r2dbc.mysql.message.client.InitDbMessage;
 import io.asyncer.r2dbc.mysql.message.client.PingMessage;
 import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
@@ -76,36 +77,6 @@ public final class MySqlConnection implements Connection, ConnectionState {
 
     private static final ServerVersion TX_LEVEL_8X = ServerVersion.create(8, 0, 0);
 
-    /**
-     * Convert initialize result to {@link InitData}.
-     */
-    private static final Function<MySqlResult, Publisher<InitData>> INIT_HANDLER = r ->
-        r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
-            convertLockWaitTimeout(row.get(1, Long.class)),
-            row.get(2, String.class), null));
-
-    private static final Function<MySqlResult, Publisher<InitData>> FULL_INIT = r -> r.map((row, meta) -> {
-        IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
-        long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
-        String product = row.get(2, String.class);
-        String systemTimeZone = row.get(3, String.class);
-        String timeZone = row.get(4, String.class);
-        ZoneId zoneId;
-
-        if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
-            if (systemTimeZone == null || systemTimeZone.isEmpty()) {
-                logger.warn("MySQL does not return any timezone, trying to use system default timezone");
-                zoneId = ZoneId.systemDefault();
-            } else {
-                zoneId = convertZoneId(systemTimeZone);
-            }
-        } else {
-            zoneId = convertZoneId(timeZone);
-        }
-
-        return new InitData(level, lockWaitTimeout, product, zoneId);
-    });
-
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
         if (message instanceof ErrorMessage) {
             ErrorMessage msg = (ErrorMessage) message;
@@ -115,6 +86,31 @@ public final class MySqlConnection implements Connection, ConnectionState {
             sink.complete();
         } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
             sink.next(true);
+            sink.complete();
+        } else {
+            ReferenceCountUtil.safeRelease(message);
+        }
+    };
+
+    private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> INIT_DB = (message, sink) -> {
+        if (message instanceof ErrorMessage) {
+            ErrorMessage msg = (ErrorMessage) message;
+            logger.debug("Use database failed: [{}] [{}] {}", msg.getCode(), msg.getSqlState(),
+                msg.getMessage());
+            sink.next(false);
+            sink.complete();
+        } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
+            sink.next(true);
+            sink.complete();
+        } else {
+            ReferenceCountUtil.safeRelease(message);
+        }
+    };
+
+    private static final BiConsumer<ServerMessage, SynchronousSink<Void>> INIT_DB_AFTER = (message, sink) -> {
+        if (message instanceof ErrorMessage) {
+            sink.error(((ErrorMessage) message).toException());
+        } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
             sink.complete();
         } else {
             ReferenceCountUtil.safeRelease(message);
@@ -433,13 +429,17 @@ public final class MySqlConnection implements Connection, ConnectionState {
      * @param client       must be logged-in.
      * @param codecs       the {@link Codecs}.
      * @param context      must be initialized.
+     * @param database     the database that should be lazy init.
      * @param queryCache   the cache of {@link Query}.
      * @param prepareCache the cache of server-preparing result.
      * @param prepare      judging for prefer use prepare statement to execute simple query.
      * @return a {@link Mono} will emit an initialized {@link MySqlConnection}.
      */
-    static Mono<MySqlConnection> init(Client client, Codecs codecs, ConnectionContext context,
-        QueryCache queryCache, PrepareCache prepareCache, @Nullable Predicate<String> prepare) {
+    static Mono<MySqlConnection> init(
+        Client client, Codecs codecs, ConnectionContext context, String database,
+        QueryCache queryCache, PrepareCache prepareCache,
+        @Nullable Predicate<String> prepare
+    ) {
         ServerVersion version = context.getServerVersion();
         StringBuilder query = new StringBuilder(128);
 
@@ -456,12 +456,12 @@ public final class MySqlConnection implements Connection, ConnectionState {
 
         if (context.shouldSetServerZoneId()) {
             query.append(",@@system_time_zone AS s,@@time_zone AS t");
-            handler = FULL_INIT;
+            handler = MySqlConnection::fullInit;
         } else {
-            handler = INIT_HANDLER;
+            handler = MySqlConnection::init;
         }
 
-        return new TextSimpleStatement(client, codecs, context, query.toString())
+        Mono<MySqlConnection> connection = new TextSimpleStatement(client, codecs, context, query.toString())
             .execute()
             .flatMap(handler)
             .last()
@@ -475,6 +475,55 @@ public final class MySqlConnection implements Connection, ConnectionState {
                 return new MySqlConnection(client, context, codecs, data.level, data.lockWaitTimeout,
                     queryCache, prepareCache, data.product, prepare);
             });
+
+        if (database.isEmpty()) {
+            return connection;
+        }
+
+        requireValidName(database, "database must not be empty and not contain backticks");
+
+        return connection.flatMap(conn -> client.exchange(new InitDbMessage(database), INIT_DB)
+            .last()
+            .flatMap(success -> {
+                if (success) {
+                    return Mono.just(conn);
+                }
+
+                String sql = String.format("CREATE DATABASE IF NOT EXISTS `%s`", database);
+
+                return QueryFlow.executeVoid(client, sql)
+                    .then(client.exchange(new InitDbMessage(database), INIT_DB_AFTER).then(Mono.just(conn)));
+            }));
+    }
+
+    private static Publisher<InitData> init(MySqlResult r) {
+        return r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
+            convertLockWaitTimeout(row.get(1, Long.class)),
+            row.get(2, String.class), null));
+    }
+
+    private static Publisher<InitData> fullInit(MySqlResult r) {
+        return r.map((row, meta) -> {
+            IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
+            long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
+            String product = row.get(2, String.class);
+            String systemTimeZone = row.get(3, String.class);
+            String timeZone = row.get(4, String.class);
+            ZoneId zoneId;
+
+            if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
+                if (systemTimeZone == null || systemTimeZone.isEmpty()) {
+                    logger.warn("MySQL does not return any timezone, trying to use system default timezone");
+                    zoneId = ZoneId.systemDefault();
+                } else {
+                    zoneId = convertZoneId(systemTimeZone);
+                }
+            } else {
+                zoneId = convertZoneId(timeZone);
+            }
+
+            return new InitData(level, lockWaitTimeout, product, zoneId);
+        });
     }
 
     /**
