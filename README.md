@@ -123,6 +123,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(PORT, 3306)  // optional, default 3306
     .option(PASSWORD, "database-password-in-here") // optional, default null, null means has no password
     .option(DATABASE, "r2dbc") // optional, default null, null means not specifying the database
+    .option(Option.valueOf("createDatabaseIfNotExist"), true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
     .option(Option.valueOf("socketTimeout"), Duration.ofSeconds(4)) // deprecated since 0.9.2, because it has no effect and serves no purpose.
     .option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
@@ -170,6 +171,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .port(3306) // optional, default 3306
     .password("database-password-in-here") // optional, default null, null means has no password
     .database("r2dbc") // optional, default null, null means not specifying the database
+    .createDatabaseIfNotExist(true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .serverZoneId(ZoneId.of("Continent/City")) // optional, default null, null means query server time zone when connection init
     .connectTimeout(Duration.ofSeconds(3)) // optional, default null, null means no timeout
     .socketTimeout(Duration.ofSeconds(4)) // deprecated since 0.9.2, because it has no effect and serves no purpose.
@@ -219,6 +221,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | user | A valid MySQL username and not be empty | Required | Who wants to connect to the MySQL database |
 | password | Any printable string | Optional, default no password | The password of the MySQL database user |
 | database | A valid MySQL database name | Optional, default does not initialize database | Database used by the MySQL connection |
+| createDatabaseIfNotExist | `true` or `false` | Optional, default `false` | Create database if not exist |
 | connectTimeout | A `Duration` which must be positive duration | Optional, default has no timeout | TCP connect timeout |
 | socketTimeout | A `Duration` which must be positive duration | Deprecated since 0.9.2 | TCP socket timeout |
 | serverZoneId | An id of `ZoneId` | Optional, default query time zone when connection init | Server time zone id |
