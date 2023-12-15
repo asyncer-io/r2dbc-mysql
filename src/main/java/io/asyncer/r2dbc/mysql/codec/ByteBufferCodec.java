@@ -125,5 +125,10 @@ final class ByteBufferCodec extends AbstractClassedCodec<ByteBuffer> {
         public int hashCode() {
             return buffer.hashCode();
         }
+
+        @Override
+        public String toString() {
+            return buffer.toString();
+        }
     }
 }

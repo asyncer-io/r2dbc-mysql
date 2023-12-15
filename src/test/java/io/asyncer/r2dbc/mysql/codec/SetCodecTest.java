@@ -138,6 +138,11 @@ class SetCodecTest implements CodecTestSupport<String[]> {
         }
     }
 
+    @Override
+    public String dataToString(String[] strings) {
+        return Arrays.toString(strings);
+    }
+
     private String[] stringifySets() {
         return Arrays.stream(sets)
             .map(set -> set.stream()

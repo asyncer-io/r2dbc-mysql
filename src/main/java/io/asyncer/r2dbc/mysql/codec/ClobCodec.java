@@ -193,5 +193,11 @@ final class ClobCodec implements MassiveCodec<Clob> {
             Clob clob = this.clob.getAndSet(null);
             return clob == null ? null : clob.discard();
         }
+
+        @Override
+        public String toString() {
+            Clob clob = this.clob.get();
+            return clob == null ? "Clob[MOVED]" : clob.toString();
+        }
     }
 }

@@ -168,5 +168,10 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
         public int hashCode() {
             return (int) (value ^ (value >>> 32));
         }
+
+        @Override
+        public String toString() {
+            return Long.toString(value);
+        }
     }
 }

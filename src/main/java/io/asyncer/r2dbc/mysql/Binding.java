@@ -51,15 +51,17 @@ final class Binding {
     }
 
     /**
-     * Converts bindings to a request message. If not need execute immediate, it will return a open cursor
+     * Converts bindings to a request message. If not need execute immediate, it will return an open cursor
      * message.
      *
      * @param statementId prepared statement identifier.
-     * @param immediate   if should be execute immediate, otherwise return a open cursor message
+     * @param immediate   if it should be executed immediate, otherwise return an open cursor message
      * @return an execute message or open cursor message
      */
     PreparedExecuteMessage toExecuteMessage(int statementId, boolean immediate) {
         if (values.length == 0) {
+            QueryLogger.log(statementId, EMPTY_VALUES);
+
             return new PreparedExecuteMessage(statementId, immediate, EMPTY_VALUES);
         }
 
@@ -67,11 +69,19 @@ final class Binding {
             throw new IllegalStateException("Parameters has been used");
         }
 
-        return new PreparedExecuteMessage(statementId, immediate, drainValues());
+        MySqlParameter[] values = drainValues();
+
+        QueryLogger.log(statementId, values);
+
+        return new PreparedExecuteMessage(statementId, immediate, values);
     }
 
     PreparedTextQueryMessage toTextMessage(Query query, String returning) {
-        return new PreparedTextQueryMessage(query, returning, drainValues());
+        MySqlParameter[] values = drainValues();
+
+        QueryLogger.log(query, returning, values);
+
+        return new PreparedTextQueryMessage(query, returning, values);
     }
 
     /**

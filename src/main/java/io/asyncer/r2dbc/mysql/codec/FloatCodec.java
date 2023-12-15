@@ -159,5 +159,10 @@ final class FloatCodec extends AbstractPrimitiveCodec<Float> {
         public int hashCode() {
             return (value != 0.0f ? Float.floatToIntBits(value) : 0);
         }
+
+        @Override
+        public String toString() {
+            return Float.toString(value);
+        }
     }
 }

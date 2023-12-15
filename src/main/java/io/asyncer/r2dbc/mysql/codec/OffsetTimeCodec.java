@@ -119,5 +119,10 @@ final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
             return value.toLocalTime()
                 .plusSeconds(offset.getTotalSeconds() - value.getOffset().getTotalSeconds());
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

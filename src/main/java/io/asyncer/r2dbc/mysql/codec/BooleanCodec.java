@@ -100,5 +100,10 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
         public int hashCode() {
             return (value ? 1 : 0);
         }
+
+        @Override
+        public String toString() {
+            return Boolean.toString(value);
+        }
     }
 }

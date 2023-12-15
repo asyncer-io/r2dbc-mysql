@@ -104,5 +104,10 @@ final class ShortCodec extends AbstractPrimitiveCodec<Short> {
         public int hashCode() {
             return value;
         }
+
+        @Override
+        public String toString() {
+            return Short.toString(value);
+        }
     }
 }

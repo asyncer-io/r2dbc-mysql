@@ -110,5 +110,10 @@ final class InstantCodec implements Codec<Instant> {
         private LocalDateTime serverValue() {
             return LocalDateTime.ofInstant(value, context.getServerZoneId());
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

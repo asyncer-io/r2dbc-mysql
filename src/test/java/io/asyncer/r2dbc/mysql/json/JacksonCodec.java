@@ -153,6 +153,11 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
         public MySqlType getType() {
             return MySqlType.VARCHAR;
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 
     public enum Mode {

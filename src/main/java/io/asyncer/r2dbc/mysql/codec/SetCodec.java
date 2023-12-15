@@ -339,6 +339,11 @@ final class SetCodec implements ParametrizedCodec<String[]> {
         public int hashCode() {
             return value.hashCode();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 
     private static final class StringArrayMySqlParameter extends AbstractMySqlParameter {
@@ -391,6 +396,11 @@ final class SetCodec implements ParametrizedCodec<String[]> {
         @Override
         public int hashCode() {
             return value.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return value.toString();
         }
     }
 }

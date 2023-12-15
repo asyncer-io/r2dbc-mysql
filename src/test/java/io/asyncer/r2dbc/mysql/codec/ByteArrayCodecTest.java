@@ -61,4 +61,9 @@ class ByteArrayCodecTest implements CodecTestSupport<byte[]> {
             .map(Unpooled::wrappedBuffer)
             .toArray(ByteBuf[]::new);
     }
+
+    @Override
+    public String dataToString(byte[] bytes) {
+        return Arrays.toString(bytes);
+    }
 }

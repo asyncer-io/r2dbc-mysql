@@ -97,5 +97,10 @@ final class ByteCodec extends AbstractPrimitiveCodec<Byte> {
         public int hashCode() {
             return value;
         }
+
+        @Override
+        public String toString() {
+            return Byte.toString(value);
+        }
     }
 }

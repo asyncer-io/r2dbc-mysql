@@ -236,5 +236,10 @@ final class LocalTimeCodec extends AbstractClassedCodec<LocalTime> {
         public int hashCode() {
             return value.hashCode();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

@@ -71,4 +71,12 @@ class BitSetCodecTest implements CodecTestSupport<BitSet> {
         }
         return LongCodecTest.convert(value.toLongArray()[0]);
     }
+
+    @Override
+    public String dataToString(BitSet bitSet) {
+        long[] array = bitSet.toLongArray();
+        long bits = array.length == 0 ? 0 : array[0];
+
+        return Long.toBinaryString(bits);
+    }
 }

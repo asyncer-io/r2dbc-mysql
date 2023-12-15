@@ -160,5 +160,10 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
             long temp = Double.doubleToLongBits(value);
             return (int) (temp ^ (temp >>> 32));
         }
+
+        @Override
+        public String toString() {
+            return Double.toString(value);
+        }
     }
 }

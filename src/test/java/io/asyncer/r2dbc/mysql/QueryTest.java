@@ -329,11 +329,6 @@ class QueryTest {
         static final MockMySqlParameter INSTANCE = new MockMySqlParameter();
 
         @Override
-        public boolean isNull() {
-            return false;
-        }
-
-        @Override
         public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.error(() -> new IllegalStateException("Mock parameter, has no value"));
         }

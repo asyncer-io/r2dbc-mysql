@@ -35,6 +35,7 @@ import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -101,6 +102,16 @@ interface CodecTestSupport<T> {
     }
 
     @Test
+    default void encodedToString() {
+        Codec<T> codec = getCodec();
+        T[] origin = originParameters();
+
+        for (T t : origin) {
+            assertEquals(codec.encode(t, context()).toString(), dataToString(t));
+        }
+    }
+
+    @Test
     default void decodeBinary() {
         Codec<T> codec = getCodec();
 
@@ -155,6 +166,10 @@ interface CodecTestSupport<T> {
                 }
             });
         });
+    }
+
+    default String dataToString(T t) {
+        return String.valueOf(t);
     }
 
     default CodecContext context() {

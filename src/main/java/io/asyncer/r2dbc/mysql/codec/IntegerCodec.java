@@ -162,5 +162,10 @@ final class IntegerCodec extends AbstractPrimitiveCodec<Integer> {
         public int hashCode() {
             return value;
         }
+
+        @Override
+        public String toString() {
+            return Integer.toString(value);
+        }
     }
 }
