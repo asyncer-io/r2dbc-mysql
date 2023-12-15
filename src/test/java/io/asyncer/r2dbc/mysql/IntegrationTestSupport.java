@@ -101,6 +101,7 @@ abstract class IntegrationTestSupport {
             .connectTimeout(Duration.ofSeconds(3))
             .user("root")
             .password(password)
+            .port(container.getMappedPort(MySQLContainer.MYSQL_PORT))
             .database(database)
             .createDatabaseIfNotExist(createDatabaseIfNotExist)
             .autodetectExtensions(autodetectExtensions);
