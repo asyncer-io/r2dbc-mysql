@@ -130,5 +130,10 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
             return value.withZoneSameInstant(context.getServerZoneId())
                 .toLocalDateTime();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

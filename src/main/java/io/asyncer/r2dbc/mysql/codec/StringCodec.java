@@ -128,5 +128,10 @@ final class StringCodec extends AbstractClassedCodec<String> {
         public int hashCode() {
             return value.hashCode();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

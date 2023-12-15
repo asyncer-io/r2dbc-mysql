@@ -24,8 +24,5 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 abstract class AbstractMySqlParameter implements MySqlParameter {
 
     @Override
-    public final String toString() {
-        // Hide parameter detail even its type.
-        return "Parameter{REDACTED}";
-    }
+    public abstract String toString();
 }

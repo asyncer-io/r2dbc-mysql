@@ -261,5 +261,10 @@ final class DurationCodec extends AbstractClassedCodec<Duration> {
 
             encodeTime(writer, isNegative, hours, minutes, seconds, micros);
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

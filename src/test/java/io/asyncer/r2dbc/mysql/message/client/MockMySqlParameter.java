@@ -39,11 +39,6 @@ final class MockMySqlParameter extends AtomicInteger implements MySqlParameter {
     }
 
     @Override
-    public boolean isNull() {
-        return false;
-    }
-
-    @Override
     public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
         if (success) {
             return Mono.fromRunnable(this::dispose);

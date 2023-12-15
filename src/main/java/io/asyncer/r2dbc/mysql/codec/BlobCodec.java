@@ -213,5 +213,11 @@ final class BlobCodec implements MassiveCodec<Blob> {
             Blob blob = this.blob.getAndSet(null);
             return blob == null ? null : blob.discard();
         }
+
+        @Override
+        public String toString() {
+            Blob blob = this.blob.get();
+            return blob == null ? "Blob[MOVED]" : blob.toString();
+        }
     }
 }

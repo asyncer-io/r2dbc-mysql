@@ -126,5 +126,10 @@ final class ByteArrayCodec extends AbstractClassedCodec<byte[]> {
         public int hashCode() {
             return Arrays.hashCode(value);
         }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(value);
+        }
     }
 }

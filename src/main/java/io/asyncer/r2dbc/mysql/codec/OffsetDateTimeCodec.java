@@ -118,5 +118,10 @@ final class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
                 value.withOffsetSameInstant((ZoneOffset) zone).toLocalDateTime() :
                 value.toZonedDateTime().withZoneSameInstant(zone).toLocalDateTime();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

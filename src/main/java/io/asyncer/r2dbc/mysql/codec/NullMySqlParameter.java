@@ -66,7 +66,7 @@ final class NullMySqlParameter implements MySqlParameter {
     @Override
     public String toString() {
         // Hide parameter detail even it is null.
-        return "Parameter{REDACTED}";
+        return "null";
     }
 
     private NullMySqlParameter() { }

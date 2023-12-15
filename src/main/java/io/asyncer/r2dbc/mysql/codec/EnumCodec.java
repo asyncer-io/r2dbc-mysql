@@ -104,5 +104,10 @@ final class EnumCodec implements Codec<Enum<?>> {
         public int hashCode() {
             return value.hashCode();
         }
+
+        @Override
+        public String toString() {
+            return value.toString();
+        }
     }
 }

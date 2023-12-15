@@ -162,5 +162,10 @@ final class BitSetCodec extends AbstractClassedCodec<BitSet> {
         public int hashCode() {
             return (int) (value ^ (value >>> 32));
         }
+
+        @Override
+        public String toString() {
+            return Long.toBinaryString(value);
+        }
     }
 }

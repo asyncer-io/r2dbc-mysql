@@ -66,11 +66,6 @@ class EnumCodecTest implements CodecTestSupport<Enum<?>> {
     private enum SomeElement {
 
         $$$$,
-        A1B2;
-
-        @Override
-        public final String toString() {
-            throw new IllegalStateException("Special enum class, can not to string");
-        }
+        A1B2
     }
 }

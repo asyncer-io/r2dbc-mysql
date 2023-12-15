@@ -392,8 +392,6 @@ final class TextQueryExchangeable extends BaseFluxExchangeable {
     @Override
     protected void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink) {
         if (this.bindings.hasNext()) {
-            QueryLogger.log(this.query, this.returning);
-
             PreparedTextQueryMessage message = this.bindings.next().toTextMessage(this.query, this.returning);
             Sinks.EmitResult result = this.requests.tryEmitNext(message);
 
@@ -534,6 +532,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
             // Should reset only when it comes from cache.
             this.shouldClose = false;
             this.statementId = statementId;
+            QueryLogger.log(statementId, sql);
             Sinks.EmitResult result = this.requests.tryEmitNext(new PreparedResetMessage(statementId));
 
             if (result != Sinks.EmitResult.OK) {
@@ -568,6 +567,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
                     int parameters = ok.getTotalParameters();
 
                     this.statementId = statementId;
+                    QueryLogger.log(statementId, sql);
 
                     // columns + parameters <= 0, has not metadata follow in,
                     if (columns <= -parameters) {
