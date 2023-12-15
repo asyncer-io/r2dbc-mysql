@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ConnectionIntegrationTest extends IntegrationTestSupport {
 
     ConnectionIntegrationTest() {
-        super(configuration(false, null, null));
+        super(configuration("r2dbc", false, false, null, null));
     }
 
     @Test
@@ -231,6 +231,16 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
             .concatMap(level -> connection.setTransactionIsolationLevel(level)
                 .map(ignored -> assertThat(level))
                 .doOnNext(a -> a.isEqualTo(connection.getTransactionIsolationLevel()))));
+    }
+
+    @Test
+    void errorPropagteRequestQueue() {
+        illegalArgument(connection -> Flux.merge(
+                                connection.createStatement("SELECT 'Result 1', SLEEP(1)").execute(),
+                                connection.createStatement("SELECT 'Result 2'").execute(),
+                                connection.createStatement("SELECT 'Result 3'").execute()
+                        ).flatMap(result -> result.map((row, meta) -> row.get(0, Integer.class)))
+        );
     }
 
     @Test

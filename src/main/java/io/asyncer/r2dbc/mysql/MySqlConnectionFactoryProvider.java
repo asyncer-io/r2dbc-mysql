@@ -23,6 +23,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
+import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.time.Duration;
@@ -162,6 +163,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Boolean> TCP_NO_DELAY = Option.valueOf("tcpNoDelay");
 
     /**
+     * Enable/Disable database creation if not exist.
+     *
+     * @since 1.0.6
+     */
+    public static final Option<Boolean> CREATE_DATABASE_IF_NOT_EXIST =
+        Option.valueOf("createDatabaseIfNotExist");
+
+    /**
      * Enable server preparing for parametrized statements and prefer server preparing simple statements.
      * <p>
      * The value can be a {@link Boolean}. If it is {@code true}, driver will use server preparing for
@@ -202,6 +211,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * @since 0.8.2
      */
     public static final Option<Boolean> AUTODETECT_EXTENSIONS = Option.valueOf("autodetectExtensions");
+
+    /**
+     * Password Publisher function can be used to retrieve password before creating a connection.
+     * This can be used with Amazon RDS Aurora IAM authentication, wherein it requires token to be generated.
+     * The token is valid for 15 minutes, and this token will be used as password.
+     *
+     */
+    public static final Option<Publisher<String>> PASSWORD_PUBLISHER = Option.valueOf("passwordPublisher");
 
     @Override
     public ConnectionFactory create(ConnectionFactoryOptions options) {
@@ -261,6 +278,10 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::socketTimeout);
         mapper.optional(DATABASE).asString()
             .to(builder::database);
+        mapper.optional(CREATE_DATABASE_IF_NOT_EXIST).asBoolean()
+            .to(builder::createDatabaseIfNotExist);
+        mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
+            .to(builder::passwordPublisher);
 
         return builder.build();
     }

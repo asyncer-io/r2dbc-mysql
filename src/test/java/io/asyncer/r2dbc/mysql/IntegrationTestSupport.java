@@ -65,6 +65,10 @@ abstract class IntegrationTestSupport {
         process(runner).verifyError(R2dbcBadGrammarException.class);
     }
 
+    void illegalArgument(Function<? super MySqlConnection, Publisher<?>> runner) {
+        process(runner).expectError(IllegalArgumentException.class).verify(Duration.ofSeconds(3));
+    }
+
     Mono<MySqlConnection> create() {
         return connectionFactory.create();
     }
@@ -82,8 +86,10 @@ abstract class IntegrationTestSupport {
         return Mono.from(result.getRowsUpdated());
     }
 
-    static MySqlConnectionConfiguration configuration(boolean autodetectExtensions,
-        @Nullable ZoneId serverZoneId, @Nullable Predicate<String> preferPrepared) {
+    static MySqlConnectionConfiguration configuration(
+        String database, boolean createDatabaseIfNotExist, boolean autodetectExtensions,
+        @Nullable ZoneId serverZoneId, @Nullable Predicate<String> preferPrepared
+    ) {
         String password = System.getProperty("test.mysql.password");
 
         assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
@@ -95,8 +101,9 @@ abstract class IntegrationTestSupport {
             .connectTimeout(Duration.ofSeconds(3))
             .user("root")
             .password(password)
-            .database("r2dbc")
             .port(container.getMappedPort(MySQLContainer.MYSQL_PORT))
+            .database(database)
+            .createDatabaseIfNotExist(createDatabaseIfNotExist)
             .autodetectExtensions(autodetectExtensions);
 
         if (serverZoneId != null) {

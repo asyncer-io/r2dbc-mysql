@@ -24,6 +24,8 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.Option;
 import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -35,6 +37,7 @@ import java.util.Collections;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.PASSWORD_PUBLISHER;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.USE_SERVER_PREPARE_STATEMENT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
@@ -274,6 +277,7 @@ class MySqlConnectionFactoryProviderTest {
             .option(SSL, true)
             .option(Option.valueOf(CONNECT_TIMEOUT.name()), Duration.ofSeconds(3).toString())
             .option(DATABASE, "r2dbc")
+            .option(Option.valueOf("createDatabaseIfNotExist"), true)
             .option(Option.valueOf("serverZoneId"), "Asia/Tokyo")
             .option(Option.valueOf("useServerPrepareStatement"), AllTruePredicate.class.getName())
             .option(Option.valueOf("zeroDate"), "use_round")
@@ -296,6 +300,7 @@ class MySqlConnectionFactoryProviderTest {
         assertThat(configuration.getPassword()).isEqualTo("123456");
         assertThat(configuration.getConnectTimeout()).isEqualTo(Duration.ofSeconds(3));
         assertThat(configuration.getDatabase()).isEqualTo("r2dbc");
+        assertThat(configuration.isCreateDatabaseIfNotExist()).isTrue();
         assertThat(configuration.getZeroDateOption()).isEqualTo(ZeroDateOption.USE_ROUND);
         assertThat(configuration.isTcpKeepAlive()).isTrue();
         assertThat(configuration.isTcpNoDelay()).isTrue();
@@ -390,6 +395,20 @@ class MySqlConnectionFactoryProviderTest {
                 .option(USE_SERVER_PREPARE_STATEMENT, NotPredicate.class.getPackage() + "NonePredicate")
                 .build()));
     }
+
+    @Test
+    void validPasswordSupplier() {
+        final Publisher<String> passwordSupplier = Mono.just("123456");
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+            .option(DRIVER, "mysql")
+            .option(HOST, "127.0.0.1")
+            .option(USER, "root")
+            .option(PASSWORD_PUBLISHER, passwordSupplier)
+            .build();
+
+        assertThat(ConnectionFactories.get(options)).isExactlyInstanceOf(MySqlConnectionFactory.class);
+    }
+
 }
 
 final class MockException extends RuntimeException {

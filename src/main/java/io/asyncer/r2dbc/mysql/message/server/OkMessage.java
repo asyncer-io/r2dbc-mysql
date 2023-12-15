@@ -160,10 +160,11 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
             if (size > sizeAfterVarInt) {
                 information = buf.toString(readerIndex, buf.writerIndex() - readerIndex, charset);
             } else {
+                // JVM does NOT support strings longer than Integer.MAX_VALUE
                 information = buf.toString(buf.readerIndex(), (int) size, charset);
             }
 
-            // Ignore session track, it is not human readable and useless for R2DBC client.
+            // Ignore session track, it is not human-readable and useless for R2DBC client.
             return new OkMessage(affectedRows, lastInsertId, serverStatuses, warnings, information);
         }
 

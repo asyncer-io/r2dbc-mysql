@@ -12,8 +12,8 @@ Refer to the table below to determine the appropriate version of r2dbc-mysql for
 
 | spring-boot-starter-data-r2dbc | spring-data-r2dbc | r2dbc-spi     | r2dbc-mysql(recommended)     |
 |--------------------------------|-------------------|---------------|------------------------------|
-| 3.0.*                          | 3.0.*             | 1.0.0.RELEASE | io.asyncer:r2dbc-mysql:1.0.1 |
-| 2.7.*                          | 1.5.*             | 0.9.1.RELEASE | io.asyncer:r2dbc-mysql:0.9.2 |
+| 3.0.* and above                | 3.0.* and above   | 1.0.0.RELEASE | io.asyncer:r2dbc-mysql:1.0.4 |
+| 2.7.*                          | 1.5.*             | 0.9.1.RELEASE | io.asyncer:r2dbc-mysql:0.9.5 |
 | 2.6.* and below                | 1.4.* and below   | 0.8.6.RELEASE | dev.miku:r2dbc-mysql:0.8.2   |
 
 ## Supported Features
@@ -41,6 +41,10 @@ This project is currently being maintained by [@jchrys](https://github.com/jchry
 ![MySQL 5.6 status](https://img.shields.io/badge/MySQL%205.6-pass-blue)
 ![MySQL 5.7 status](https://img.shields.io/badge/MySQL%205.7-pass-blue)
 ![MySQL 8.0 status](https://img.shields.io/badge/MySQL%208.0-pass-blue)
+![MySQL 8.1 status](https://img.shields.io/badge/MySQL%208.1-pass-blue)
+![MySQL 8.2 status](https://img.shields.io/badge/MySQL%208.2-pass-blue)
+
+
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
 
@@ -53,7 +57,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 <dependency>
   <groupId>io.asyncer</groupId>
   <artifactId>r2dbc-mysql</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.4</version>
 </dependency>
 ```
 
@@ -63,7 +67,7 @@ However, Docker-certified images do not have these versions lower than 5.5.0, so
 
 ```groovy
 dependencies {
-    implementation 'io.asyncer:r2dbc-mysql:1.0.1'
+    implementation 'io.asyncer:r2dbc-mysql:1.0.4'
 }
 ```
 
@@ -72,7 +76,7 @@ dependencies {
 ```kotlin
 dependencies {
     // Maybe should to use `compile` instead of `implementation` on the lower version of Gradle.
-    implementation("io.asyncer:r2dbc-mysql:1.0.1")
+    implementation("io.asyncer:r2dbc-mysql:1.0.4")
 }
 ```
 
@@ -121,6 +125,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(PORT, 3306)  // optional, default 3306
     .option(PASSWORD, "database-password-in-here") // optional, default null, null means has no password
     .option(DATABASE, "r2dbc") // optional, default null, null means not specifying the database
+    .option(Option.valueOf("createDatabaseIfNotExist"), true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
     .option(Option.valueOf("socketTimeout"), Duration.ofSeconds(4)) // deprecated since 1.0.1, because it has no effect and serves no purpose.
     .option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
@@ -137,6 +142,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(Option.valueOf("tcpKeepAlive"), true) // optional, default false
     .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
     .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
+    .option(Option.valueOf("passwordPublisher"), Mono.just("password")) // optional, default null, null means has no passwordPublisher (since 1.0.5 / 0.9.6)
     .build();
 ConnectionFactory connectionFactory = ConnectionFactories.get(options);
 
@@ -167,9 +173,10 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .port(3306) // optional, default 3306
     .password("database-password-in-here") // optional, default null, null means has no password
     .database("r2dbc") // optional, default null, null means not specifying the database
+    .createDatabaseIfNotExist(true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .serverZoneId(ZoneId.of("Continent/City")) // optional, default null, null means query server time zone when connection init
     .connectTimeout(Duration.ofSeconds(3)) // optional, default null, null means no timeout
-    .socketTimeout(Duration.ofSeconds(4)) // optional, default null, null means no timeout
+    .socketTimeout(Duration.ofSeconds(4)) // deprecated since 1.0.1, because it has no effect and serves no purpose.
     .sslMode(SslMode.VERIFY_IDENTITY) // optional, default SslMode.PREFERRED
     .sslCa("/path/to/mysql/ca.pem") // required when sslMode is VERIFY_CA or VERIFY_IDENTITY, default null, null means has no server CA cert
     .sslCert("/path/to/mysql/client-cert.pem") // optional, default has no client SSL certificate
@@ -184,6 +191,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .tcpNoDelay(true) // optional, controls TCP No Delay, default is false
     .autodetectExtensions(false) // optional, controls extension auto-detect, default is true
     .extendWith(MyExtension.INSTANCE) // optional, manual extend an extension into extensions, default using auto-detect
+    .passwordPublisher(Mono.just("password")) // optional, default null, null means has no password publisher (since 1.0.5 / 0.9.6)
     .build();
 ConnectionFactory connectionFactory = MySqlConnectionFactory.from(configuration);
 
@@ -215,8 +223,9 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | user | A valid MySQL username and not be empty | Required | Who wants to connect to the MySQL database |
 | password | Any printable string | Optional, default no password | The password of the MySQL database user |
 | database | A valid MySQL database name | Optional, default does not initialize database | Database used by the MySQL connection |
+| createDatabaseIfNotExist | `true` or `false` | Optional, default `false` | Create database if not exist |
 | connectTimeout | A `Duration` which must be positive duration | Optional, default has no timeout | TCP connect timeout |
-| socketTimeout | A `Duration` which must be positive duration | Optional, default has no timeout | TCP socket timeout |
+| socketTimeout | A `Duration` which must be positive duration | Deprecated since 1.0.1 | TCP socket timeout |
 | serverZoneId | An id of `ZoneId` | Optional, default query time zone when connection init | Server time zone id |
 | tcpKeepAlive | `true` or `false` | Optional, default disabled | Controls TCP KeepAlive |
 | tcpNoDelay | `true` or `false` | Optional, default disabled | Controls TCP NoDelay |
@@ -231,6 +240,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | zeroDateOption | Any value of `ZeroDateOption` | Optional, default `USE_NULL` | The option indicates "zero date" handling, see following notice |
 | autodetectExtensions | `true` or `false` | Optional, default is `true` | Controls auto-detect `Extension`s |
 | useServerPrepareStatement | `true`, `false` or `Predicate<String>` | Optional, default is `false` | See following notice |
+| passwordPublisher | A `Publisher<String>` | Optional, default is `null` | The password publisher, see following notice |
 
 - `SslMode` Considers security level and verification for SSL, make sure the database server supports SSL before you want change SSL mode to `REQUIRED` or higher. **The Unix Domain Socket only offers "DISABLED" available**
   - `DISABLED` I don't care about security and don't want to pay the overhead for encryption
@@ -256,6 +266,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
   - It is **NOT** RECOMMENDED, enable the `autodetectExtensions` is the best way for extensions
   - The `Extensions` will not remove duplicates, make sure it would be not extended twice or more
   - The auto-detected `Extension`s will not affect manual extends and will not remove duplicates
+- `passwordPublisher` Every time the client attempts to authenticate, it will use the password provided by the `passwordPublisher`.(Since `1.0.5` / `0.9.6`) e.g., You can employ this method for IAM-based authentication when connecting to an AWS Aurora RDS database.
 
 Should use `enum` in [Programmatic](#programmatic-configuration) configuration that not like discovery configurations, except `TlsVersions` (All elements of `TlsVersions` will be always `String` which is case-sensitive).
 
