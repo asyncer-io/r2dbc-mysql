@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -157,6 +158,8 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
 
         private final int capacity;
 
+        private final ReentrantLock lock = new ReentrantLock();
+
         @Nullable
         private volatile QueryCache cache;
 
@@ -167,11 +170,14 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
         public QueryCache get() {
             QueryCache cache = this.cache;
             if (cache == null) {
-                synchronized (this) {
+                lock.lock();
+                try {
                     if ((cache = this.cache) == null) {
                         this.cache = cache = Caches.createQueryCache(capacity);
                     }
                     return cache;
+                } finally {
+                    lock.unlock();
                 }
             }
             return cache;

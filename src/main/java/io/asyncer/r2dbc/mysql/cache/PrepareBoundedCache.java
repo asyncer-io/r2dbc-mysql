@@ -17,10 +17,11 @@
 package io.asyncer.r2dbc.mysql.cache;
 
 import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 
 /**
- * A bounded implementation of {@link PrepareCache} that uses synchronized methods to ensure correctness, even
+ * A bounded implementation of {@link PrepareCache} that uses {@link ReentrantLock} to ensure correctness, even
  * it should not be used thread concurrently.
  */
 final class PrepareBoundedCache extends HashMap<String, Lru.Node<Integer>> implements PrepareCache {
@@ -32,6 +33,8 @@ final class PrepareBoundedCache extends HashMap<String, Lru.Node<Integer>> imple
     private final Lru<Integer> probation;
 
     private final Lru<Integer> protection;
+
+    private final ReentrantLock lock = new ReentrantLock();
 
     PrepareBoundedCache(int capacity) {
         int windowSize = Math.max(1, capacity / 100);
@@ -45,29 +48,39 @@ final class PrepareBoundedCache extends HashMap<String, Lru.Node<Integer>> imple
     }
 
     @Override
-    public synchronized Integer getIfPresent(String key) {
-        Lru.Node<Integer> node = super.get(key);
+    public Integer getIfPresent(String key) {
+        lock.lock();
+        try {
+            Lru.Node<Integer> node = super.get(key);
 
-        if (node == null) {
-            return null;
+            if (node == null) {
+                return null;
+            }
+
+            drainRead(node);
+            return node.getValue();
+        } finally {
+            lock.unlock();
         }
-
-        drainRead(node);
-        return node.getValue();
     }
 
     @Override
-    public synchronized boolean putIfAbsent(String key, int value, IntConsumer evict) {
-        Lru.Node<Integer> wantAdd = new Lru.Node<>(key, value);
-        Lru.Node<Integer> present = super.putIfAbsent(key, wantAdd);
+    public boolean putIfAbsent(String key, int value, IntConsumer evict) {
+        lock.lock();
+        try {
+            Lru.Node<Integer> wantAdd = new Lru.Node<>(key, value);
+            Lru.Node<Integer> present = super.putIfAbsent(key, wantAdd);
 
-        if (present == null) {
-            drainAdded(wantAdd, evict);
-            return true;
+            if (present == null) {
+                drainAdded(wantAdd, evict);
+                return true;
+            }
+
+            drainRead(present);
+            return false;
+        } finally {
+            lock.unlock();
         }
-
-        drainRead(present);
-        return false;
     }
 
     @Override
