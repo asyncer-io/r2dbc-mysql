@@ -455,7 +455,7 @@ public final class JacksonCodec implements Codec<Object> {
         return encoding;
     }
 
-    private static final class JacksonParameter implements Parameter {
+    private static final class JacksonParameter implements MySqlParameter {
 
         private final ByteBufAllocator allocator;
 
@@ -523,6 +523,14 @@ public final class JacksonCodec implements Codec<Object> {
         @Override
         public short getType() {
             return DataTypes.VARCHAR;
+        }
+
+        /**
+         * Optional, for statements/parameters logging.
+         */
+        @Override
+        public String toString() {
+            return value.toString();
         }
     }
 }
