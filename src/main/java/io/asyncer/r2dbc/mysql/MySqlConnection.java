@@ -185,10 +185,6 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> beginTransaction() {
         return Mono.defer(() -> {
-            if (isInTransaction()) {
-                return Mono.empty();
-            }
-
             return QueryFlow.executeVoid(client, "BEGIN");
         });
     }
@@ -196,10 +192,6 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> beginTransaction(TransactionDefinition definition) {
         return Mono.defer(() -> {
-            if (isInTransaction()) {
-                return Mono.empty();
-            }
-
             return QueryFlow.beginTransaction(client, this, batchSupported, definition);
         });
     }
@@ -219,10 +211,6 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> commitTransaction() {
         return Mono.defer(() -> {
-            if (!isInTransaction()) {
-                return Mono.empty();
-            }
-
             return QueryFlow.doneTransaction(client, this, true, lockWaitTimeout, batchSupported);
         });
     }
@@ -300,10 +288,6 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> rollbackTransaction() {
         return Mono.defer(() -> {
-            if (!isInTransaction()) {
-                return Mono.empty();
-            }
-
             return QueryFlow.doneTransaction(client, this, false, lockWaitTimeout, batchSupported);
         });
     }

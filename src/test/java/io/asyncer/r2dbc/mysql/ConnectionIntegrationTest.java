@@ -293,6 +293,69 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void commitTransactionShouldRespectQueuedMessages() {
+        final String tdl = "CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))";
+        complete(connection ->
+                         Mono.from(connection.createStatement(tdl).execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .thenMany(Flux.merge(
+                                             connection.beginTransaction(),
+                                             connection.createStatement("INSERT INTO test VALUES (1, 'test1')")
+                                                       .execute(),
+                                             connection.commitTransaction()
+                                     ))
+                             .doOnComplete(() -> assertThat(connection.isInTransaction()).isFalse())
+                             .thenMany(connection.createStatement("SELECT COUNT(*) FROM test").execute())
+                             .flatMap(result ->
+                                              Mono.from(result.map((row, metadata) -> row.get(0, Long.class)))
+                             )
+                             .doOnNext(text -> assertThat(text).isEqualTo(1L))
+        );
+    }
+
+    @Test
+    void rollbackTransactionShouldRespectQueuedMessages() {
+        final String tdl = "CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))";
+        complete(connection ->
+                         Mono.from(connection.createStatement(tdl).execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .thenMany(Flux.merge(
+                                     connection.beginTransaction(),
+                                     connection.createStatement("INSERT INTO test VALUES (1, 'test1')")
+                                               .execute(),
+                                     connection.rollbackTransaction()
+                             ))
+                             .doOnComplete(() -> assertThat(connection.isInTransaction()).isFalse())
+                             .thenMany(connection.createStatement("SELECT COUNT(*) FROM test").execute())
+                             .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class)))
+                             .doOnNext(count -> assertThat(count).isEqualTo(0L)))
+        );
+    }
+
+    @Test
+    void beginTransactionShouldRespectQueuedMessages() {
+        final String tdl = "CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))";
+        complete(connection ->
+                         Mono.from(connection.createStatement(tdl).execute())
+                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                             .then(Mono.from(connection.beginTransaction()))
+                             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                             .thenMany(Flux.merge(
+                                     connection.createStatement("INSERT INTO test VALUES (1, 'test1')").execute(),
+                                     connection.commitTransaction(),
+                                     connection.beginTransaction()
+                             ))
+                             .doOnComplete(() -> assertThat(connection.isInTransaction()).isTrue())
+                             .then(Mono.from(connection.rollbackTransaction()))
+                             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
+                             .thenMany(connection.createStatement("SELECT COUNT(*) FROM test").execute())
+                             .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class)))
+                             .doOnNext(count -> assertThat(count).isEqualTo(1L)))
+        );
+
+    }
+
+    @Test
     void batchCrud() {
         // TODO: spilt it to multiple test cases and move it to BatchIntegrationTest
         String isEven = "id % 2 = 0";
