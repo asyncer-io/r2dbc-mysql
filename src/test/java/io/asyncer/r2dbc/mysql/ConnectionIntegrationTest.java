@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 
 import static io.r2dbc.spi.IsolationLevel.READ_COMMITTED;
 import static io.r2dbc.spi.IsolationLevel.READ_UNCOMMITTED;
@@ -50,6 +51,54 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
             .then(connection.rollbackTransaction())
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse()));
+    }
+
+    @Test
+    void autoRollbackPreRelease() {
+        // Mock pool allocate/release.
+        complete(conn -> conn.postAllocate()
+            .thenMany(conn.createStatement("CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY)")
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .then(conn.beginTransaction())
+            .thenMany(conn.createStatement("INSERT INTO test VALUES (1)")
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .single()
+            .doOnNext(it -> assertThat(it).isEqualTo(1))
+            .doOnSuccess(ignored -> assertThat(conn.isInTransaction()).isTrue())
+            .then(conn.preRelease())
+            .doOnSuccess(ignored -> assertThat(conn.isInTransaction()).isFalse())
+            .then(conn.postAllocate())
+            .thenMany(conn.createStatement("SELECT * FROM test")
+                .execute())
+            .flatMap(it -> it.map((row, metadata) -> row.get(0, Integer.class)))
+            .count()
+            .doOnNext(it -> assertThat(it).isZero()));
+    }
+
+    @Test
+    void shouldNotRollbackCommittedPreRelease() {
+        // Mock pool allocate/release.
+        complete(conn -> conn.postAllocate()
+            .thenMany(conn.createStatement("CREATE TEMPORARY TABLE test (id INT NOT NULL PRIMARY KEY)")
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .then(conn.beginTransaction())
+            .thenMany(conn.createStatement("INSERT INTO test VALUES (1)")
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .single()
+            .doOnNext(it -> assertThat(it).isEqualTo(1))
+            .then(conn.commitTransaction())
+            .then(conn.preRelease())
+            .doOnSuccess(ignored -> assertThat(conn.isInTransaction()).isFalse())
+            .then(conn.postAllocate())
+            .thenMany(conn.createStatement("SELECT * FROM test")
+                .execute())
+            .flatMap(it -> it.map((row, metadata) -> row.get(0, Integer.class)))
+            .collectList()
+            .doOnNext(it -> assertThat(it).isEqualTo(Collections.singletonList(1))));
     }
 
     @Test

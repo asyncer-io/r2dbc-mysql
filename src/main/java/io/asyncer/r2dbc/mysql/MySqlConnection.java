@@ -31,6 +31,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.IsolationLevel;
+import io.r2dbc.spi.Lifecycle;
 import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
@@ -52,7 +53,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
 /**
  * An implementation of {@link Connection} for connecting to the MySQL database.
  */
-public final class MySqlConnection implements Connection, ConnectionState {
+public final class MySqlConnection implements Connection, Lifecycle, ConnectionState {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(MySqlConnection.class);
 
@@ -276,6 +277,17 @@ public final class MySqlConnection implements Connection, ConnectionState {
         logger.debug("Create a parametrized statement provided by prepare query");
 
         return new PrepareParametrizedStatement(client, codecs, query, context, prepareCache);
+    }
+
+    @Override
+    public Mono<Void> postAllocate() {
+        return Mono.empty();
+    }
+
+    @Override
+    public Mono<Void> preRelease() {
+        // Rollback if the connection is in transaction.
+        return rollbackTransaction();
     }
 
     @Override
