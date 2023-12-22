@@ -184,9 +184,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     @Override
     public Mono<Void> beginTransaction() {
-        return Mono.defer(() -> {
-            return QueryFlow.executeVoid(client, "BEGIN");
-        });
+        return beginTransaction(MySqlTransactionDefinition.empty());
     }
 
     @Override
