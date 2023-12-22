@@ -21,6 +21,7 @@ import reactor.util.concurrent.Queues;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.locks.ReentrantLock;
 
 abstract class LeftPadding {
 
@@ -56,6 +57,8 @@ abstract class ActiveStatus extends LeftPadding {
 final class RequestQueue extends ActiveStatus implements Runnable {
 
     private final Queue<RequestTask<?>> queue = Queues.<RequestTask<?>>small().get();
+
+    private final ReentrantLock lock = new ReentrantLock();
 
     @Nullable
     private volatile RuntimeException disposed;
@@ -145,7 +148,8 @@ final class RequestQueue extends ActiveStatus implements Runnable {
         RuntimeException disposed = this.disposed;
 
         if (disposed == null) {
-            synchronized (this) {
+            lock.lock();
+            try {
                 disposed = this.disposed;
 
                 if (disposed == null) {
@@ -153,6 +157,8 @@ final class RequestQueue extends ActiveStatus implements Runnable {
                 }
 
                 return disposed;
+            } finally {
+                lock.unlock();
             }
         }
 
