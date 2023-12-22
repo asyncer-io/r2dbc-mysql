@@ -22,12 +22,15 @@ import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.JsonNode;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -207,10 +210,22 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     @Test
+    void text() {
+        testType(byte[].class, true, "TEXT", null, new byte[0], new byte[] { 1, 2, 3, 4, 5 });
+        testType(ByteBuffer.class, true, "TEXT", null, ByteBuffer.allocate(0),
+            ByteBuffer.wrap(new byte[] { 1, 2, 3, 4, 5 }));
+    }
+
+    @Test
     void bit() {
         testType(Boolean.class, true, "BIT(1)", null, false, true);
         testType(BitSet.class, true, "BIT(16)", null, BitSet.valueOf(new byte[] { (byte) 0xEF, (byte) 0xCD }),
-            BitSet.valueOf(new byte[0]), BitSet.valueOf(new byte[] { 0, 0 }));
+            BitSet.valueOf(new byte[0]), BitSet.valueOf(new byte[] { 0, 0 }), BitSet.valueOf(new byte[] { (byte) 0xCD }));
+        testType(BitSet.class, true, "BIT(64)", null, BitSet.valueOf(new long[0]),
+            BitSet.valueOf(new long[] { 0 }), BitSet.valueOf(new long[] { 0xEFCD }),
+            BitSet.valueOf(new long[] { Long.MAX_VALUE }));
+        testType(BitSet.class, false, "BIT(64)", BitSet.valueOf(new long[] { -1 }),
+            BitSet.valueOf(new long[] { Long.MIN_VALUE }));
         testType(byte[].class, false, "BIT(16)", null, new byte[] { (byte) 0xCD, (byte) 0xEF },
             new byte[] { 0, 0 });
         testType(ByteBuffer.class, false, "BIT(16)", null, ByteBuffer.wrap(new byte[] { 1, 2 }),
@@ -247,11 +262,13 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             EnumSet.of(EnumData.ONE, EnumData.THREE));
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.[56](\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql57OrMariaDb102")
     @Test
     void json() {
         testType(String.class, false, "JSON", null, "{\"data\": 1}", "[\"data\", 1]", "1", "null",
             "\"R2DBC\"", "2.56");
+
+
     }
 
     @Test
@@ -274,7 +291,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         testType(Duration.class, true, "TIME", null, minDuration, aDuration, maxDuration);
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.5(\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql56")
     @Test
     void time6() {
         LocalTime smallTime = LocalTime.of(0, 0, 0, 1000);
@@ -307,7 +324,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
                 .concatMap(pair -> testTimeDuration(connection, pair.getT1(), pair.getT2()))));
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.5(\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql56")
     @Test
     void timeDuration6() {
         long seconds = TimeUnit.HOURS.toSeconds(8) + TimeUnit.MINUTES.toSeconds(5) + 45;
@@ -337,7 +354,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         testType(LocalDateTime.class, true, "DATETIME", null, minDateTime, aDateTime, maxDateTime);
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.5(\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql56")
     @Test
     void dateTime6() {
         LocalDateTime smallDateTime = LocalDateTime.of(1000, 1, 1, 0, 0, 0, 1000);
@@ -357,7 +374,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         testType(LocalDateTime.class, true, "TIMESTAMP", minTimestamp, aTimestamp, maxTimestamp);
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.5(\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql56")
     @Test
     void timestamp6() {
         LocalDateTime minTimestamp = LocalDateTime.of(1970, 1, 3, 0, 0, 0, 1000);
@@ -553,41 +570,55 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * ref: https://github.com/asyncer-io/r2dbc-mysql/issues/91
+     * ref: <a href="https://github.com/asyncer-io/r2dbc-mysql/issues/91">Issue 91</a>
      */
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.[56](\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql57OrMariaDb102")
     @Test
     void testUnionQueryWithJsonColumnDecodedAsString() {
         complete(connection ->
-                         Flux.from(connection.createStatement(
-                                                     "CREATE TEMPORARY TABLE test1 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
-                                             .execute())
-                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-                             .thenMany(connection.createStatement("INSERT INTO test1 VALUES(DEFAULT, ?)")
-                                                 .bind(0, "{\"id\":1,\"name\":\"iron man\"}")
-                                                 .execute())
-                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-                             .doOnNext(it -> assertThat(it).isEqualTo(1))
-                             .thenMany(connection.createStatement(
-                                                         "CREATE TEMPORARY TABLE test2 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
-                                                 .execute())
-                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-                             .thenMany(connection.createStatement("INSERT INTO test2 VALUES(DEFAULT, ?)")
-                                                 .bind(0,
-                                                       "[{\"id\":2,\"name\":\"bat man\"},{\"id\":3,\"name\":\"super man\"}]")
-                                                 .execute())
-                             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-                             .doOnNext(it -> assertThat(it).isEqualTo(1))
-                             .thenMany(
-                                     connection.createStatement("SELECT value FROM test1 UNION SELECT value FROM test2")
-                                               .execute())
-                             .flatMap(r -> r.map((row, metadata) -> row.get(0, String.class))
-                                            .collectList()
-                                            .doOnNext(it -> assertThat(it).isEqualTo(
-                                                    Arrays.asList("{\"id\": 1, \"name\": \"iron man\"}",
-                                                                  "[{\"id\": 2, \"name\": \"bat man\"}, {\"id\": 3, \"name\": \"super man\"}]"))))
+            Flux.from(connection.createStatement(
+                        "CREATE TEMPORARY TABLE test1 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
+                    .execute())
+                .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                .thenMany(connection.createStatement("INSERT INTO test1 VALUES(DEFAULT, ?)")
+                    .bind(0, "{\"id\":1,\"name\":\"iron man\"}")
+                    .execute())
+                .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                .doOnNext(it -> assertThat(it).isEqualTo(1))
+                .thenMany(connection.createStatement(
+                        "CREATE TEMPORARY TABLE test2 (id INT PRIMARY KEY AUTO_INCREMENT, value JSON)")
+                    .execute())
+                .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                .thenMany(connection.createStatement("INSERT INTO test2 VALUES(DEFAULT, ?)")
+                    .bind(0,
+                        "[{\"id\":2,\"name\":\"bat man\"},{\"id\":3,\"name\":\"super man\"}]")
+                    .execute())
+                .flatMap(IntegrationTestSupport::extractRowsUpdated)
+                .doOnNext(it -> assertThat(it).isEqualTo(1))
+                .thenMany(
+                    connection.createStatement("SELECT value FROM test1 UNION SELECT value FROM test2")
+                        .execute())
+                .flatMap(r -> r.map((row, metadata) -> row.get(0, String.class))
+                    .map(QueryIntegrationTestSupport::parseJson)
+                    .collectList()
+                    .doOnNext(it -> assertThat(it).isEqualTo(
+                        Arrays.asList(
+                            parseJson("{\"id\": 1, \"name\": \"iron man\"}"),
+                            parseJson(
+                                "[{\"id\": 2, \"name\": \"bat man\"}, {\"id\": 3, \"name\": \"super man\"}]"
+                            )
+                        )
+                    )))
         );
+    }
 
+    private static JsonNode parseJson(String json) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readTree(json);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static Flux<Integer> extractFirstInteger(Result result) {

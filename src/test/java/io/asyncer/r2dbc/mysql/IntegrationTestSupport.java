@@ -102,4 +102,38 @@ abstract class IntegrationTestSupport {
 
         return builder.build();
     }
+
+    boolean envIsLessThanMySql56() {
+        String version = System.getProperty("test.mysql.version");
+
+        if (version == null || version.isEmpty()) {
+            return true;
+        }
+
+        ServerVersion ver = ServerVersion.parse(version);
+        String type = System.getProperty("test.db.type");
+
+        if ("mariadb".equalsIgnoreCase(type)) {
+            return false;
+        }
+
+        return ver.isLessThan(ServerVersion.create(5, 6, 0));
+    }
+
+    boolean envIsLessThanMySql57OrMariaDb102() {
+        String version = System.getProperty("test.mysql.version");
+
+        if (version == null || version.isEmpty()) {
+            return true;
+        }
+
+        ServerVersion ver = ServerVersion.parse(version);
+        String type = System.getProperty("test.db.type");
+
+        if ("mariadb".equalsIgnoreCase(type)) {
+            return ver.isLessThan(ServerVersion.create(10, 2, 0));
+        }
+
+        return ver.isLessThan(ServerVersion.create(5, 7, 0));
+    }
 }

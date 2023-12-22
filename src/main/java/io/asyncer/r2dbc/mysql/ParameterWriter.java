@@ -48,13 +48,23 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@code long} to current parameter. If current mode is string mode, it will write as a
-     * string like {@code write(String.valueOf(value))}. If it write as a numeric, nothing else can be written
-     * before or after this.
+     * string like {@code write(String.valueOf(value))}. If it writes as a numeric, nothing else can be
+     * written before or after this.
      *
      * @param value the value of {@code long}.
      * @throws IllegalStateException if parameters filled, or something was written before that numeric.
      */
     public abstract void writeLong(long value);
+
+    /**
+     * Writes a value as an unsigned {@code long} to current parameter. If current mode is string mode, it
+     * will write as a string like {@code write(String.valueOf(value))}. If it writes as a numeric, nothing
+     * else can be written before or after this.
+     *
+     * @param value the value as an unsigned {@code long}.
+     * @throws IllegalStateException if parameters filled, or something was written before that numeric.
+     */
+    public abstract void writeUnsignedLong(long value);
 
     /**
      * Writes a value of {@link BigInteger} to current parameter. If current mode is string mode, it will

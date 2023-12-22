@@ -80,6 +80,13 @@ final class ParamWriter extends ParameterWriter {
     }
 
     @Override
+    public void writeUnsignedLong(long value) {
+        startAvailable(Mode.NUMERIC);
+
+        builder.append(Long.toUnsignedString(value));
+    }
+
+    @Override
     public void writeBigInteger(BigInteger value) {
         requireNonNull(value, "value must not be null");
 
