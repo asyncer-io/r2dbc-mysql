@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
@@ -319,8 +320,10 @@ final class DefaultCodecs implements Codecs {
 
         private final ByteBufAllocator allocator;
 
-        @GuardedBy("this")
+        @GuardedBy("lock")
         private final ArrayList<Codec<?>> codecs = new ArrayList<>();
+
+        private final ReentrantLock lock = new ReentrantLock();
 
         Builder(ByteBufAllocator allocator) {
             this.allocator = allocator;
@@ -328,7 +331,8 @@ final class DefaultCodecs implements Codecs {
 
         @Override
         public CodecsBuilder addFirst(Codec<?> codec) {
-            synchronized (this) {
+            lock.lock();
+            try {
                 if (codecs.isEmpty()) {
                     Codec<?>[] defaultCodecs = defaultCodecs(allocator);
 
@@ -339,24 +343,30 @@ final class DefaultCodecs implements Codecs {
                 } else {
                     codecs.add(0, codec);
                 }
+            } finally {
+                lock.unlock();
             }
             return this;
         }
 
         @Override
         public CodecsBuilder addLast(Codec<?> codec) {
-            synchronized (this) {
+            lock.lock();
+            try {
                 if (codecs.isEmpty()) {
                     codecs.addAll(InternalArrays.asImmutableList(defaultCodecs(allocator)));
                 }
                 codecs.add(codec);
+            } finally {
+                lock.unlock();
             }
             return this;
         }
 
         @Override
         public Codecs build() {
-            synchronized (this) {
+            lock.lock();
+            try {
                 try {
                     if (codecs.isEmpty()) {
                         return new DefaultCodecs(defaultCodecs(allocator));
@@ -366,6 +376,8 @@ final class DefaultCodecs implements Codecs {
                     codecs.clear();
                     codecs.trimToSize();
                 }
+            } finally {
+                lock.unlock();
             }
         }
     }

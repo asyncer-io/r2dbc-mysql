@@ -16,7 +16,10 @@
 
 package io.asyncer.r2dbc.mysql.collation;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.nio.charset.Charset;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Character collation those NOT use cached {@link CharsetTarget} of MySQL, it will be initialized and cached
@@ -26,6 +29,9 @@ import java.nio.charset.Charset;
  */
 final class LazyInitCharCollation extends AbstractCharCollation {
 
+    private final ReentrantLock lock = new ReentrantLock();
+
+    @Nullable
     private volatile Charset cached;
 
     LazyInitCharCollation(int id, String name, CharsetTarget target) {
@@ -37,7 +43,8 @@ final class LazyInitCharCollation extends AbstractCharCollation {
         Charset cached = this.cached;
 
         if (cached == null) {
-            synchronized (this) {
+            lock.lock();
+            try {
                 cached = this.cached;
 
                 if (cached == null) {
@@ -46,6 +53,8 @@ final class LazyInitCharCollation extends AbstractCharCollation {
                 }
 
                 return cached;
+            } finally {
+                lock.unlock();
             }
         }
 
