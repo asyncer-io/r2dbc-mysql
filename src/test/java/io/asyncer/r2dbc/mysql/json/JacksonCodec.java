@@ -99,7 +99,7 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
     }
 
     private boolean doCanDecode(MySqlColumnMetadata metadata) {
-        return mode.isDecode() && metadata.getType() == MySqlType.JSON;
+        return mode.isDecode() && (metadata.getType() == MySqlType.JSON || metadata.getType() == MySqlType.TEXT);
     }
 
     private static final class JacksonMySqlParameter implements MySqlParameter {

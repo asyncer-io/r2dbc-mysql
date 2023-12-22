@@ -53,14 +53,8 @@ class BitSetCodecTest implements CodecTestSupport<BitSet> {
     @Override
     public Object[] stringifyParameters() {
         return Arrays.stream(sets).map(it -> {
-            if (it.isEmpty()) {
-                return "b'0'";
-            } else {
-                byte[] bytes = it.toByteArray();
-                ArrayUtils.reverse(bytes);
-                String content = Hex.toHexString(bytes);
-                return String.format("x'%s'", content.startsWith("0") ? content.substring(1) : content);
-            }
+            long[] array = it.toLongArray();
+            return array.length == 0 ? "0" : Long.toUnsignedString(array[0]);
         }).toArray();
     }
 

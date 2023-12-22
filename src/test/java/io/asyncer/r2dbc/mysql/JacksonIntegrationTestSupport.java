@@ -22,7 +22,7 @@ import io.asyncer.r2dbc.mysql.json.JacksonCodecRegistrar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -64,7 +64,7 @@ abstract class JacksonIntegrationTestSupport extends IntegrationTestSupport {
         JacksonCodecRegistrar.tearDown();
     }
 
-    @DisabledIfSystemProperty(named = "test.mysql.version", matches = "5\\.[56](\\.\\d+)?")
+    @DisabledIf("envIsLessThanMySql57OrMariaDb102")
     @Test
     void json() {
         create().flatMap(connection -> Mono.from(connection.createStatement(TDL).execute())
