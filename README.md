@@ -43,7 +43,8 @@ This project is currently being maintained by [@jchrys](https://github.com/jchry
 ![MySQL 8.0 status](https://img.shields.io/badge/MySQL%208.0-pass-blue)
 ![MySQL 8.1 status](https://img.shields.io/badge/MySQL%208.1-pass-blue)
 ![MySQL 8.2 status](https://img.shields.io/badge/MySQL%208.2-pass-blue)
-
+![MariaDB 10.6 status](https://img.shields.io/badge/MariaDB%2010.6-pass-blue)
+![MariaDB 10.11 status](https://img.shields.io/badge/MariaDB%2010.11-pass-blue)
 
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
@@ -546,7 +547,9 @@ If you want to raise an issue, please follow the recommendations below:
 - The MySQL server does not **actively** return time zone when query `DATETIME` or `TIMESTAMP`, this driver does not attempt time zone conversion. That means should always use `LocalDateTime` for SQL type `DATETIME` or `TIMESTAMP`. Execute `SHOW VARIABLES LIKE '%time_zone%'` to get more information.
 - Should not turn-on the `trace` log level unless debugging. Otherwise, the security information may be exposed through `ByteBuf` dump.
 - If `Statement` bound `returnGeneratedValues`, the `Result` of the `Statement` can be called both: `getRowsUpdated` to get affected rows, and `map` to get last inserted ID.
-- The MySQL may be not support search rows by a binary field, like `BIT`, `BLOB` and `JSON`, because those data fields maybe just an address of reference in MySQL server, or maybe need strict bit-aligned. (but `VARBINARY` is OK)
+- The MySQL may be not support well for searching rows by a binary field, like `BIT` and `JSON`
+  - `BIT`: cannot select 'BIT(64)' with value greater than 'Long.MAX_VALUE' (or equivalent in binary)
+  - `JSON`: different MySQL may have different serialization formats, e.g. MariaDB and MySQL
 
 ## License
 
