@@ -73,7 +73,9 @@ final class BitSetCodec extends AbstractClassedCodec<BitSet> {
 
         MySqlType type;
 
-        if ((byte) bits == bits) {
+        if (bits < 0) {
+            type = MySqlType.BIGINT;
+        } else if ((byte) bits == bits) {
             type = MySqlType.TINYINT;
         } else if ((short) bits == bits) {
             type = MySqlType.SMALLINT;
@@ -135,17 +137,7 @@ final class BitSetCodec extends AbstractClassedCodec<BitSet> {
 
         @Override
         public Mono<Void> publishText(ParameterWriter writer) {
-            return Mono.fromRunnable(() -> {
-                if (value == 0) {
-                    // Must filled by 0 for MySQL 5.5.x, because MySQL 5.5.x does not clear its buffer on type
-                    // BIT (i.e. unsafe allocate).
-                    // So if we do not fill the buffer, it will use last content which is an undefined
-                    // behavior. A classic bug, right?
-                    writer.writeBinary(false);
-                } else {
-                    writer.writeHex(value);
-                }
-            });
+            return Mono.fromRunnable(() -> writer.writeUnsignedLong(value));
         }
 
         @Override

@@ -1,0 +1,37 @@
+name: Integration Tests for MariaDB
+
+on:
+  pull_request:
+    branches: [ "trunk", "0.9.x" ]
+
+jobs:
+  mariadb-integration-tests-pr:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        mariadb-version: [ 10.6, 10.11 ]
+    name: Integration test with MariaDB ${{ matrix.mariadb-version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Temurin 8
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 8
+          cache: maven
+      - name: Shutdown the Default MySQL
+        run: sudo service mysql stop
+      - name: Set up MariaDB ${{ matrix.mariadb-version }}
+        env:
+          MYSQL_DATABASE: r2dbc
+          MYSQL_ROOT_PASSWORD: r2dbc-password!@
+          MARIADB_VERSION: ${{ matrix.mariadb-version }}
+        run: docker-compose -f ${{ github.workspace }}/containers/mariadb-compose.yml up -d
+      - name: Integration test with MySQL ${{ matrix.mysql-version }}
+        run: |
+          ./mvnw -B verify -Dmaven.javadoc.skip=true \
+          -Dmaven.surefire.skip=true \
+          -Dtest.mysql.password=r2dbc-password!@ \
+          -Dtest.mysql.version=${{ matrix.mariadb-version }} \
+          -Dtest.db.type=mariadb \
+          -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
