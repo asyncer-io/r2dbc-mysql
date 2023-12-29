@@ -209,7 +209,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> commitTransaction() {
         return Mono.defer(() -> {
-            return QueryFlow.doneTransaction(client, this, true, lockWaitTimeout, batchSupported);
+            return QueryFlow.doneTransaction(client, this, true, batchSupported);
         });
     }
 
@@ -223,19 +223,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> createSavepoint(String name) {
         requireValidName(name, "Savepoint name must not be empty and not contain backticks");
-
-        String sql = String.format("SAVEPOINT `%s`", name);
-
-        return Mono.defer(() -> {
-            if (isInTransaction()) {
-                return QueryFlow.executeVoid(client, sql);
-            } else if (batchSupported) {
-                // If connection does not in transaction, then starts transaction.
-                return QueryFlow.executeVoid(client, "BEGIN;" + sql);
-            }
-
-            return QueryFlow.executeVoid(client, "BEGIN", sql);
-        });
+        return QueryFlow.createSavepoint(client, this, name, batchSupported);
     }
 
     @Override
@@ -286,7 +274,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> rollbackTransaction() {
         return Mono.defer(() -> {
-            return QueryFlow.doneTransaction(client, this, false, lockWaitTimeout, batchSupported);
+            return QueryFlow.doneTransaction(client, this, false, batchSupported);
         });
     }
 
@@ -369,6 +357,11 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public void setIsolationLevel(IsolationLevel level) {
         this.currentLevel = level;
+    }
+
+    @Override
+    public long getSessionLockWaitTimeout() {
+        return lockWaitTimeout;
     }
 
     @Override
