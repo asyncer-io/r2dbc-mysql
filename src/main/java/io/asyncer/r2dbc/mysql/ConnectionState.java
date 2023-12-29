@@ -31,6 +31,13 @@ interface ConnectionState {
     void setIsolationLevel(IsolationLevel level);
 
     /**
+     * Reutrns session lock wait timeout.
+     *
+     * @return Session lock wait timeout.
+     */
+    long getSessionLockWaitTimeout();
+
+    /**
      * Sets current lock wait timeout.
      *
      * @param timeoutSeconds seconds of current lock wait timeout.
