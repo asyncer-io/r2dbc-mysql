@@ -32,7 +32,9 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage {
 
-    private static final int RESERVED_SIZE = 10;
+    private static final int RESERVED_SIZE = 6;
+
+    private static final int MARIA_DB_CAPABILITY_SIZE = Integer.BYTES;
 
     private static final int SALT_FIRST_PART_SIZE = 8;
 
@@ -133,23 +135,26 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
             buf.skipBytes(SALT_FIRST_PART_SIZE + 1);
 
             // The Server Capabilities first part following the salt first part. (always lower 2-bytes)
-            int loCapabilities = buf.readUnsignedShortLE();
+            long loCapabilities = buf.readUnsignedShortLE();
 
             // MySQL is using 16 bytes to identify server character. There has lower 8-bits only, skip it.
             buf.skipBytes(1);
             builder.serverStatuses(buf.readShortLE());
 
             // The Server Capabilities second part following the server statuses. (always upper 2-bytes)
-            int hiCapabilities = buf.readUnsignedShortLE() << Short.SIZE;
-            Capability capability = Capability.of(loCapabilities | hiCapabilities);
-
-            builder.serverCapability(capability);
+            long miCapabilities = ((long) buf.readUnsignedShortLE()) << Short.SIZE;
+            Capability capability = Capability.of(loCapabilities | miCapabilities);
 
             // If PLUGIN_AUTH flag not exists, MySQL server will return 0x00 always.
             short saltSize = buf.readUnsignedByte();
 
-            // Reserved field, all bytes are 0x00.
-            buf.skipBytes(RESERVED_SIZE);
+            if (capability.isMariaDb()) {
+                buf.skipBytes(RESERVED_SIZE);
+                builder.serverCapability(capability.extendMariaDb(buf.readUnsignedIntLE()));
+            } else {
+                buf.skipBytes(RESERVED_SIZE + MARIA_DB_CAPABILITY_SIZE);
+                builder.serverCapability(capability);
+            }
 
             if (capability.isSaltSecured()) {
                 // If it has not this part, means it is using mysql_old_password,

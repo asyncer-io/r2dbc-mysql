@@ -25,81 +25,80 @@ package io.asyncer.r2dbc.mysql;
 public final class Capability {
 
     /**
-     * Can use long password.
-     * <p>
-     * TODO: Reinterpret it as {@code CLIENT_MYSQL} to support MariaDB 10.2 and above.
+     * If UNSET, the server supports the MariaDB protocol and statements.
      */
-    private static final int LONG_PASSWORD = 1;
+    private static final long CLIENT_MYSQL = 1L;
 
     /**
      * Use found/touched rows instead of changed rows for affected rows. Should enable it by default.
      */
-    private static final int FOUND_ROWS = 2;
+    private static final long FOUND_ROWS = 2L;
 
     /**
      * Use 2-bytes definition flags of {@code DefinitionMetadataMessage}.
      * <p>
      * Very old servers (before 3.23) will not set this capability flag.
      */
-    private static final int LONG_FLAG = 4;
+    private static final long LONG_FLAG = 4L;
 
     /**
      * Connect to server with a database.
      */
-    private static final int CONNECT_WITH_DB = 8;
+    private static final long CONNECT_WITH_DB = 8L;
 
     /**
      * Enable it to disallow a statement which use {@code database.table.column} for access other schema
      * data.
      */
-    private static final int NO_SCHEMA = 16;
+    private static final long NO_SCHEMA = 16L;
 
     /**
      * The deflate compression, old compression flag.
      */
-    private static final int COMPRESS = 32;
+    private static final long COMPRESS = 32L;
 
-//    private static final int ODBC = 64; // R2DBC driver is not ODBC driver.
+//    private static final long ODBC = 64L; // R2DBC driver is not ODBC driver.
 
     /**
      * Allow to use LOAD DATA [LOCAL] INFILE statement.
      */
-    private static final int LOCAL_FILES = 128;
+    private static final long LOCAL_FILES = 128L;
 
     /**
      * Ignore space between a built-in function name and the subsequent parenthesis.
      * <p>
      * Note: Ignoring spaces may cause ambiguity.
      * <p>
-     * See also https://dev.mysql.com/doc/refman/8.0/en/function-resolution.html .
+     * See also <a href="https://dev.mysql.com/doc/refman/8.0/en/function-resolution.html">
+     * Function Resolution</a>.
      */
-    private static final int IGNORE_SPACE = 256;
+    private static final long IGNORE_SPACE = 256L;
 
     /**
      * The protocol version is 4.1 (instead of 3.20).
      */
-    private static final int PROTOCOL_41 = 512;
+    private static final long PROTOCOL_41 = 512L;
 
     /**
      * Use {@code wait_interactive_timeout} instead of {@code wait_timeout} for the server waits for activity
      * on a connection before closing it.
      */
-    private static final int INTERACTIVE = 1024;
+    private static final long INTERACTIVE = 1024L;
 
     /**
      * Enable SSL.
      */
-    private static final int SSL = 2048;
+    private static final long SSL = 2048L;
 
-//    private static final int IGNORE_SIGPIPE = 4096; // Connector/C only flag.
+//    private static final long IGNORE_SIGPIPE = 4096L; // Connector/C only flag.
 
     /**
      * Allow transactions. All available versions of MySQL server support it.
      */
-    private static final int TRANSACTIONS = 8192;
+    private static final long TRANSACTIONS = 8192L;
 
     // Old flag and alias of PROTOCOL_41. It will not be used by any available server version/edition.
-//    private static final int RESERVED = 16384;
+//    private static final int RESERVED = 16384L;
 
     /**
      * Allow second part of authentication hashing salt.
@@ -108,67 +107,77 @@ public final class Capability {
      * <p>
      * Origin name: SECURE_CONNECTION.
      */
-    private static final int SECURE_SALT = 32768;
+    private static final long SECURE_SALT = 32768L;
 
     /**
      * Allow to send multiple statements in text query and prepare query.
      * <p>
      * Old name: MULTI_QUERIES.
      */
-    private static final int MULTI_STATEMENTS = 65536;
+    private static final long MULTI_STATEMENTS = 65536L;
 
     /**
      * Allow to receive multiple results in the response of executing a text query.
      */
-    private static final int MULTI_RESULTS = 1 << 17;
+    private static final long MULTI_RESULTS = 1L << 17;
 
     /**
      * Allow to receive multiple results in the response of executing a prepare query.
      */
-    private static final int PS_MULTI_RESULTS = 1 << 18;
+    private static final long PS_MULTI_RESULTS = 1L << 18;
 
     /**
      * Supports authentication plugins. Server will send more details (i.e. name) for authentication plugin.
      */
-    private static final int PLUGIN_AUTH = 1 << 19;
+    private static final long PLUGIN_AUTH = 1L << 19;
 
     /**
      * Connection attributes should be sent.
      */
-    private static final int CONNECT_ATTRS = 1 << 20;
+    private static final long CONNECT_ATTRS = 1L << 20;
 
     /**
      * Can use var-integer sized bytes to encode client authentication.
      * <p>
      * Origin name: PLUGIN_AUTH_LENENC_CLIENT_DATA.
      */
-    private static final int VAR_INT_SIZED_AUTH = 1 << 21;
+    private static final long VAR_INT_SIZED_AUTH = 1L << 21;
 
-//    private static final int HANDLE_EXPIRED_PASSWORD = 1 << 22; // Client can handle expired passwords.
-//    private static final int SESSION_TRACK = 1 << 23;
+//    private static final long HANDLE_EXPIRED_PASSWORD = 1L << 22; // Client can handle expired passwords.
+//    private static final long SESSION_TRACK = 1L << 23;
 
     /**
      * The MySQL server marks the EOF message as deprecated and use OK message instead.
      */
-    private static final int DEPRECATE_EOF = 1 << 24;
+    private static final long DEPRECATE_EOF = 1L << 24;
 
     // Allow the server not to send column metadata in result set,
     // should NEVER enable this option.
-//    private static final int OPTIONAL_RESULT_SET_METADATA = 1 << 25;
-//    private static final int Z_STD_COMPRESSION = 1 << 26;
+//    private static final long OPTIONAL_RESULT_SET_METADATA = 1L << 25;
+//    private static final long Z_STD_COMPRESSION = 1L << 26;
 
     // A reserved flag, used to extend the 32-bits capability bitmap to 64-bits.
     // There is no available MySql server version/edition to support it.
-//    private static final int CAPABILITY_EXTENSION = 1 << 29;
-//    private static final int SSL_VERIFY_SERVER_CERT = 1 << 30; // Client only flag, use SslMode instead.
-//    private static final int REMEMBER_OPTIONS = 1 << 31; // Connector/C only flag.
+//    private static final long CAPABILITY_EXTENSION = 1L << 29;
+//    private static final long SSL_VERIFY_SERVER_CERT = 1L << 30; // Client only flag, use SslMode instead.
+//    private static final long REMEMBER_OPTIONS = 1L << 31; // Connector/C only flag.
 
-    private static final int ALL_SUPPORTED = LONG_PASSWORD | FOUND_ROWS | LONG_FLAG | CONNECT_WITH_DB |
+//    private static final long MARIADB_CLIENT_PROGRESS = 1L << 32;
+//    private static final long MARIADB_CLIENT_COM_MULTI = 1L << 33;
+//    private static final long MARIADB_CLIENT_STMT_BULK_OPERATIONS = 1L << 34;
+//    private static final long MARIADB_CLIENT_EXTENDED_TYPE_INFO = 1L << 35;
+//    private static final long MARIADB_CLIENT_CACHE_METADATA = 1L << 36;
+
+    private static final long ALL_SUPPORTED = CLIENT_MYSQL | FOUND_ROWS | LONG_FLAG | CONNECT_WITH_DB |
         NO_SCHEMA | COMPRESS | LOCAL_FILES | IGNORE_SPACE | PROTOCOL_41 | INTERACTIVE | SSL |
         TRANSACTIONS | SECURE_SALT | MULTI_STATEMENTS | MULTI_RESULTS | PS_MULTI_RESULTS |
         PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | DEPRECATE_EOF;
 
-    private final int bitmap;
+    private final long bitmap;
+
+    public boolean isMariaDb() {
+        return (bitmap & CLIENT_MYSQL) == 0;
+    }
 
     /**
      * Checks if the connection will be connected and logon with a database.
@@ -261,12 +270,31 @@ public final class Capability {
     }
 
     /**
-     * Get the original bitmap of {@link Capability this}.
+     * Extends MariaDB capabilities.
      *
-     * @return the bitmap.
+     * @param hiCapabilities the bitmap of extend capabilities.
+     * @return a new {@link Capability} takes base and extend capabilities.
      */
-    public int getBitmap() {
-        return bitmap;
+    public Capability extendMariaDb(long hiCapabilities) {
+        return of((this.bitmap & 0xFFFFFFFFL) | (hiCapabilities << 32));
+    }
+
+    /**
+     * Get the lower 32-bits bitmap of {@link Capability this}.
+     *
+     * @return the lower 32-bits bitmap.
+     */
+    public int getBaseBitmap() {
+        return (int) bitmap;
+    }
+
+    /**
+     * Get the higher 32-bits bitmap of {@link Capability this}.
+     *
+     * @return the higher 32-bits bitmap.
+     */
+    public int getExtendBitmap() {
+        return (int) (bitmap >>> 32);
     }
 
     @Override
@@ -285,36 +313,36 @@ public final class Capability {
 
     @Override
     public int hashCode() {
-        return bitmap;
+        return Long.hashCode(bitmap);
     }
 
     @Override
     public String toString() {
         // Do not consider complex output, just use hex.
-        return "Capability<0x" + Integer.toHexString(bitmap) + '>';
+        return "Capability<0x" + Long.toHexString(bitmap) + '>';
     }
 
     Builder mutate() {
         return new Builder(bitmap);
     }
 
-    private Capability(int bitmap) {
+    private Capability(long bitmap) {
         this.bitmap = bitmap;
     }
 
     /**
      * Creates a {@link Capability} with capabilities bitmap. It will unset all unknown flags.
      *
-     * @param capabilities the capabilities bitmap.
+     * @param capabilities the bitmap of capabilities.
      * @return the {@link Capability} without unknown flags.
      */
-    public static Capability of(int capabilities) {
+    public static Capability of(long capabilities) {
         return new Capability(capabilities & ALL_SUPPORTED);
     }
 
     static final class Builder {
 
-        private int bitmap;
+        private long bitmap;
 
         void disableConnectWithDatabase() {
             this.bitmap &= ~CONNECT_WITH_DB;
@@ -352,7 +380,7 @@ public final class Capability {
             return of(this.bitmap);
         }
 
-        private Builder(int bitmap) {
+        private Builder(long bitmap) {
             this.bitmap = bitmap;
         }
     }
