@@ -83,7 +83,7 @@ final class SslRequest320 extends SizedClientMessage implements SslRequest {
     @Override
     protected void writeTo(ByteBuf buf) {
         // Protocol 3.20 only allows low 16-bits capabilities.
-        buf.writeShortLE(capability.getBitmap() & 0xFFFF)
+        buf.writeShortLE(capability.getBaseBitmap() & 0xFFFF)
             .writeMediumLE(Envelopes.MAX_ENVELOPE_SIZE);
     }
 }

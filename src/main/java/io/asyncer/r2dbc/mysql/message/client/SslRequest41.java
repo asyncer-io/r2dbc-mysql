@@ -27,9 +27,12 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
  */
 final class SslRequest41 extends SizedClientMessage implements SslRequest {
 
-    private static final int FILTER_SIZE = 23;
+    private static final int RESERVED_SIZE = 19;
 
-    private static final int BUF_SIZE = Integer.BYTES + Integer.BYTES + Byte.BYTES + FILTER_SIZE;
+    private static final int MARIA_DB_CAPABILITY_SIZE = Integer.BYTES;
+
+    private static final int BUF_SIZE = Integer.BYTES + Integer.BYTES + Byte.BYTES +
+        RESERVED_SIZE + MARIA_DB_CAPABILITY_SIZE;
 
     private final int envelopeId;
 
@@ -91,10 +94,16 @@ final class SslRequest41 extends SizedClientMessage implements SslRequest {
 
     @Override
     protected void writeTo(ByteBuf buf) {
-        buf.writeIntLE(capability.getBitmap())
+        buf.writeIntLE(capability.getBaseBitmap())
             .writeIntLE(Envelopes.MAX_ENVELOPE_SIZE)
-            .writeByte(collationId & 0xFF) // only low 8-bits
-            .writeZero(FILTER_SIZE);
+            .writeByte(collationId & 0xFF); // only low 8-bits
+
+        if (capability.isMariaDb()) {
+            buf.writeZero(RESERVED_SIZE)
+                .writeIntLE(capability.getExtendBitmap());
+        } else {
+            buf.writeZero(RESERVED_SIZE + MARIA_DB_CAPABILITY_SIZE);
+        }
     }
 
     int getCollationId() {
