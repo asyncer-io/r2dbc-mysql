@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 import java.nio.charset.Charset;
@@ -65,8 +64,8 @@ class DurationCodecTest implements CodecTestSupport<Duration> {
     };
 
     @Override
-    public DurationCodec getCodec(ByteBufAllocator allocator) {
-        return new DurationCodec(allocator);
+    public DurationCodec getCodec() {
+        return DurationCodec.INSTANCE;
     }
 
     @Override

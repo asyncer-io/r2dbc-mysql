@@ -20,6 +20,7 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import reactor.core.publisher.Mono;
 
 /**
@@ -43,7 +44,7 @@ final class NullMySqlParameter implements MySqlParameter {
      * {@inheritDoc}
      */
     @Override
-    public Mono<ByteBuf> publishBinary() {
+    public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
         return Mono.empty();
     }
 

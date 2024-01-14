@@ -45,12 +45,9 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final ByteBufAllocator allocator;
-
     private final Mode mode;
 
-    public JacksonCodec(ByteBufAllocator allocator, Mode mode) {
-        this.allocator = allocator;
+    public JacksonCodec(Mode mode) {
         this.mode = mode;
     }
 
@@ -80,7 +77,7 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new JacksonMySqlParameter(allocator, value, context);
+        return new JacksonMySqlParameter(value, context);
     }
 
     @Override
@@ -104,20 +101,17 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
 
     private static final class JacksonMySqlParameter implements MySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final Object value;
 
         private final CodecContext context;
 
-        private JacksonMySqlParameter(ByteBufAllocator allocator, Object value, CodecContext context) {
-            this.allocator = allocator;
+        private JacksonMySqlParameter(Object value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 int reserved;
                 Charset charset = context.getClientCollation().getCharset();

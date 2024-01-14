@@ -24,7 +24,6 @@ import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.asyncer.r2dbc.mysql.message.client.ParameterWriterHelper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ interface CodecTestSupport<T> {
 
     @Test
     default void encodeBinary() {
-        Codec<T> codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        Codec<T> codec = getCodec();
         T[] origin = originParameters();
         ByteBuf[] binaries = binaryParameters(CharCollation.clientCharCollation().getCharset());
 
@@ -69,7 +68,7 @@ interface CodecTestSupport<T> {
             ByteBuf sized = sized(binaries[i]);
             try {
                 MySqlParameter parameter = codec.encode(origin[i], context());
-                merge(Flux.from(parameter.publishBinary()))
+                merge(Flux.from(parameter.publishBinary(UnpooledByteBufAllocator.DEFAULT)))
                     .doOnNext(buf::set)
                     .as(StepVerifier::create)
                     .expectNext(sized)
@@ -83,7 +82,7 @@ interface CodecTestSupport<T> {
 
     @Test
     default void encodeStringify() {
-        Codec<T> codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        Codec<T> codec = getCodec();
         T[] origin = originParameters();
         Object[] strings = stringifyParameters();
 
@@ -103,7 +102,7 @@ interface CodecTestSupport<T> {
 
     @Test
     default void decodeBinary() {
-        Codec<T> codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        Codec<T> codec = getCodec();
 
         for (Decoding d : decoding(true, StandardCharsets.UTF_8)) {
             assertThat(codec.decode(d.content(), d.metadata(), Object.class, true, context()))
@@ -114,7 +113,7 @@ interface CodecTestSupport<T> {
 
     @Test
     default void decodeStringify() {
-        Codec<T> codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        Codec<T> codec = getCodec();
 
         for (Decoding d : decoding(false, StandardCharsets.UTF_8)) {
             assertThat(codec.decode(d.content(), d.metadata(), Object.class, false, context()))
@@ -162,7 +161,7 @@ interface CodecTestSupport<T> {
         return ConnectionContextTest.mock();
     }
 
-    Codec<T> getCodec(ByteBufAllocator allocator);
+    Codec<T> getCodec();
 
     T[] originParameters();
 

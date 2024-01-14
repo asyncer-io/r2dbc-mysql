@@ -33,8 +33,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class BigIntegerCodec extends AbstractClassedCodec<BigInteger> {
 
-    BigIntegerCodec(ByteBufAllocator allocator) {
-        super(allocator, BigInteger.class);
+    static final BigIntegerCodec INSTANCE = new BigIntegerCodec();
+
+    private BigIntegerCodec() {
+        super(BigInteger.class);
     }
 
     @Override
@@ -84,10 +86,10 @@ final class BigIntegerCodec extends AbstractClassedCodec<BigInteger> {
         BigInteger i = (BigInteger) value;
 
         if (i.bitLength() < Long.SIZE) {
-            return LongCodec.encodeLong(allocator, i.longValue());
+            return LongCodec.encodeLong(i.longValue());
         }
 
-        return new BigIntegerMySqlParameter(allocator, (BigInteger) value);
+        return new BigIntegerMySqlParameter((BigInteger) value);
     }
 
     @Override
@@ -140,17 +142,14 @@ final class BigIntegerCodec extends AbstractClassedCodec<BigInteger> {
 
     private static class BigIntegerMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final BigInteger value;
 
-        private BigIntegerMySqlParameter(ByteBufAllocator allocator, BigInteger value) {
-            this.allocator = allocator;
+        private BigIntegerMySqlParameter(BigInteger value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> CodecUtils.encodeAscii(allocator, value.toString()));
         }
 

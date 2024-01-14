@@ -21,8 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.asyncer.r2dbc.mysql.json.JacksonCodec;
+import io.asyncer.r2dbc.mysql.json.JacksonCodec.Mode;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 import java.nio.charset.Charset;
@@ -66,8 +66,8 @@ class JacksonCodecTest implements CodecTestSupport<Object> {
     };
 
     @Override
-    public Codec<Object> getCodec(ByteBufAllocator allocator) {
-        return new JacksonCodec(allocator, JacksonCodec.Mode.ALL);
+    public Codec<Object> getCodec() {
+        return new JacksonCodec(Mode.ALL);
     }
 
     @Override

@@ -41,16 +41,15 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 final class ClobCodec implements MassiveCodec<Clob> {
 
+    static final ClobCodec INSTANCE = new ClobCodec();
+
     /**
      * It should less than {@link BlobCodec}'s, because we can only make a minimum estimate before writing the
      * string.
      */
     private static final int MAX_MERGE = 1 << 13;
 
-    private final ByteBufAllocator allocator;
-
-    ClobCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private ClobCodec() {
     }
 
     @Override
@@ -79,25 +78,22 @@ final class ClobCodec implements MassiveCodec<Clob> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new ClobMySqlParameter(allocator, (Clob) value, context);
+        return new ClobMySqlParameter((Clob) value, context);
     }
 
     private static class ClobMySqlParameter extends AbstractLobMySqlParameter {
-
-        private final ByteBufAllocator allocator;
 
         private final AtomicReference<Clob> clob;
 
         private final CodecContext context;
 
-        private ClobMySqlParameter(ByteBufAllocator allocator, Clob clob, CodecContext context) {
-            this.allocator = allocator;
+        private ClobMySqlParameter(Clob clob, CodecContext context) {
             this.clob = new AtomicReference<>(clob);
             this.context = context;
         }
 
         @Override
-        public Flux<ByteBuf> publishBinary() {
+        public Flux<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Flux.defer(() -> {
                 Clob clob = this.clob.getAndSet(null);
 

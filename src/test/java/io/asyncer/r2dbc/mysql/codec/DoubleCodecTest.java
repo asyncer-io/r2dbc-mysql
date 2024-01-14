@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 import java.math.BigInteger;
@@ -65,8 +64,8 @@ class DoubleCodecTest extends NumericCodecTestSupport<Double> {
     };
 
     @Override
-    public DoubleCodec getCodec(ByteBufAllocator allocator) {
-        return new DoubleCodec(allocator);
+    public DoubleCodec getCodec() {
+        return DoubleCodec.INSTANCE;
     }
 
     @Override

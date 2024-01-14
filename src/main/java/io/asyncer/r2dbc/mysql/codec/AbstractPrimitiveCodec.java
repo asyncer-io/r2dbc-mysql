@@ -28,17 +28,14 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
  */
 abstract class AbstractPrimitiveCodec<T> implements PrimitiveCodec<T> {
 
-    protected final ByteBufAllocator allocator;
-
     private final Class<T> primitiveClass;
 
     private final Class<T> boxedClass;
 
-    AbstractPrimitiveCodec(ByteBufAllocator allocator, Class<T> primitiveClass, Class<T> boxedClass) {
+    AbstractPrimitiveCodec(Class<T> primitiveClass, Class<T> boxedClass) {
         require(primitiveClass.isPrimitive() && !boxedClass.isPrimitive(),
             "primitiveClass must be primitive and boxedClass must not be primitive");
 
-        this.allocator = allocator;
         this.primitiveClass = primitiveClass;
         this.boxedClass = boxedClass;
     }

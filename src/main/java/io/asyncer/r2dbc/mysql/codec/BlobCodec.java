@@ -42,12 +42,11 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 final class BlobCodec implements MassiveCodec<Blob> {
 
+    static final BlobCodec INSTANCE = new BlobCodec();
+
     private static final int MAX_MERGE = 1 << 14;
 
-    private final ByteBufAllocator allocator;
-
-    BlobCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private BlobCodec() {
     }
 
     @Override
@@ -76,7 +75,7 @@ final class BlobCodec implements MassiveCodec<Blob> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new BlobMySqlParameter(allocator, (Blob) value);
+        return new BlobMySqlParameter((Blob) value);
     }
 
     static List<ByteBuf> toList(List<ByteBuf> buffers) {
@@ -107,17 +106,14 @@ final class BlobCodec implements MassiveCodec<Blob> {
 
     private static final class BlobMySqlParameter extends AbstractLobMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final AtomicReference<Blob> blob;
 
-        private BlobMySqlParameter(ByteBufAllocator allocator, Blob blob) {
-            this.allocator = allocator;
+        private BlobMySqlParameter(Blob blob) {
             this.blob = new AtomicReference<>(blob);
         }
 
         @Override
-        public Flux<ByteBuf> publishBinary() {
+        public Flux<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Flux.defer(() -> {
                 Blob blob = this.blob.getAndSet(null);
 

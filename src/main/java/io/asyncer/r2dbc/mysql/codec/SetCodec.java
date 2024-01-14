@@ -43,10 +43,9 @@ import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
  */
 final class SetCodec implements ParametrizedCodec<String[]> {
 
-    private final ByteBufAllocator allocator;
+    static final SetCodec INSTANCE = new SetCodec();
 
-    SetCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private SetCodec() {
     }
 
     @Override
@@ -129,11 +128,11 @@ final class SetCodec implements ParametrizedCodec<String[]> {
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
         if (value instanceof CharSequence[]) {
-            return new StringArrayMySqlParameter(allocator, InternalArrays.toImmutableList((CharSequence[]) value),
+            return new StringArrayMySqlParameter(InternalArrays.toImmutableList((CharSequence[]) value),
                                                  context);
         }
 
-        return new SetMySqlParameter(allocator, (Set<?>) value, context);
+        return new SetMySqlParameter((Set<?>) value, context);
     }
 
     private static Set<?> buildSet(Class<?> subClass, boolean isEnum) {
@@ -291,20 +290,17 @@ final class SetCodec implements ParametrizedCodec<String[]> {
 
     private static final class SetMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final Set<?> value;
 
         private final CodecContext context;
 
-        private SetMySqlParameter(ByteBufAllocator allocator, Set<?> value, CodecContext context) {
-            this.allocator = allocator;
+        private SetMySqlParameter(Set<?> value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 if (value.isEmpty()) {
                     // It is zero of var int, not terminal.
@@ -347,21 +343,17 @@ final class SetCodec implements ParametrizedCodec<String[]> {
 
     private static final class StringArrayMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final List<CharSequence> value;
 
         private final CodecContext context;
 
-        private StringArrayMySqlParameter(ByteBufAllocator allocator, List<CharSequence> value,
-                                          CodecContext context) {
-            this.allocator = allocator;
+        private StringArrayMySqlParameter(List<CharSequence> value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 if (value.isEmpty()) {
                     // It is zero of var int, not terminal.

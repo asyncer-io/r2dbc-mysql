@@ -31,10 +31,9 @@ import java.nio.charset.Charset;
  */
 final class EnumCodec implements Codec<Enum<?>> {
 
-    private final ByteBufAllocator allocator;
+    static final EnumCodec INSTANCE = new EnumCodec();
 
-    EnumCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private EnumCodec() {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -58,25 +57,22 @@ final class EnumCodec implements Codec<Enum<?>> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new EnumMySqlParameter(allocator, (Enum<?>) value, context);
+        return new EnumMySqlParameter((Enum<?>) value, context);
     }
 
     private static final class EnumMySqlParameter extends AbstractMySqlParameter {
-
-        private final ByteBufAllocator allocator;
 
         private final Enum<?> value;
 
         private final CodecContext context;
 
-        private EnumMySqlParameter(ByteBufAllocator allocator, Enum<?> value, CodecContext context) {
-            this.allocator = allocator;
+        private EnumMySqlParameter(Enum<?> value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> StringCodec.encodeCharSequence(allocator, value.name(), context));
         }
 

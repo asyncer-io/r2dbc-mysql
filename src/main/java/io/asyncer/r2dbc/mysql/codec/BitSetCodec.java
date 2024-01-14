@@ -34,8 +34,10 @@ import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
  */
 final class BitSetCodec extends AbstractClassedCodec<BitSet> {
 
-    BitSetCodec(ByteBufAllocator allocator) {
-        super(allocator, BitSet.class);
+    static final BitSetCodec INSTANCE = new BitSetCodec();
+
+    private BitSetCodec() {
+        super(BitSet.class);
     }
 
     @Override
@@ -85,7 +87,7 @@ final class BitSetCodec extends AbstractClassedCodec<BitSet> {
             type = MySqlType.BIGINT;
         }
 
-        return new BitSetMySqlParameter(allocator, bits, type);
+        return new BitSetMySqlParameter(bits, type);
     }
 
     @Override
@@ -109,20 +111,17 @@ final class BitSetCodec extends AbstractClassedCodec<BitSet> {
 
     private static final class BitSetMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final long value;
 
         private final MySqlType type;
 
-        private BitSetMySqlParameter(ByteBufAllocator allocator, long value, MySqlType type) {
-            this.allocator = allocator;
+        private BitSetMySqlParameter(long value, MySqlType type) {
             this.value = value;
             this.type = type;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             switch (type) {
                 case TINYINT:
                     return Mono.fromSupplier(() -> allocator.buffer(Byte.BYTES).writeByte((int) value));

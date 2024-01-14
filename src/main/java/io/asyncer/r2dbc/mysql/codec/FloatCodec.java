@@ -31,8 +31,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class FloatCodec extends AbstractPrimitiveCodec<Float> {
 
-    FloatCodec(ByteBufAllocator allocator) {
-        super(allocator, Float.TYPE, Float.class);
+    static final FloatCodec INSTANCE = new FloatCodec();
+
+    private FloatCodec() {
+        super(Float.TYPE, Float.class);
     }
 
     @Override
@@ -62,7 +64,7 @@ final class FloatCodec extends AbstractPrimitiveCodec<Float> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new FloatMySqlParameter(allocator, (Float) value);
+        return new FloatMySqlParameter((Float) value);
     }
 
     @Override
@@ -110,17 +112,14 @@ final class FloatCodec extends AbstractPrimitiveCodec<Float> {
 
     private static final class FloatMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final float value;
 
-        private FloatMySqlParameter(ByteBufAllocator allocator, float value) {
-            this.allocator = allocator;
+        private FloatMySqlParameter(float value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 ByteBuf buf = allocator.buffer(Float.BYTES);
                 try {

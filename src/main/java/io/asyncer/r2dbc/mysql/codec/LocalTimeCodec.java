@@ -42,14 +42,16 @@ import static io.asyncer.r2dbc.mysql.codec.DateTimes.readMicroInDigits;
  */
 final class LocalTimeCodec extends AbstractClassedCodec<LocalTime> {
 
+    static final LocalTimeCodec INSTANCE = new LocalTimeCodec();
+
     private static final long NANOS_OF_DAY = ((long) SECONDS_OF_DAY) * NANOS_OF_SECOND;
 
     private static final long NANOS_OF_HOUR = ((long) SECONDS_OF_HOUR) * NANOS_OF_SECOND;
 
     private static final long NANOS_OF_MINUTE = ((long) SECONDS_OF_MINUTE) * NANOS_OF_SECOND;
 
-    LocalTimeCodec(ByteBufAllocator allocator) {
-        super(allocator, LocalTime.class);
+    private LocalTimeCodec() {
+        super(LocalTime.class);
     }
 
     @Override
@@ -65,7 +67,7 @@ final class LocalTimeCodec extends AbstractClassedCodec<LocalTime> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new LocalTimeMySqlParameter(allocator, (LocalTime) value);
+        return new LocalTimeMySqlParameter((LocalTime) value);
     }
 
     @Override
@@ -195,17 +197,14 @@ final class LocalTimeCodec extends AbstractClassedCodec<LocalTime> {
 
     private static final class LocalTimeMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final LocalTime value;
 
-        private LocalTimeMySqlParameter(ByteBufAllocator allocator, LocalTime value) {
-            this.allocator = allocator;
+        private LocalTimeMySqlParameter(LocalTime value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> encodeBinary(allocator, value));
         }
 

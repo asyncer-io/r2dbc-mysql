@@ -41,8 +41,10 @@ import static io.asyncer.r2dbc.mysql.codec.DateTimes.readMicroInDigits;
  */
 final class DurationCodec extends AbstractClassedCodec<Duration> {
 
-    DurationCodec(ByteBufAllocator allocator) {
-        super(allocator, Duration.class);
+    static final DurationCodec INSTANCE = new DurationCodec();
+
+    private DurationCodec() {
+        super(Duration.class);
     }
 
     @Override
@@ -58,7 +60,7 @@ final class DurationCodec extends AbstractClassedCodec<Duration> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new DurationMySqlParameter(allocator, (Duration) value);
+        return new DurationMySqlParameter((Duration) value);
     }
 
     @Override
@@ -160,17 +162,14 @@ final class DurationCodec extends AbstractClassedCodec<Duration> {
 
     private static final class DurationMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final Duration value;
 
-        private DurationMySqlParameter(ByteBufAllocator allocator, Duration value) {
-            this.allocator = allocator;
+        private DurationMySqlParameter(Duration value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 long seconds = value.getSeconds();
                 int nanos = value.getNano();

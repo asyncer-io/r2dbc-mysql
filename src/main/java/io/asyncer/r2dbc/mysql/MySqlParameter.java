@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
@@ -50,9 +51,11 @@ public interface MySqlParameter extends Disposable {
      * If we don't support multiple times writing, it will be hard to understand and maybe make a confuse to
      * user.
      *
+     * @param allocator the buffer allocator.
+     *
      * @return the encoded binary buffer(s).
      */
-    Publisher<ByteBuf> publishBinary();
+    Publisher<ByteBuf> publishBinary(ByteBufAllocator allocator);
 
     /**
      * Text protocol encoding.

@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 import java.nio.charset.Charset;
 import java.time.Instant;
@@ -39,8 +38,8 @@ class OffsetDateTimeCodecTest extends DateTimeCodecTestSupport<OffsetDateTime> {
     };
 
     @Override
-    public OffsetDateTimeCodec getCodec(ByteBufAllocator allocator) {
-        return new OffsetDateTimeCodec(allocator);
+    public OffsetDateTimeCodec getCodec() {
+        return OffsetDateTimeCodec.INSTANCE;
     }
 
     @Override

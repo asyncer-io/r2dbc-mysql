@@ -31,8 +31,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
 
-    DoubleCodec(ByteBufAllocator allocator) {
-        super(allocator, Double.TYPE, Double.class);
+    static final DoubleCodec INSTANCE = new DoubleCodec();
+
+    private DoubleCodec() {
+        super(Double.TYPE, Double.class);
     }
 
     @Override
@@ -62,7 +64,7 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new DoubleMySqlParameter(allocator, (Double) value);
+        return new DoubleMySqlParameter((Double) value);
     }
 
     @Override
@@ -110,17 +112,14 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
 
     private static final class DoubleMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final double value;
 
-        private DoubleMySqlParameter(ByteBufAllocator allocator, double value) {
-            this.allocator = allocator;
+        private DoubleMySqlParameter(double value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 ByteBuf buf = allocator.buffer(Double.BYTES);
                 try {

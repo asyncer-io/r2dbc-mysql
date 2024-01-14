@@ -34,8 +34,10 @@ import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
  */
 final class ByteBufferCodec extends AbstractClassedCodec<ByteBuffer> {
 
-    ByteBufferCodec(ByteBufAllocator allocator) {
-        super(allocator, ByteBuffer.class);
+    static final ByteBufferCodec INSTANCE = new ByteBufferCodec();
+
+    private ByteBufferCodec() {
+        super(ByteBuffer.class);
     }
 
     @Override
@@ -55,7 +57,7 @@ final class ByteBufferCodec extends AbstractClassedCodec<ByteBuffer> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new ByteBufferMySqlParameter(allocator, (ByteBuffer) value);
+        return new ByteBufferMySqlParameter((ByteBuffer) value);
     }
 
     @Override
@@ -70,17 +72,14 @@ final class ByteBufferCodec extends AbstractClassedCodec<ByteBuffer> {
 
     private static final class ByteBufferMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final ByteBuffer buffer;
 
-        private ByteBufferMySqlParameter(ByteBufAllocator allocator, ByteBuffer buffer) {
-            this.allocator = allocator;
+        private ByteBufferMySqlParameter(ByteBuffer buffer) {
             this.buffer = buffer;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> {
                 if (!buffer.hasRemaining()) {
                     // It is zero of var int, not terminal.

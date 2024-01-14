@@ -20,6 +20,7 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.IllegalReferenceCountException;
 import reactor.core.publisher.Mono;
 
@@ -43,7 +44,7 @@ final class MockMySqlParameter extends AtomicInteger implements MySqlParameter {
     }
 
     @Override
-    public Mono<ByteBuf> publishBinary() {
+    public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
         if (success) {
             return Mono.fromRunnable(this::dispose);
         } else {

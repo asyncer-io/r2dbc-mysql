@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.netty.buffer.ByteBufAllocator;
 
 /**
  * Codec for classed type when field bytes less or equals than {@link Integer#MAX_VALUE}.
@@ -26,12 +25,9 @@ import io.netty.buffer.ByteBufAllocator;
  */
 abstract class AbstractClassedCodec<T> implements Codec<T> {
 
-    protected final ByteBufAllocator allocator;
-
     private final Class<? extends T> type;
 
-    AbstractClassedCodec(ByteBufAllocator allocator, Class<? extends T> type) {
-        this.allocator = allocator;
+    AbstractClassedCodec(Class<? extends T> type) {
         this.type = type;
     }
 
@@ -40,5 +36,5 @@ abstract class AbstractClassedCodec<T> implements Codec<T> {
         return target.isAssignableFrom(this.type) && doCanDecode(metadata);
     }
 
-    abstract protected boolean doCanDecode(MySqlColumnMetadata metadata);
+    protected abstract boolean doCanDecode(MySqlColumnMetadata metadata);
 }
