@@ -74,6 +74,8 @@ public final class ErrorMessage implements ServerMessage {
     }
 
     public R2dbcException toException(@Nullable String sql) {
+        // mysql: https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
+        // mariadb: https://mariadb.com/kb/en/mariadb-error-code-reference/
         // Should keep looking more error codes
         switch (code) {
             case 1044: // Database access denied
@@ -93,6 +95,8 @@ public final class ErrorMessage implements ServerMessage {
                 return new R2dbcTransientResourceException(message, sqlState, code);
             case 1205: // Wait lock timeout
             case 1907: // Statement executing timeout
+            case 3024: // Query execution was interrupted, maximum statement execution time exceeded
+            case 1969: // Query execution was interrupted
                 return new R2dbcTimeoutException(message, sqlState, code);
             case 1613: // Transaction rollback because of took too long
                 return new R2dbcRollbackException(message, sqlState, code);

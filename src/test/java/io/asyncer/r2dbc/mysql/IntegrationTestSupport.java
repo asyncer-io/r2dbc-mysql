@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.R2dbcBadGrammarException;
+import io.r2dbc.spi.R2dbcTimeoutException;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
@@ -48,6 +49,10 @@ abstract class IntegrationTestSupport {
 
     void badGrammar(Function<? super MySqlConnection, Publisher<?>> runner) {
         process(runner).verifyError(R2dbcBadGrammarException.class);
+    }
+
+    void timeout(Function<? super MySqlConnection, Publisher<?>> runner) {
+        process(runner).verifyError(R2dbcTimeoutException.class);
     }
 
     void illegalArgument(Function<? super MySqlConnection, Publisher<?>> runner) {
@@ -147,5 +152,22 @@ abstract class IntegrationTestSupport {
         ServerVersion ver = ServerVersion.parse(System.getProperty("test.mysql.version"));
 
         return ver.isGreaterThanOrEqualTo(ServerVersion.create(10, 5, 1));
+    }
+
+    boolean envIsLessThanMySql574OrMariaDb102() {
+        String version = System.getProperty("test.mysql.version");
+
+        if (version == null || version.isEmpty()) {
+            return true;
+        }
+
+        ServerVersion ver = ServerVersion.parse(version);
+        String type = System.getProperty("test.db.type");
+
+        if ("mariadb".equalsIgnoreCase(type)) {
+            return ver.isLessThan(ServerVersion.create(10, 2, 0));
+        }
+
+        return ver.isLessThan(ServerVersion.create(5, 7, 4));
     }
 }

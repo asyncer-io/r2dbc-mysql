@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.netty.util.ReferenceCountUtil;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
@@ -608,6 +607,17 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
                             )
                         )
                     )))
+        );
+    }
+
+    @Test
+    @DisabledIf("envIsLessThanMySql574OrMariaDb102")
+    void setStatementTimeoutTest() {
+        final String sql = "SELECT 1 WHERE SLEEP(1) > 1";
+        timeout(connection -> connection.setStatementTimeout(Duration.ofMillis(500))
+                .then(Mono.from(connection.createStatement(sql).execute()))
+                .flatMapMany(result -> Mono.from(result.map((row, metadata) -> row.get(0, String.class))))
+                .collectList()
         );
     }
 
