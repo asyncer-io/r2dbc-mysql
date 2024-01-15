@@ -23,6 +23,7 @@ import io.asyncer.r2dbc.mysql.client.FluxExchangeable;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.message.client.AuthResponse;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.HandshakeResponse;
@@ -1230,7 +1231,7 @@ final class CreateSavepointState extends AbstractTransactionState {
             statements.add("BEGIN");
         }
 
-        final String doneSql = String.format("SAVEPOINT `%s`", name);
+        final String doneSql = "SAVEPOINT " + StringUtils.quoteIdentifier(name);
         tasks |= CREATE_SAVEPOINT;
         statements.add(doneSql);
         return false;

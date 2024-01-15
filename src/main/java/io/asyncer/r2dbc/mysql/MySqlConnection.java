@@ -21,6 +21,7 @@ import io.asyncer.r2dbc.mysql.cache.QueryCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.message.client.InitDbMessage;
 import io.asyncer.r2dbc.mysql.message.client.PingMessage;
 import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
@@ -47,8 +48,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
 
 /**
  * An implementation of {@link Connection} for connecting to the MySQL database.
@@ -222,7 +223,8 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     @Override
     public Mono<Void> createSavepoint(String name) {
-        requireValidName(name, "Savepoint name must not be empty and not contain backticks");
+        requireNonEmpty(name, "Savepoint name must not be empty");
+
         return QueryFlow.createSavepoint(client, this, name, batchSupported);
     }
 
@@ -266,23 +268,21 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     @Override
     public Mono<Void> releaseSavepoint(String name) {
-        requireValidName(name, "Savepoint name must not be empty and not contain backticks");
+        requireNonEmpty(name, "Savepoint name must not be empty");
 
-        return QueryFlow.executeVoid(client, String.format("RELEASE SAVEPOINT `%s`", name));
+        return QueryFlow.executeVoid(client, "RELEASE SAVEPOINT " + StringUtils.quoteIdentifier(name));
     }
 
     @Override
     public Mono<Void> rollbackTransaction() {
-        return Mono.defer(() -> {
-            return QueryFlow.doneTransaction(client, this, false, batchSupported);
-        });
+        return Mono.defer(() -> QueryFlow.doneTransaction(client, this, false, batchSupported));
     }
 
     @Override
     public Mono<Void> rollbackTransactionToSavepoint(String name) {
-        requireValidName(name, "Savepoint name must not be empty and not contain backticks");
+        requireNonEmpty(name, "Savepoint name must not be empty");
 
-        return QueryFlow.executeVoid(client, String.format("ROLLBACK TO SAVEPOINT `%s`", name));
+        return QueryFlow.executeVoid(client, "ROLLBACK TO SAVEPOINT " + StringUtils.quoteIdentifier(name));
     }
 
     @Override
@@ -294,7 +294,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
      * MySQL does not have any way to query the isolation level of the current transaction, only inferred from
      * past statements, so driver can not make sure the result is right.
      * <p>
-     * See https://bugs.mysql.com/bug.php?id=53341
+     * See <a href="https://bugs.mysql.com/bug.php?id=53341">MySQL Bug 53341</a>
      * <p>
      * {@inheritDoc}
      */
@@ -467,7 +467,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             return connection;
         }
 
-        requireValidName(database, "database must not be empty and not contain backticks");
+        requireNonEmpty(database, "database must not be empty");
 
         return connection.flatMap(conn -> client.exchange(new InitDbMessage(database), INIT_DB)
             .last()
@@ -476,7 +476,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
                     return Mono.just(conn);
                 }
 
-                String sql = String.format("CREATE DATABASE IF NOT EXISTS `%s`", database);
+                String sql = "CREATE DATABASE IF NOT EXISTS " + StringUtils.quoteIdentifier(database);
 
                 return QueryFlow.executeVoid(client, sql)
                     .then(client.exchange(new InitDbMessage(database), INIT_DB_AFTER).then(Mono.just(conn)));
