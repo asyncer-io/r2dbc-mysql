@@ -21,7 +21,6 @@ import io.asyncer.r2dbc.mysql.Query;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.message.client.ParameterWriterHelper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
@@ -71,8 +70,8 @@ class SetCodecTest implements CodecTestSupport<String[]> {
     };
 
     @Override
-    public SetCodec getCodec(ByteBufAllocator allocator) {
-        return new SetCodec(allocator);
+    public SetCodec getCodec() {
+        return SetCodec.INSTANCE;
     }
 
     @Override
@@ -99,7 +98,7 @@ class SetCodecTest implements CodecTestSupport<String[]> {
 
     @Test
     void binarySet() {
-        SetCodec codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        SetCodec codec = getCodec();
         ByteBuf[] binaries = binarySets(CharCollation.clientCharCollation().getCharset());
 
         assertThat(sets).hasSize(binaries.length);
@@ -108,7 +107,7 @@ class SetCodecTest implements CodecTestSupport<String[]> {
             AtomicReference<ByteBuf> buf = new AtomicReference<>();
             ByteBuf sized = sized(binaries[i]);
             try {
-                merge(Flux.from(codec.encode(sets[i], context()).publishBinary()))
+                merge(Flux.from(codec.encode(sets[i], context()).publishBinary(UnpooledByteBufAllocator.DEFAULT)))
                     .doOnNext(buf::set)
                     .as(StepVerifier::create)
                     .expectNext(sized)
@@ -122,7 +121,7 @@ class SetCodecTest implements CodecTestSupport<String[]> {
 
     @Test
     void stringifySet() {
-        SetCodec codec = getCodec(UnpooledByteBufAllocator.DEFAULT);
+        SetCodec codec = getCodec();
         String[] strings = stringifySets();
 
         assertThat(sets).hasSize(strings.length);

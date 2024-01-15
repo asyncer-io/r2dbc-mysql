@@ -277,42 +277,42 @@ final class DefaultCodecs implements Codecs {
 
     private static Codec<?>[] defaultCodecs(ByteBufAllocator allocator) {
         return new Codec<?>[] {
-            new ByteCodec(allocator),
-            new ShortCodec(allocator),
-            new IntegerCodec(allocator),
-            new LongCodec(allocator),
-            new BigIntegerCodec(allocator),
+            ByteCodec.INSTANCE,
+            ShortCodec.INSTANCE,
+            IntegerCodec.INSTANCE,
+            LongCodec.INSTANCE,
+            BigIntegerCodec.INSTANCE,
 
-            new BigDecimalCodec(allocator), // Only all decimals
-            new FloatCodec(allocator), // Decimal (precision < 7) or float
-            new DoubleCodec(allocator), // Decimal (precision < 16) or double or float
+            BigDecimalCodec.INSTANCE, // Only all decimals
+            FloatCodec.INSTANCE, // Decimal (precision < 7) or float
+            DoubleCodec.INSTANCE, // Decimal (precision < 16) or double or float
 
-            new BooleanCodec(allocator),
-            new BitSetCodec(allocator),
+            BooleanCodec.INSTANCE,
+            BitSetCodec.INSTANCE,
 
-            new ZonedDateTimeCodec(allocator),
-            new LocalDateTimeCodec(allocator),
-            new InstantCodec(allocator),
-            new OffsetDateTimeCodec(allocator),
+            ZonedDateTimeCodec.INSTANCE,
+            LocalDateTimeCodec.INSTANCE,
+            InstantCodec.INSTANCE,
+            OffsetDateTimeCodec.INSTANCE,
 
-            new LocalDateCodec(allocator),
+            LocalDateCodec.INSTANCE,
 
-            new LocalTimeCodec(allocator),
-            new DurationCodec(allocator),
-            new OffsetTimeCodec(allocator),
+            LocalTimeCodec.INSTANCE,
+            DurationCodec.INSTANCE,
+            OffsetTimeCodec.INSTANCE,
 
-            new YearCodec(allocator),
+            YearCodec.INSTANCE,
 
-            new StringCodec(allocator),
+            StringCodec.INSTANCE,
 
-            new EnumCodec(allocator),
-            new SetCodec(allocator),
+            EnumCodec.INSTANCE,
+            SetCodec.INSTANCE,
 
-            new ClobCodec(allocator),
-            new BlobCodec(allocator),
+            ClobCodec.INSTANCE,
+            BlobCodec.INSTANCE,
 
-            new ByteBufferCodec(allocator),
-            new ByteArrayCodec(allocator)
+            ByteBufferCodec.INSTANCE,
+            ByteArrayCodec.INSTANCE
         };
     }
 

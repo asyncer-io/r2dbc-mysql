@@ -34,8 +34,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class IntegerCodec extends AbstractPrimitiveCodec<Integer> {
 
-    IntegerCodec(ByteBufAllocator allocator) {
-        super(allocator, Integer.TYPE, Integer.class);
+    static final IntegerCodec INSTANCE = new IntegerCodec();
+
+    private IntegerCodec() {
+        super(Integer.TYPE, Integer.class);
     }
 
     @Override
@@ -54,12 +56,12 @@ final class IntegerCodec extends AbstractPrimitiveCodec<Integer> {
         int v = (Integer) value;
 
         if ((byte) v == v) {
-            return new ByteMySqlParameter(allocator, (byte) v);
+            return new ByteMySqlParameter((byte) v);
         } else if ((short) v == v) {
-            return new ShortMySqlParameter(allocator, (short) v);
+            return new ShortMySqlParameter((short) v);
         }
 
-        return new IntMySqlParameter(allocator, v);
+        return new IntMySqlParameter(v);
     }
 
     @Override
@@ -121,17 +123,14 @@ final class IntegerCodec extends AbstractPrimitiveCodec<Integer> {
 
     static final class IntMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final int value;
 
-        IntMySqlParameter(ByteBufAllocator allocator, int value) {
-            this.allocator = allocator;
+        IntMySqlParameter(int value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> allocator.buffer(Integer.BYTES).writeIntLE(value));
         }
 

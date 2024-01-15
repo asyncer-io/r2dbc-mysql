@@ -35,8 +35,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class LongCodec extends AbstractPrimitiveCodec<Long> {
 
-    LongCodec(ByteBufAllocator allocator) {
-        super(allocator, Long.TYPE, Long.class);
+    static final LongCodec INSTANCE = new LongCodec();
+
+    private LongCodec() {
+        super(Long.TYPE, Long.class);
     }
 
     @Override
@@ -67,7 +69,7 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return encodeLong(allocator, (Long) value);
+        return encodeLong((Long) value);
     }
 
     @Override
@@ -75,16 +77,18 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
         return metadata.getType().isNumeric();
     }
 
-    static MySqlParameter encodeLong(ByteBufAllocator allocator, long v) {
+    static MySqlParameter encodeLong(long v) {
         if ((byte) v == v) {
-            return new ByteMySqlParameter(allocator, (byte) v);
-        } else if ((short) v == v) {
-            return new ShortMySqlParameter(allocator, (short) v);
-        } else if ((int) v == v) {
-            return new IntMySqlParameter(allocator, (int) v);
+            return new ByteMySqlParameter((byte) v);
+        }
+        if ((short) v == v) {
+            return new ShortMySqlParameter((short) v);
+        }
+        if ((int) v == v) {
+            return new IntMySqlParameter((int) v);
         }
 
-        return new LongMySqlParameter(allocator, v);
+        return new LongMySqlParameter(v);
     }
 
     private static long decodeBinary(ByteBuf buf, MySqlType type) {
@@ -125,17 +129,14 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
 
     private static final class LongMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final long value;
 
-        private LongMySqlParameter(ByteBufAllocator allocator, long value) {
-            this.allocator = allocator;
+        private LongMySqlParameter(long value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> allocator.buffer(Long.BYTES).writeLongLE(value));
         }
 

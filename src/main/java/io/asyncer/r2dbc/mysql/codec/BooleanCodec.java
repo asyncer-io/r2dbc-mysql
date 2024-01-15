@@ -29,8 +29,10 @@ import reactor.core.publisher.Mono;
  */
 final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
-    BooleanCodec(ByteBufAllocator allocator) {
-        super(allocator, Boolean.TYPE, Boolean.class);
+    static final BooleanCodec INSTANCE = new BooleanCodec();
+
+    private BooleanCodec() {
+        super(Boolean.TYPE, Boolean.class);
     }
 
     @Override
@@ -46,7 +48,7 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new BooleanMySqlParameter(allocator, (Boolean) value);
+        return new BooleanMySqlParameter((Boolean) value);
     }
 
     @Override
@@ -57,17 +59,14 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
     private static final class BooleanMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final boolean value;
 
-        private BooleanMySqlParameter(ByteBufAllocator allocator, boolean value) {
-            this.allocator = allocator;
+        private BooleanMySqlParameter(boolean value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> allocator.buffer(Byte.BYTES).writeByte(value ? 1 : 0));
         }
 

@@ -38,10 +38,9 @@ import java.time.chrono.ChronoZonedDateTime;
  */
 final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
 
-    private final ByteBufAllocator allocator;
+    static final ZonedDateTimeCodec INSTANCE = new ZonedDateTimeCodec();
 
-    ZonedDateTimeCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private ZonedDateTimeCodec() {
     }
 
     @Override
@@ -58,7 +57,7 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new ZonedDateTimeMySqlParameter(allocator, (ZonedDateTime) value, context);
+        return new ZonedDateTimeMySqlParameter((ZonedDateTime) value, context);
     }
 
     @Override
@@ -84,21 +83,17 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
 
     private static final class ZonedDateTimeMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final ZonedDateTime value;
 
         private final CodecContext context;
 
-        private ZonedDateTimeMySqlParameter(ByteBufAllocator allocator, ZonedDateTime value,
-                                            CodecContext context) {
-            this.allocator = allocator;
+        private ZonedDateTimeMySqlParameter(ZonedDateTime value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> LocalDateTimeCodec.encodeBinary(allocator, serverValue()));
         }
 

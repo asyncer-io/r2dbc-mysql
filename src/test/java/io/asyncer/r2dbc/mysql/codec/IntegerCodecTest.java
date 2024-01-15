@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -60,8 +59,8 @@ class IntegerCodecTest extends NumericCodecTestSupport<Integer> {
     };
 
     @Override
-    public IntegerCodec getCodec(ByteBufAllocator allocator) {
-        return new IntegerCodec(allocator);
+    public IntegerCodec getCodec() {
+        return IntegerCodec.INSTANCE;
     }
 
     @Override

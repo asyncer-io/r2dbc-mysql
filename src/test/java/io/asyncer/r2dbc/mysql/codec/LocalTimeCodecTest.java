@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 import java.nio.charset.Charset;
 import java.time.LocalTime;
@@ -39,8 +38,8 @@ class LocalTimeCodecTest extends TimeCodecTestSupport<LocalTime> {
     };
 
     @Override
-    public LocalTimeCodec getCodec(ByteBufAllocator allocator) {
-        return new LocalTimeCodec(allocator);
+    public LocalTimeCodec getCodec() {
+        return LocalTimeCodec.INSTANCE;
     }
 
     @Override

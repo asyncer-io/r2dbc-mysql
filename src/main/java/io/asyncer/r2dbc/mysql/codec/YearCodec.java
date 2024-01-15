@@ -23,7 +23,6 @@ import io.asyncer.r2dbc.mysql.codec.IntegerCodec.IntMySqlParameter;
 import io.asyncer.r2dbc.mysql.codec.ShortCodec.ShortMySqlParameter;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 import java.time.Year;
 
@@ -34,8 +33,10 @@ import java.time.Year;
  */
 final class YearCodec extends AbstractClassedCodec<Year> {
 
-    YearCodec(ByteBufAllocator allocator) {
-        super(allocator, Year.class);
+    static final YearCodec INSTANCE = new YearCodec();
+
+    private YearCodec() {
+        super(Year.class);
     }
 
     @Override
@@ -54,13 +55,14 @@ final class YearCodec extends AbstractClassedCodec<Year> {
         int year = ((Year) value).getValue();
 
         if ((byte) year == year) {
-            return new ByteMySqlParameter(allocator, (byte) year);
-        } else if ((short) year == year) {
-            return new ShortMySqlParameter(allocator, (short) year);
+            return new ByteMySqlParameter((byte) year);
+        }
+        if ((short) year == year) {
+            return new ShortMySqlParameter((short) year);
         }
 
         // Server does not support it, but still encodes it.
-        return new IntMySqlParameter(allocator, year);
+        return new IntMySqlParameter(year);
     }
 
     @Override

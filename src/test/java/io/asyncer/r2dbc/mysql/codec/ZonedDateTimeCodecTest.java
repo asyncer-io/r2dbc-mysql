@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.Charset;
@@ -56,8 +55,8 @@ class ZonedDateTimeCodecTest extends DateTimeCodecTestSupport<ZonedDateTime> {
     }
 
     @Override
-    public Codec<ZonedDateTime> getCodec(ByteBufAllocator allocator) {
-        return new ZonedDateTimeCodec(allocator);
+    public Codec<ZonedDateTime> getCodec() {
+        return ZonedDateTimeCodec.INSTANCE;
     }
 
     @Override

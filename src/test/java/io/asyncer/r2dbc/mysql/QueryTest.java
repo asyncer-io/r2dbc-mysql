@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -333,7 +334,7 @@ class QueryTest {
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.error(() -> new IllegalStateException("Mock parameter, has no value"));
         }
 

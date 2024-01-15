@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 import java.nio.charset.Charset;
@@ -31,8 +30,8 @@ class BooleanCodecTest implements CodecTestSupport<Boolean> {
     private final Boolean[] booleans = { Boolean.TRUE, Boolean.FALSE };
 
     @Override
-    public BooleanCodec getCodec(ByteBufAllocator allocator) {
-        return new BooleanCodec(allocator);
+    public BooleanCodec getCodec() {
+        return BooleanCodec.INSTANCE;
     }
 
     @Override

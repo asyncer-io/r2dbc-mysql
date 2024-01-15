@@ -30,8 +30,10 @@ import reactor.core.publisher.Mono;
  */
 final class ShortCodec extends AbstractPrimitiveCodec<Short> {
 
-    ShortCodec(ByteBufAllocator allocator) {
-        super(allocator, Short.TYPE, Short.class);
+    static final ShortCodec INSTANCE = new ShortCodec();
+
+    private ShortCodec() {
+        super(Short.TYPE, Short.class);
     }
 
     @Override
@@ -50,10 +52,10 @@ final class ShortCodec extends AbstractPrimitiveCodec<Short> {
         short v = (Short) value;
 
         if ((byte) v == v) {
-            return new ByteMySqlParameter(allocator, (byte) v);
+            return new ByteMySqlParameter((byte) v);
         }
 
-        return new ShortMySqlParameter(allocator, v);
+        return new ShortMySqlParameter(v);
     }
 
     @Override
@@ -63,17 +65,14 @@ final class ShortCodec extends AbstractPrimitiveCodec<Short> {
 
     static final class ShortMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final short value;
 
-        ShortMySqlParameter(ByteBufAllocator allocator, short value) {
-            this.allocator = allocator;
+        ShortMySqlParameter(short value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> allocator.buffer(Short.BYTES).writeShortLE(value));
         }
 

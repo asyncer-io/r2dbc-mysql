@@ -32,8 +32,10 @@ import java.nio.charset.Charset;
  */
 final class StringCodec extends AbstractClassedCodec<String> {
 
-    StringCodec(ByteBufAllocator allocator) {
-        super(allocator, String.class);
+    static final StringCodec INSTANCE = new StringCodec();
+
+    private StringCodec() {
+        super(String.class);
     }
 
     @Override
@@ -53,7 +55,7 @@ final class StringCodec extends AbstractClassedCodec<String> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new StringMySqlParameter(allocator, (CharSequence) value, context);
+        return new StringMySqlParameter((CharSequence) value, context);
     }
 
     @Override
@@ -84,20 +86,17 @@ final class StringCodec extends AbstractClassedCodec<String> {
 
     private static class StringMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final CharSequence value;
 
         private final CodecContext context;
 
-        private StringMySqlParameter(ByteBufAllocator allocator, CharSequence value, CodecContext context) {
-            this.allocator = allocator;
+        private StringMySqlParameter(CharSequence value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> encodeCharSequence(allocator, value, context));
         }
 

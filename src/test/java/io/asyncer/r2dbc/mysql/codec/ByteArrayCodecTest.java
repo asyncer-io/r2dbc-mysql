@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.testcontainers.shaded.org.bouncycastle.util.encoders.Hex;
 
@@ -40,8 +39,8 @@ class ByteArrayCodecTest implements CodecTestSupport<byte[]> {
     };
 
     @Override
-    public ByteArrayCodec getCodec(ByteBufAllocator allocator) {
-        return new ByteArrayCodec(allocator);
+    public ByteArrayCodec getCodec() {
+        return ByteArrayCodec.INSTANCE;
     }
 
     @Override

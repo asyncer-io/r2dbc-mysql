@@ -32,8 +32,10 @@ import java.nio.charset.StandardCharsets;
  */
 final class BigDecimalCodec extends AbstractClassedCodec<BigDecimal> {
 
-    BigDecimalCodec(ByteBufAllocator allocator) {
-        super(allocator, BigDecimal.class);
+    static final BigDecimalCodec INSTANCE = new BigDecimalCodec();
+
+    private BigDecimalCodec() {
+        super(BigDecimal.class);
     }
 
     @Override
@@ -76,7 +78,7 @@ final class BigDecimalCodec extends AbstractClassedCodec<BigDecimal> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new BigDecimalMySqlParameter(allocator, (BigDecimal) value);
+        return new BigDecimalMySqlParameter((BigDecimal) value);
     }
 
     @Override
@@ -128,17 +130,14 @@ final class BigDecimalCodec extends AbstractClassedCodec<BigDecimal> {
 
     private static final class BigDecimalMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final BigDecimal value;
 
-        private BigDecimalMySqlParameter(ByteBufAllocator allocator, BigDecimal value) {
-            this.allocator = allocator;
+        private BigDecimalMySqlParameter(BigDecimal value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> CodecUtils.encodeAscii(allocator, value.toString()));
         }
 

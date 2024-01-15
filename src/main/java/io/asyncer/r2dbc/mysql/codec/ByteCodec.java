@@ -29,8 +29,10 @@ import reactor.core.publisher.Mono;
  */
 final class ByteCodec extends AbstractPrimitiveCodec<Byte> {
 
-    ByteCodec(ByteBufAllocator allocator) {
-        super(allocator, Byte.TYPE, Byte.class);
+    static final ByteCodec INSTANCE = new ByteCodec();
+
+    private ByteCodec() {
+        super(Byte.TYPE, Byte.class);
     }
 
     @Override
@@ -46,7 +48,7 @@ final class ByteCodec extends AbstractPrimitiveCodec<Byte> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new ByteMySqlParameter(allocator, (Byte) value);
+        return new ByteMySqlParameter((Byte) value);
     }
 
     @Override
@@ -56,17 +58,14 @@ final class ByteCodec extends AbstractPrimitiveCodec<Byte> {
 
     static final class ByteMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final byte value;
 
-        ByteMySqlParameter(ByteBufAllocator allocator, byte value) {
-            this.allocator = allocator;
+        ByteMySqlParameter(byte value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> allocator.buffer(Byte.BYTES).writeByte(value));
         }
 

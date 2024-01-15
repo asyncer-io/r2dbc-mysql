@@ -32,10 +32,12 @@ import java.time.LocalDate;
  */
 final class LocalDateCodec extends AbstractClassedCodec<LocalDate> {
 
+    static final LocalDateCodec INSTANCE = new LocalDateCodec();
+
     static final LocalDate ROUND = LocalDate.of(1, 1, 1);
 
-    LocalDateCodec(ByteBufAllocator allocator) {
-        super(allocator, LocalDate.class);
+    LocalDateCodec() {
+        super(LocalDate.class);
     }
 
     @Override
@@ -58,7 +60,7 @@ final class LocalDateCodec extends AbstractClassedCodec<LocalDate> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new LocalDateMySqlParameter(allocator, (LocalDate) value);
+        return new LocalDateMySqlParameter((LocalDate) value);
     }
 
     @Override
@@ -158,17 +160,14 @@ final class LocalDateCodec extends AbstractClassedCodec<LocalDate> {
 
     private static final class LocalDateMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final LocalDate value;
 
-        private LocalDateMySqlParameter(ByteBufAllocator allocator, LocalDate value) {
-            this.allocator = allocator;
+        private LocalDateMySqlParameter(LocalDate value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> encodeDate(allocator, value));
         }
 

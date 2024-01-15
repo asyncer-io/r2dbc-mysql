@@ -129,7 +129,7 @@ public final class PreparedExecuteMessage implements ClientMessage, Disposable {
 
                 Flux<ByteBuf> parameters = OperatorUtils.discardOnCancel(Flux.fromArray(values))
                     .doOnDiscard(MySqlParameter.class, MySqlParameter::dispose)
-                    .concatMap(MySqlParameter::publishBinary);
+                    .concatMap(mySqlParameter -> mySqlParameter.publishBinary(allocator));
 
                 return Flux.just(buf).concatWith(parameters);
             } catch (Throwable e) {

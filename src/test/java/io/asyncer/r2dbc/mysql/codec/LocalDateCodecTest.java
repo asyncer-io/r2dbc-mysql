@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 import java.nio.charset.Charset;
@@ -59,8 +58,8 @@ class LocalDateCodecTest implements CodecTestSupport<LocalDate> {
         .toFormatter(Locale.ENGLISH);
 
     @Override
-    public LocalDateCodec getCodec(ByteBufAllocator allocator) {
-        return new LocalDateCodec(allocator);
+    public LocalDateCodec getCodec() {
+        return LocalDateCodec.INSTANCE;
     }
 
     @Override

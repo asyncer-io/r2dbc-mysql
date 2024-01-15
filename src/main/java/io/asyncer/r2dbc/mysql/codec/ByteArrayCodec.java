@@ -35,8 +35,10 @@ import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
  */
 final class ByteArrayCodec extends AbstractClassedCodec<byte[]> {
 
-    ByteArrayCodec(ByteBufAllocator allocator) {
-        super(allocator, byte[].class);
+    static final ByteArrayCodec INSTANCE = new ByteArrayCodec();
+
+    private ByteArrayCodec() {
+        super(byte[].class);
     }
 
     @Override
@@ -56,7 +58,7 @@ final class ByteArrayCodec extends AbstractClassedCodec<byte[]> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new ByteArrayMySqlParameter(allocator, (byte[]) value);
+        return new ByteArrayMySqlParameter((byte[]) value);
     }
 
     @Override
@@ -85,17 +87,14 @@ final class ByteArrayCodec extends AbstractClassedCodec<byte[]> {
 
     private static final class ByteArrayMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final byte[] value;
 
-        private ByteArrayMySqlParameter(ByteBufAllocator allocator, byte[] value) {
-            this.allocator = allocator;
+        private ByteArrayMySqlParameter(byte[] value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> encodeBytes(allocator, value));
         }
 

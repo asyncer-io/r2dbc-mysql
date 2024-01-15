@@ -31,8 +31,8 @@ public final class JacksonCodecRegistrar implements CodecRegistrar {
     public void register(ByteBufAllocator allocator, CodecRegistry registry) {
         if (setUp) {
             // Decoding JSON by highest priority, encoding anything by lowest priority.
-            registry.addFirst(new JacksonCodec(allocator, JacksonCodec.Mode.DECODE))
-                .addLast(new JacksonCodec(allocator, JacksonCodec.Mode.ENCODE));
+            registry.addFirst(new JacksonCodec(JacksonCodec.Mode.DECODE))
+                .addLast(new JacksonCodec(JacksonCodec.Mode.ENCODE));
         }
     }
 

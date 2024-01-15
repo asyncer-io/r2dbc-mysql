@@ -35,8 +35,10 @@ import java.time.ZoneOffset;
  */
 final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
 
-    OffsetTimeCodec(ByteBufAllocator allocator) {
-        super(allocator, OffsetTime.class);
+    static final OffsetTimeCodec INSTANCE = new OffsetTimeCodec();
+
+    private OffsetTimeCodec() {
+        super(OffsetTime.class);
     }
 
     @Override
@@ -51,7 +53,7 @@ final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new OffsetTimeMySqlParameter(allocator, (OffsetTime) value, context);
+        return new OffsetTimeMySqlParameter((OffsetTime) value, context);
     }
 
     @Override
@@ -66,20 +68,17 @@ final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
 
     private static final class OffsetTimeMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final OffsetTime value;
 
         private final CodecContext context;
 
-        private OffsetTimeMySqlParameter(ByteBufAllocator allocator, OffsetTime value, CodecContext context) {
-            this.allocator = allocator;
+        private OffsetTimeMySqlParameter(OffsetTime value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> LocalTimeCodec.encodeBinary(allocator, serverValue()));
         }
 

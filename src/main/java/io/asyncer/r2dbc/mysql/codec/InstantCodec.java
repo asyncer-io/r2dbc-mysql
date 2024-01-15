@@ -32,10 +32,9 @@ import java.time.LocalDateTime;
  */
 final class InstantCodec implements Codec<Instant> {
 
-    private final ByteBufAllocator allocator;
+    static final InstantCodec INSTANCE = new InstantCodec();
 
-    InstantCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private InstantCodec() {
     }
 
     @Override
@@ -52,7 +51,7 @@ final class InstantCodec implements Codec<Instant> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new InstantMySqlParameter(allocator, (Instant) value, context);
+        return new InstantMySqlParameter((Instant) value, context);
     }
 
     @Override
@@ -67,20 +66,17 @@ final class InstantCodec implements Codec<Instant> {
 
     private static final class InstantMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final Instant value;
 
         private final CodecContext context;
 
-        private InstantMySqlParameter(ByteBufAllocator allocator, Instant value, CodecContext context) {
-            this.allocator = allocator;
+        private InstantMySqlParameter(Instant value, CodecContext context) {
             this.value = value;
             this.context = context;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> LocalDateTimeCodec.encodeBinary(allocator, serverValue()));
         }
 

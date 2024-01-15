@@ -38,12 +38,11 @@ import java.time.chrono.ChronoLocalDateTime;
  */
 final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
 
+    static final LocalDateTimeCodec INSTANCE = new LocalDateTimeCodec();
+
     static final LocalDateTime ROUND = LocalDateTime.of(LocalDateCodec.ROUND, LocalTime.MIN);
 
-    private final ByteBufAllocator allocator;
-
-    LocalDateTimeCodec(ByteBufAllocator allocator) {
-        this.allocator = allocator;
+    private LocalDateTimeCodec() {
     }
 
     @Override
@@ -60,7 +59,7 @@ final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return new LocalDateTimeMySqlParameter(allocator, (LocalDateTime) value);
+        return new LocalDateTimeMySqlParameter((LocalDateTime) value);
     }
 
     @Override
@@ -160,17 +159,14 @@ final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
 
     private static final class LocalDateTimeMySqlParameter extends AbstractMySqlParameter {
 
-        private final ByteBufAllocator allocator;
-
         private final LocalDateTime value;
 
-        private LocalDateTimeMySqlParameter(ByteBufAllocator allocator, LocalDateTime value) {
-            this.allocator = allocator;
+        private LocalDateTimeMySqlParameter(LocalDateTime value) {
             this.value = value;
         }
 
         @Override
-        public Mono<ByteBuf> publishBinary() {
+        public Mono<ByteBuf> publishBinary(final ByteBufAllocator allocator) {
             return Mono.fromSupplier(() -> encodeBinary(allocator, value));
         }
 

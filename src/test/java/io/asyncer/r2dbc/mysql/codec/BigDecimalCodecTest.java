@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -60,8 +59,8 @@ class BigDecimalCodecTest extends NumericCodecTestSupport<BigDecimal> {
     };
 
     @Override
-    public BigDecimalCodec getCodec(ByteBufAllocator allocator) {
-        return new BigDecimalCodec(allocator);
+    public BigDecimalCodec getCodec() {
+        return BigDecimalCodec.INSTANCE;
     }
 
     @Override
