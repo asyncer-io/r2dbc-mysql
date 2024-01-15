@@ -98,9 +98,6 @@ class MySqlConnectionTest {
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.createSavepoint(""));
-        asserted.isThrownBy(() -> noPrepare.createSavepoint("`"));
-        asserted.isThrownBy(() -> noPrepare.createSavepoint("name`"));
-        asserted.isThrownBy(() -> noPrepare.createSavepoint("nam`e"));
         asserted.isThrownBy(() -> noPrepare.createSavepoint(null));
     }
 
@@ -110,9 +107,6 @@ class MySqlConnectionTest {
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.releaseSavepoint(""));
-        asserted.isThrownBy(() -> noPrepare.releaseSavepoint("`"));
-        asserted.isThrownBy(() -> noPrepare.releaseSavepoint("name`"));
-        asserted.isThrownBy(() -> noPrepare.releaseSavepoint("nam`e"));
         asserted.isThrownBy(() -> noPrepare.releaseSavepoint(null));
     }
 
@@ -122,9 +116,6 @@ class MySqlConnectionTest {
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint(""));
-        asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint("`"));
-        asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint("name`"));
-        asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint("nam`e"));
         asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint(null));
     }
 

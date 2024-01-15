@@ -16,12 +16,11 @@
 
 package io.asyncer.r2dbc.mysql;
 
-
 import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
-import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireValidName;
 
 /**
  * Base class considers generic logic for {@link MySqlStatement} implementations.
@@ -42,8 +41,8 @@ abstract class MySqlStatementSupport implements MySqlStatement {
                 this.generatedKeyName = LAST_INSERT_ID;
                 return this;
             case 1:
-                this.generatedKeyName = requireValidName(columns[0],
-                    "id name must not be empty and not contain backticks");
+                requireNonEmpty(columns[0], "id name must not be empty");
+                this.generatedKeyName = columns[0];
                 return this;
         }
 

@@ -16,7 +16,6 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
-
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -57,20 +56,17 @@ public final class AssertUtils {
     }
 
     /**
-     * Checks that a specified {@link String} is not {@code null} or empty or backticks included and throws a
-     * customized {@link IllegalArgumentException} if it is.
+     * Checks that a {@link String} is neither {@code null} nor empty, and throws a customized
+     * {@link IllegalArgumentException} if it is.
      *
-     * @param name    the {@link String} to check for nullity or empty or backticks included.
+     * @param s       the string to check for empty.
      * @param message the detail message to be used by thrown {@link IllegalArgumentException}.
-     * @return {@code name} if not {@code null} or empty or backticks included.
-     * @throws IllegalArgumentException if {@code name} is {@code null} or empty or backticks included.
+     * @throws IllegalArgumentException if {@code s} is {@code null} or empty.
      */
-    public static String requireValidName(@Nullable String name, String message) {
-        if (name == null || name.isEmpty() || name.indexOf('`') >= 0) {
+    public static void requireNonEmpty(@Nullable String s, String message) {
+        if (s == null || s.isEmpty()) {
             throw new IllegalArgumentException(message);
         }
-
-        return name;
     }
 
     private AssertUtils() { }

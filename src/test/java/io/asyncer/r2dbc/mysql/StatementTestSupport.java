@@ -156,6 +156,8 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
         assertEquals(statement.generatedKeyName, "LAST_INSERT_ID");
         statement.returnGeneratedValues("generated");
         assertEquals(statement.generatedKeyName, "generated");
+        statement.returnGeneratedValues("generate`d");
+        assertEquals(statement.generatedKeyName, "generate`d");
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -166,8 +168,6 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
         assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues((String) null));
         assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues((String[]) null));
         assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues(""));
-        assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues("`generating`"));
-        assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues("generating`"));
         assertThrows(IllegalArgumentException.class, () ->
             statement.returnGeneratedValues("generated", "names"));
     }
