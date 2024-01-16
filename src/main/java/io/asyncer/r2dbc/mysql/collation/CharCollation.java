@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.collation;
 
-import io.asyncer.r2dbc.mysql.ServerVersion;
+import io.asyncer.r2dbc.mysql.codec.CodecContext;
 
 import java.nio.charset.Charset;
 
@@ -62,17 +62,17 @@ public interface CharCollation {
 
     /**
      * Obtain an instance of {@link CharCollation} from the identifier and server version, if not found, it
-     * will fallback to UTF-8. (i.e. utf8mb4)
+     * will fall back to UTF-8. (i.e. utf8mb4)
      *
      * @param id      character collation identifier.
-     * @param version the version of MySQL server.
+     * @param context the codec context of server.
      * @return the {@link CharCollation}.
      * @throws IllegalArgumentException if {@code version} is {@code null}.
      */
-    static CharCollation fromId(int id, ServerVersion version) {
-        requireNonNull(version, "version must not be null");
+    static CharCollation fromId(int id, CodecContext context) {
+        requireNonNull(context, "version must not be null");
 
-        return CharCollations.fromId(id, version);
+        return CharCollations.fromId(id, context);
     }
 
     /**

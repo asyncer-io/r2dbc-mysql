@@ -66,18 +66,13 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     private static final int PREFIX_LENGTH = 6;
 
-    /**
-     * If MySQL server version greater than or equal to {@literal 8.0.3}, or greater than or equal to
-     * {@literal 5.7.20} and less than {@literal 8.0.0}, the column name of current session isolation level
-     * will be {@literal @@transaction_isolation}, otherwise it is {@literal @@tx_isolation}.
-     *
-     * @see #init judge server version before get the isolation level.
-     */
-    private static final ServerVersion TRAN_LEVEL_8X = ServerVersion.create(8, 0, 3);
+    private static final ServerVersion MARIA_11_1_1 = ServerVersion.create(11, 1, 1, true);
 
-    private static final ServerVersion TRAN_LEVEL_5X = ServerVersion.create(5, 7, 20);
+    private static final ServerVersion MYSQL_8_0_3 = ServerVersion.create(8, 0, 3);
 
-    private static final ServerVersion TX_LEVEL_8X = ServerVersion.create(8, 0, 0);
+    private static final ServerVersion MYSQL_5_7_20 = ServerVersion.create(5, 7, 20);
+
+    private static final ServerVersion MYSQL_8 = ServerVersion.create(8, 0, 0);
 
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
         if (message instanceof ErrorMessage) {
@@ -427,17 +422,10 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         QueryCache queryCache, PrepareCache prepareCache,
         @Nullable Predicate<String> prepare
     ) {
-        ServerVersion version = context.getServerVersion();
-        StringBuilder query = new StringBuilder(128);
-
-        // Maybe create a InitFlow for data initialization after login?
-        if (version.isGreaterThanOrEqualTo(TRAN_LEVEL_8X) ||
-            (version.isGreaterThanOrEqualTo(TRAN_LEVEL_5X) && version.isLessThan(TX_LEVEL_8X))) {
-            query.append(
-                "SELECT @@transaction_isolation AS i,@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
-        } else {
-            query.append("SELECT @@tx_isolation AS i,@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
-        }
+        StringBuilder query = new StringBuilder(128)
+            .append("SELECT ")
+            .append(transactionIsolationColumn(context))
+            .append(",@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
 
         Function<MySqlResult, Publisher<InitData>> handler;
 
@@ -585,6 +573,28 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         }
 
         return timeout;
+    }
+
+    /**
+     * Resolves the column of session isolation level, the {@literal @@tx_isolation} has been marked as
+     * deprecated.
+     * <p>
+     * If server is MariaDB, {@literal @@transaction_isolation} is used starting from {@literal 11.1.1}.
+     * <p>
+     * If the server is MySQL, use {@literal @@transaction_isolation} starting from {@literal 8.0.3}, or
+     * between {@literal 5.7.20} and {@literal 8.0.0} (exclusive).
+     */
+    private static String transactionIsolationColumn(ConnectionContext context) {
+        ServerVersion version = context.getServerVersion();
+
+        if (context.isMariaDb()) {
+            return version.isGreaterThanOrEqualTo(MARIA_11_1_1) ? "@@transaction_isolation AS i" :
+                "@@tx_isolation AS i";
+        }
+
+        return version.isGreaterThanOrEqualTo(MYSQL_8_0_3) ||
+            (version.isGreaterThanOrEqualTo(MYSQL_5_7_20) && version.isLessThan(MYSQL_8)) ?
+            "@@transaction_isolation AS i" : "@@tx_isolation AS i";
     }
 
     private static class InitData {

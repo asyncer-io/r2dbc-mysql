@@ -175,6 +175,11 @@ public final class Capability {
 
     private final long bitmap;
 
+    /**
+     * Checks if the connection is using MariaDB capabilities.
+     *
+     * @return if using MariaDB capabilities.
+     */
     public boolean isMariaDb() {
         return (bitmap & CLIENT_MYSQL) == 0;
     }

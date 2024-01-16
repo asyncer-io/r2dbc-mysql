@@ -24,6 +24,13 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class ServerVersion implements Comparable<ServerVersion> {
 
+    /**
+     * MariaDB's replication hack prefix.
+     * <p>
+     * Note: MySQL 5.5.5 is not a stable version, so it should be safe.
+     */
+    private static final String MARIADB_RPL_HACK_PREFIX = "5.5.5-";
+
     private static final String ENTERPRISE = "enterprise";
 
     private static final String COMMERCIAL = "commercial";
@@ -42,11 +49,14 @@ public final class ServerVersion implements Comparable<ServerVersion> {
 
     private final int patch;
 
-    private ServerVersion(String origin, int major, int minor, int patch) {
+    private final boolean isMariaDb;
+
+    private ServerVersion(String origin, int major, int minor, int patch, boolean isMariaDb) {
         this.origin = origin;
         this.major = major;
         this.minor = minor;
         this.patch = patch;
+        this.isMariaDb = isMariaDb;
     }
 
     /**
@@ -95,6 +105,15 @@ public final class ServerVersion implements Comparable<ServerVersion> {
 
     public int getPatch() {
         return patch;
+    }
+
+    /**
+     * Checks {@link ServerVersion this} contains MariaDB prefix or postfix.
+     *
+     * @return if it contains.
+     */
+    public boolean isMariaDb() {
+        return isMariaDb;
     }
 
     /**
@@ -150,32 +169,39 @@ public final class ServerVersion implements Comparable<ServerVersion> {
 
         int length = version.length();
         int[] index = new int[] { 0 };
-        int major = readInt(version, length, index);
+        boolean isMariaDb = false;
 
-        if (index[0] >= length) {
-            // End-of-string.
-            return create0(version, major, 0, 0);
-        } else if (version.charAt(index[0]) != '.') {
-            // Is not '.', has only postfix after major.
-            return create0(version, major, 0, 0);
-        } else {
-            // Skip last '.' after major.
-            ++index[0];
+        if (version.startsWith(MARIADB_RPL_HACK_PREFIX)) {
+            isMariaDb = true;
+            index[0] = MARIADB_RPL_HACK_PREFIX.length();
         }
 
-        int minor = readInt(version, length, index);
+        int[] parts = new int[] { 0, 0, 0 };
+        int i = 0;
 
-        if (index[0] >= length) {
-            return create0(version, major, minor, 0);
-        } else if (version.charAt(index[0]) != '.') {
-            // Is not '.', has only postfix after minor.
-            return create0(version, major, minor, 0);
-        } else {
-            // Skip last '.' after minor.
+        while (true) {
+            parts[i] = readInt(version, length, index);
+
+            if (index[0] >= length) {
+                // End of version.
+                break;
+            }
+
+            if (i == 2 || version.charAt(index[0]) != '.') {
+                // End of version number parts, check postfix if needed.
+                if (!isMariaDb) {
+                    isMariaDb = version.indexOf("MariaDB", index[0]) >= 0;
+                }
+
+                break;
+            }
+
+            // Skip last '.' after current number part.
             ++index[0];
+            ++i;
         }
 
-        return create0(version, major, minor, readInt(version, length, index));
+        return create0(version, parts[0], parts[1], parts[2], isMariaDb);
     }
 
     /**
@@ -188,15 +214,29 @@ public final class ServerVersion implements Comparable<ServerVersion> {
      * @throws IllegalArgumentException if any version part is negative integer.
      */
     public static ServerVersion create(int major, int minor, int patch) {
-        return create0("", major, minor, patch);
+        return create0("", major, minor, patch, false);
     }
 
-    private static ServerVersion create0(String origin, int major, int minor, int patch) {
+    /**
+     * Create a {@link ServerVersion} that value is {@literal major.minor.patch} with MariaDB flag.
+     *
+     * @param major     must not be a negative integer
+     * @param minor     must not be a negative integer
+     * @param patch     must not be a negative integer
+     * @param isMariaDb MariaDB flag
+     * @return A server version that value is {@literal major.minor.patch}
+     * @throws IllegalArgumentException if any version part is negative integer.
+     */
+    public static ServerVersion create(int major, int minor, int patch, boolean isMariaDb) {
+        return create0("", major, minor, patch, isMariaDb);
+    }
+
+    private static ServerVersion create0(String origin, int major, int minor, int patch, boolean isMariaDb) {
         require(major >= 0, "major version must not be a negative integer");
         require(minor >= 0, "minor version must not be a negative integer");
         require(patch >= 0, "patch version must not be a negative integer");
 
-        return new ServerVersion(origin, major, minor, patch);
+        return new ServerVersion(origin, major, minor, patch, isMariaDb);
     }
 
     /**

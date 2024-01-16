@@ -16,7 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.collation;
 
-import io.asyncer.r2dbc.mysql.ServerVersion;
+import io.asyncer.r2dbc.mysql.ConnectionContext;
+import io.asyncer.r2dbc.mysql.ConnectionContextTest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -27,16 +28,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 class CharCollationTest {
 
-    private static final ServerVersion version = ServerVersion.create(0, 0, 0);
+    private final ConnectionContext context = ConnectionContextTest.mock();
 
     @Test
     void fromId() {
-        assertNotNull(CharCollation.fromId(33, version)); // utf8 general case insensitivity
-        assertNotNull(CharCollation.fromId(45, version)); // utf8mb4 general case insensitivity
-        assertNotNull(CharCollation.fromId(224, version)); // utf8mb4 unicode case insensitivity
-        assertNotNull(CharCollation.fromId(246, version)); // utf8mb4 unicode 5.20 case insensitivity
+        assertNotNull(CharCollation.fromId(33, context)); // utf8 general case insensitivity
+        assertNotNull(CharCollation.fromId(45, context)); // utf8mb4 general case insensitivity
+        assertNotNull(CharCollation.fromId(224, context)); // utf8mb4 unicode case insensitivity
+        assertNotNull(CharCollation.fromId(246, context)); // utf8mb4 unicode 5.20 case insensitivity
         // utf8mb4 unicode 9.00 accent insensitivity and case insensitivity
-        assertNotNull(CharCollation.fromId(255, version));
-        assertNotEquals(CharCollation.fromId(33, version), CharCollation.fromId(224, version));
+        assertNotNull(CharCollation.fromId(255, context));
+        assertNotEquals(CharCollation.fromId(33, context), CharCollation.fromId(224, context));
     }
 }
