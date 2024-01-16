@@ -81,7 +81,7 @@ class CodecsTest {
 
         @Override
         public CharCollation getCharCollation(CodecContext context) {
-            return CharCollation.fromId(CharCollation.BINARY_ID, context.getServerVersion());
+            return CharCollation.fromId(CharCollation.BINARY_ID, context);
         }
 
         @Override

@@ -63,13 +63,19 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
 
     private static final String[] OLD_TLS_PROTOCOLS = new String[] { TlsVersions.TLS1_1, TlsVersions.TLS1 };
 
-    private static final ServerVersion VER_5_6_0 = ServerVersion.create(5, 6, 0);
+    private static final ServerVersion MARIA_10_2_16 = ServerVersion.create(10, 2, 16, true);
 
-    private static final ServerVersion VER_5_6_46 = ServerVersion.create(5, 6, 46);
+    private static final ServerVersion MARIA_10_3_0 = ServerVersion.create(10, 3, 0, true);
 
-    private static final ServerVersion VER_5_7_0 = ServerVersion.create(5, 7, 0);
+    private static final ServerVersion MARIA_10_3_8 = ServerVersion.create(10, 3, 8, true);
 
-    private static final ServerVersion VER_5_7_28 = ServerVersion.create(5, 7, 28);
+    private static final ServerVersion MYSQL_5_6_0 = ServerVersion.create(5, 6, 0);
+
+    private static final ServerVersion MYSQL_5_6_46 = ServerVersion.create(5, 6, 46);
+
+    private static final ServerVersion MYSQL_5_7_0 = ServerVersion.create(5, 7, 0);
+
+    private static final ServerVersion MYSQL_5_7_28 = ServerVersion.create(5, 7, 28);
 
     private final ConnectionContext context;
 
@@ -144,7 +150,7 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
                 logger.debug("SSL event triggered, enable SSL handler to pipeline");
 
                 SslProvider sslProvider = SslProvider.builder()
-                    .sslContext(MySqlSslContextSpec.forClient(ssl, context.getServerVersion()))
+                    .sslContext(MySqlSslContextSpec.forClient(ssl, context))
                     .build();
                 SslHandler sslHandler = sslProvider.getSslContext().newHandler(ctx.alloc());
 
@@ -167,13 +173,23 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
         return verifier == null ? DefaultHostnameVerifier.INSTANCE : verifier;
     }
 
-    private static boolean isCurrentTlsEnabled(ServerVersion version) {
-        // See also https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-using-ssl.html
+    private static boolean isTls13Enabled(ConnectionContext context) {
+        ServerVersion version = context.getServerVersion();
+
+        if (context.isMariaDb()) {
+            // See also https://mariadb.com/kb/en/secure-connections-overview/#tls-protocol-version-support
+            // Quoting fragment: MariaDB binaries built with the OpenSSL library (OpenSSL 1.1.1 or later)
+            // support TLSv1.3 since MariaDB 10.2.16 and MariaDB 10.3.8.
+            return (version.isGreaterThanOrEqualTo(MARIA_10_2_16) && version.isLessThan(MARIA_10_3_0))
+                || version.isGreaterThanOrEqualTo(MARIA_10_3_8);
+        }
+
+        // See also https://dev.mysql.com/doc/relnotes/connector-j/en/news-8-0-19.html
         // Quoting fragment: TLSv1,TLSv1.1,TLSv1.2,TLSv1.3 for MySQL Community Servers 8.0, 5.7.28 and
         // later, and 5.6.46 and later, and for all commercial versions of MySQL Servers.
-        return version.isGreaterThanOrEqualTo(VER_5_7_28)
-            || (version.isGreaterThanOrEqualTo(VER_5_6_46) && version.isLessThan(VER_5_7_0))
-            || (version.isGreaterThanOrEqualTo(VER_5_6_0) && version.isEnterprise());
+        return version.isGreaterThanOrEqualTo(MYSQL_5_7_28)
+            || (version.isGreaterThanOrEqualTo(MYSQL_5_6_46) && version.isLessThan(MYSQL_5_7_0))
+            || (version.isGreaterThanOrEqualTo(MYSQL_5_6_0) && version.isEnterprise());
     }
 
     private static final class MySqlSslContextSpec implements SslProvider.ProtocolSslContextSpec {
@@ -196,7 +212,7 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             return builder.build();
         }
 
-        static MySqlSslContextSpec forClient(MySqlSslConfiguration ssl, ServerVersion version) {
+        static MySqlSslContextSpec forClient(MySqlSslConfiguration ssl, ConnectionContext context) {
             // Same default configuration as TcpSslContextSpec.
             SslContextBuilder builder = SslContextBuilder.forClient()
                 .sslProvider(OpenSsl.isAvailable() ? OPENSSL : JDK)
@@ -206,11 +222,16 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
 
             if (tlsProtocols.length > 0) {
                 builder.protocols(tlsProtocols);
-            } else if (isCurrentTlsEnabled(version)) {
+            } else if (isTls13Enabled(context)) {
                 builder.protocols(TLS_PROTOCOLS);
             } else {
                 // Not sure if we need to check the JDK version, suggest not.
-                logger.warn("MySQL {} does not support TLS1.2, TLS1.1 is disabled in latest JDKs", version);
+                if (logger.isWarnEnabled()) {
+                    logger.warn("{} {} does not support TLS1.2, TLS1.1 is disabled in latest JDKs",
+                        context.isMariaDb() ? "MariaDB" : "MySQL",
+                        context.getServerVersion());
+                }
+
                 builder.protocols(OLD_TLS_PROTOCOLS);
             }
 

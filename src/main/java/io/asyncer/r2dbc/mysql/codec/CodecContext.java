@@ -54,4 +54,11 @@ public interface CodecContext {
      * @return the {@link CharCollation}.
      */
     CharCollation getClientCollation();
+
+    /**
+     * Checks server is MariaDB or not.
+     *
+     * @return if is MariaDB.
+     */
+    boolean isMariaDb();
 }

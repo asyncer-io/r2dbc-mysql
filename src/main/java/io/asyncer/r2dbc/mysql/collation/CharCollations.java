@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql.collation;
 
 import io.asyncer.r2dbc.mysql.ServerVersion;
+import io.asyncer.r2dbc.mysql.codec.CodecContext;
 
 /**
  * A constant utility that is contains all {@link CharCollation}s.
@@ -41,11 +42,11 @@ final class CharCollations {
      * <p>
      * Note: all IDs must bigger than the max ID of universe.
      *
-     * @see #fromId(int, ServerVersion)
+     * @see #fromId(int, CodecContext)
      */
     private static final CharCollation[] EXTRA;
 
-    private static final ServerVersion UTF8MB4_0900_VER = ServerVersion.create(8, 0, 1);
+    private static final ServerVersion MYSQL_8_0_1 = ServerVersion.create(8, 0, 1);
 
     static {
         // The initialization of character collation constants is the premise of the universe big bang.
@@ -66,7 +67,7 @@ final class CharCollations {
 
     private CharCollations() { }
 
-    static CharCollation fromId(int id, ServerVersion version) {
+    static CharCollation fromId(int id, CodecContext context) {
         if (id < 0 || id >= COSMOS.length) {
             for (CharCollation collation : EXTRA) {
                 if (collation.getId() == id) {
@@ -74,24 +75,24 @@ final class CharCollations {
                 }
             }
 
-            return defaultServerCollation(version);
+            return defaultServerCollation(context);
         }
 
         CharCollation collation = COSMOS[id];
 
         if (collation == null) {
-            return defaultServerCollation(version);
+            return defaultServerCollation(context);
         }
 
         return collation;
     }
 
-    private static CharCollation defaultServerCollation(ServerVersion version) {
-        if (version.isGreaterThanOrEqualTo(UTF8MB4_0900_VER)) {
-            return UTF8MB4_0900_AI_CI;
+    private static CharCollation defaultServerCollation(CodecContext context) {
+        if (context.isMariaDb() || context.getServerVersion().isLessThan(MYSQL_8_0_1)) {
+            return UTF8MB4_GENERAL_CI;
         }
 
-        return UTF8MB4_GENERAL_CI;
+        return UTF8MB4_0900_AI_CI;
     }
 
     private static int cosmosSize(CharCollation[] universe) {

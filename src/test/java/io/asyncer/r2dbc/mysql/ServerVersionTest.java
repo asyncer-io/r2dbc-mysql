@@ -17,7 +17,10 @@
 package io.asyncer.r2dbc.mysql;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -114,5 +117,18 @@ class ServerVersionTest {
         assertEquals(ServerVersion.parse("56.78.910RC2").toString(), "56.78.910RC2");
         assertEquals(ServerVersion.parse("56.78.910-v2").toString(), "56.78.910-v2");
         assertEquals(ServerVersion.parse("56.78.910-RC2").toString(), "56.78.910-RC2");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "5.5.5-10", "8.0.MariaDB", "8-MariaDB",
+        "10.1-MariaDB", "5.5.5-10.11.22-MariaDB",
+        "11.2.22-MariaDB", "11.2.22-MariaDB-1~jessie", "10.1.44-MariaDB-0+deb9u1",
+    })
+    void mariaDbVersion(String version) {
+        ServerVersion ver = ServerVersion.parse(version);
+
+        assertThat(ver.isMariaDb()).isTrue();
+        assertThat(ver.isGreaterThanOrEqualTo(ServerVersion.create(6, 0, 0))).isTrue();
     }
 }

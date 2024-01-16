@@ -122,7 +122,7 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
     @Override
     public CharCollation getCharCollation(CodecContext context) {
         return collationId == CharCollation.BINARY_ID ? context.getClientCollation() :
-            CharCollation.fromId(collationId, context.getServerVersion());
+            CharCollation.fromId(collationId, context);
     }
 
     @Override

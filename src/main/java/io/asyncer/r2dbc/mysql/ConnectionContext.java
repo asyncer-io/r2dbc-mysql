@@ -98,6 +98,11 @@ public final class ConnectionContext implements CodecContext {
         return serverZoneId;
     }
 
+    @Override
+    public boolean isMariaDb() {
+        return capability.isMariaDb() || serverVersion.isMariaDb();
+    }
+
     boolean shouldSetServerZoneId() {
         return serverZoneId == null;
     }
