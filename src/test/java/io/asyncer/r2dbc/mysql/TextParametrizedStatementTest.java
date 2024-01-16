@@ -29,8 +29,6 @@ class TextParametrizedStatementTest implements StatementTestSupport<TextParametr
 
     private final Client client = mock(Client.class);
 
-    private final ConnectionContext context = ConnectionContextTest.mock();
-
     private final Codecs codecs = Codecs.builder(UnpooledByteBufAllocator.DEFAULT).build();
 
     @Override
@@ -39,8 +37,13 @@ class TextParametrizedStatementTest implements StatementTestSupport<TextParametr
     }
 
     @Override
-    public TextParametrizedStatement makeInstance(String sql, String ignored) {
-        return new TextParametrizedStatement(client, codecs, Query.parse(sql), context);
+    public TextParametrizedStatement makeInstance(boolean isMariaDB, String sql, String ignored) {
+        return new TextParametrizedStatement(
+            client,
+            codecs,
+            Query.parse(sql),
+            ConnectionContextTest.mock(isMariaDB)
+        );
     }
 
     @Override

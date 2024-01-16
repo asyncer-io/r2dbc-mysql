@@ -51,8 +51,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * An implementation of {@link Result} representing the results of a query against the MySQL database.
  * <p>
  * A {@link Segment} provided by this implementation may be both {@link UpdateCount} and {@link RowSegment},
- * see also {@link MySqlOkSegment}. It's based on a {@link OkMessage}, when the {@code generatedKeyName} is
- * not {@code null}.
+ * see also {@link MySqlOkSegment}.
  */
 public final class MySqlResult implements Result {
 
@@ -155,14 +154,14 @@ public final class MySqlResult implements Result {
     }
 
     static MySqlResult toResult(boolean binary, Codecs codecs, ConnectionContext context,
-                                @Nullable String generatedKeyName, Flux<ServerMessage> messages) {
+                                @Nullable String syntheticKeyName, Flux<ServerMessage> messages) {
         requireNonNull(codecs, "codecs must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(messages, "messages must not be null");
 
         return new MySqlResult(OperatorUtils.discardOnCancel(messages)
             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
-            .handle(new MySqlSegments(binary, codecs, context, generatedKeyName)));
+            .handle(new MySqlSegments(binary, codecs, context, syntheticKeyName)));
     }
 
     private static final class MySqlMessage implements Message {
@@ -268,16 +267,16 @@ public final class MySqlResult implements Result {
         private final ConnectionContext context;
 
         @Nullable
-        private final String generatedKeyName;
+        private final String syntheticKeyName;
 
         private MySqlRowMetadata rowMetadata;
 
         private MySqlSegments(boolean binary, Codecs codecs, ConnectionContext context,
-            @Nullable String generatedKeyName) {
+            @Nullable String syntheticKeyName) {
             this.binary = binary;
             this.codecs = codecs;
             this.context = context;
-            this.generatedKeyName = generatedKeyName;
+            this.syntheticKeyName = syntheticKeyName;
         }
 
         @Override
@@ -309,8 +308,8 @@ public final class MySqlResult implements Result {
 
                 this.rowMetadata = MySqlRowMetadata.create(metadataMessages);
             } else if (message instanceof OkMessage) {
-                Segment segment = generatedKeyName == null ? new MySqlUpdateCount((OkMessage) message) :
-                    new MySqlOkSegment((OkMessage) message, codecs, generatedKeyName);
+                Segment segment = syntheticKeyName == null ? new MySqlUpdateCount((OkMessage) message) :
+                    new MySqlOkSegment((OkMessage) message, codecs, syntheticKeyName);
 
                 sink.next(segment);
             } else if (message instanceof ErrorMessage) {

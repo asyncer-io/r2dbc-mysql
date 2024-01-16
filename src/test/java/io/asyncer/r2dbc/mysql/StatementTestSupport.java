@@ -17,9 +17,12 @@
 package io.asyncer.r2dbc.mysql;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.NoSuchElementException;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +36,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     String SIMPLE = "SELECT * FROM test WHERE id = 1 AND name = 'Mirrors'";
 
-    T makeInstance(String parametrizedSql, String simpleSql);
+    T makeInstance(boolean isMariaDB, String parametrizedSql, String simpleSql);
 
     boolean supportsBinding();
 
@@ -45,7 +48,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void bind() {
         assertTrue(supportsBinding(), "Must skip test case #bind() for simple statements");
 
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
         statement.bind(0, 1);
         statement.bind("id", 1);
         statement.bind(1, 1);
@@ -54,7 +57,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badBind() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
 
         if (supportsBinding()) {
             assertThrows(IllegalArgumentException.class, () -> statement.bind(0, null));
@@ -86,7 +89,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void bindNull() {
         assertTrue(supportsBinding(), "Must skip test case #bindNull() for simple statements");
 
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
         statement.bindNull(0, Integer.class);
         statement.bindNull("id", Integer.class);
         statement.bindNull(1, Integer.class);
@@ -95,7 +98,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badBindNull() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
 
         if (supportsBinding()) {
             assertThrows(IllegalArgumentException.class, () -> statement.bindNull(0, null));
@@ -125,7 +128,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void add() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
 
         if (!supportsBinding()) {
             statement.add();
@@ -143,38 +146,90 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void badAdd() {
         assertTrue(supportsBinding(), "Must skip test case #badAdd() for simple statements");
 
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
         statement.bind(0, 1);
         assertThrows(IllegalStateException.class, statement::add);
     }
 
     @Test
-    default void returnGeneratedValues() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+    default void mySqlReturnGeneratedValues() {
+        T s = makeInstance(false, PARAMETRIZED, SIMPLE);
 
-        statement.returnGeneratedValues();
-        assertEquals(statement.generatedKeyName, "LAST_INSERT_ID");
-        statement.returnGeneratedValues("generated");
-        assertEquals(statement.generatedKeyName, "generated");
-        statement.returnGeneratedValues("generate`d");
-        assertEquals(statement.generatedKeyName, "generate`d");
+        s.returnGeneratedValues();
+
+        assertThat(s.syntheticKeyName()).isEqualTo("LAST_INSERT_ID");
+        assertThat(s.returningIdentifiers()).isEqualTo("");
+
+        s.returnGeneratedValues("generated");
+
+        assertThat(s.syntheticKeyName()).isEqualTo("generated");
+        assertThat(s.returningIdentifiers()).isEqualTo("");
+
+        s.returnGeneratedValues("generate`d");
+
+        assertThat(s.syntheticKeyName()).isEqualTo("generate`d");
+        assertThat(s.returningIdentifiers()).isEqualTo("");
+    }
+
+    @Test
+    default void mariaDbReturnGeneratedValues() {
+        T s = makeInstance(true, PARAMETRIZED, SIMPLE);
+
+        s.returnGeneratedValues();
+
+        assertThat(s.syntheticKeyName()).isNull();
+        assertThat(s.returningIdentifiers()).isEqualTo("*");
+
+        s.returnGeneratedValues("generated");
+
+        assertThat(s.syntheticKeyName()).isNull();
+        assertThat(s.returningIdentifiers()).isEqualTo("generated");
+
+        s.returnGeneratedValues("CURRENT_TIMESTAMP");
+        assertThat(s.syntheticKeyName()).isNull();
+        assertThat(s.returningIdentifiers()).isEqualTo("CURRENT_TIMESTAMP");
+
+        s.returnGeneratedValues("id", "name");
+
+        assertThat(s.syntheticKeyName()).isNull();
+        assertThat(s.returningIdentifiers()).isEqualTo("id,name");
+
+        s.returnGeneratedValues("id", "name", "desc", "created_at");
+
+        assertThat(s.syntheticKeyName()).isNull();
+        assertThat(s.returningIdentifiers()).isEqualTo("id,name,desc,created_at");
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badReturnGeneratedValues() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T s = makeInstance(false, PARAMETRIZED, SIMPLE);
 
-        assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues((String) null));
-        assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues((String[]) null));
-        assertThrows(IllegalArgumentException.class, () -> statement.returnGeneratedValues(""));
-        assertThrows(IllegalArgumentException.class, () ->
-            statement.returnGeneratedValues("generated", "names"));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String) null));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String[]) null));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues(""));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("", ""));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("id", "name"));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    default void mariaDbBadReturnGeneratedValues() {
+        T s = makeInstance(true, PARAMETRIZED, SIMPLE);
+
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String) null));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String[]) null));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues(""));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("", ""));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("id", ""));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("id", null));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("id", "", "name"));
+        assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues("id", null, "name"));
     }
 
     @Test
     default void fetchSize() throws IllegalAccessException {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
         assertEquals(0, getFetchSize(statement), "Must skip test case #fetchSize() for text-based queries");
 
         for (int i = 1; i <= 10; ++i) {
@@ -192,7 +247,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void badFetchSize() {
-        T statement = makeInstance(PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
 
         assertThrows(IllegalArgumentException.class, () -> statement.fetchSize(-1));
         assertThrows(IllegalArgumentException.class, () -> statement.fetchSize(-10));

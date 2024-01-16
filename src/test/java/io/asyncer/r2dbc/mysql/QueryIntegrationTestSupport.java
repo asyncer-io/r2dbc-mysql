@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -220,7 +219,8 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     void bit() {
         testType(Boolean.class, true, "BIT(1)", null, false, true);
         testType(BitSet.class, true, "BIT(16)", null, BitSet.valueOf(new byte[] { (byte) 0xEF, (byte) 0xCD }),
-            BitSet.valueOf(new byte[0]), BitSet.valueOf(new byte[] { 0, 0 }), BitSet.valueOf(new byte[] { (byte) 0xCD }));
+            BitSet.valueOf(new byte[0]), BitSet.valueOf(new byte[] { 0, 0 }),
+            BitSet.valueOf(new byte[] { (byte) 0xCD }));
         testType(BitSet.class, true, "BIT(64)", null, BitSet.valueOf(new long[0]),
             BitSet.valueOf(new long[] { 0 }), BitSet.valueOf(new long[] { 0xEFCD }),
             BitSet.valueOf(new long[] { Long.MAX_VALUE }));
@@ -240,8 +240,8 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     @SuppressWarnings("unchecked")
     @Test
     void set() {
-        Type stringSet = new TypeReference<Set<String>>() {}.getType();
-        Type enumSet = new TypeReference<Set<EnumData>>() {}.getType();
+        Type stringSet = new TypeReference<Set<String>>() { }.getType();
+        Type enumSet = new TypeReference<Set<EnumData>>() { }.getType();
 
         testType(String.class, true, "SET('ONE','TWO','THREE')", null, "ONE,TWO,THREE", "ONE", "",
             "ONE,THREE");
@@ -267,7 +267,6 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     void json() {
         testType(String.class, false, "JSON", null, "{\"data\": 1}", "[\"data\", 1]", "1", "null",
             "\"R2DBC\"", "2.56");
-
 
     }
 
@@ -407,7 +406,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     @Test
     void selectFromOtherDatabase() {
         complete(conn -> Flux.from(conn.createStatement("SELECT * FROM `information_schema`.`innodb_trx`")
-            .execute())
+                .execute())
             .flatMap(result -> result.map((row, metadata) -> row.get(0))));
     }
 
@@ -422,7 +421,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(Flux.range(0, 10))
             .flatMap(it -> Flux.from(connection.createStatement("INSERT INTO test VALUES" +
-                "(DEFAULT,?,?,NOW(),NOW())")
+                    "(DEFAULT,?,?,NOW(),NOW())")
                 .bind(0, String.format("integration-test%d@mail.com", it))
                 .bind(1, "******")
                 .execute()))
@@ -443,7 +442,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     @Test
     void consumePortion() {
         complete(connection -> Mono.from(connection.createStatement("CREATE TEMPORARY TABLE test" +
-            "(id INT PRIMARY KEY AUTO_INCREMENT,value INT)").execute())
+                "(id INT PRIMARY KEY AUTO_INCREMENT,value INT)").execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .then(Mono.from(connection.createStatement("INSERT INTO test(`value`) VALUES (1),(2),(3),(4),(5)")
                 .execute()))
@@ -453,8 +452,8 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
                 .execute()))
             .flatMapMany(r -> r.map((row, metadata) -> row.get(0, Integer.TYPE))).take(3)
             .concatWith(Mono.from(connection.createStatement("SELECT value FROM test WHERE id > ?")
-                .bind(0, 0)
-                .execute())
+                    .bind(0, 0)
+                    .execute())
                 .flatMapMany(r -> r.map((row, metadata) -> row.get(0, Integer.TYPE))).take(2))
             .collectList()
             .doOnNext(it -> assertThat(it).isEqualTo(Arrays.asList(1, 2, 3, 1, 2))));
@@ -474,7 +473,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(Flux.merge(
                 Flux.from(connection.createStatement("SELECT value FROM test WHERE id > ?")
-                    .bind(0, 0).execute())
+                        .bind(0, 0).execute())
                     .flatMap(r -> r.map((row, meta) -> row.get(0, Integer.class)))
                     .doOnNext(values::add),
                 connection.createStatement("BAD GRAMMAR").execute()
@@ -496,8 +495,8 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     void foundRows() {
         int value = 10;
         complete(connection -> Flux.from(connection.createStatement("CREATE TEMPORARY TABLE test" +
-            "(id INT PRIMARY KEY AUTO_INCREMENT,value INT)")
-            .execute())
+                    "(id INT PRIMARY KEY AUTO_INCREMENT,value INT)")
+                .execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(connection.createStatement("INSERT INTO test VALUES(DEFAULT,?)")
                 .bind(0, value).execute())
@@ -522,11 +521,11 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     @Test
     void insertOnDuplicate() {
         complete(connection -> Flux.from(connection.createStatement("CREATE TEMPORARY TABLE test" +
-            "(id INT PRIMARY KEY,value INT)")
-            .execute())
+                    "(id INT PRIMARY KEY,value INT)")
+                .execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(connection.createStatement("INSERT INTO test VALUES(?,?) " +
-                "ON DUPLICATE KEY UPDATE value=?")
+                    "ON DUPLICATE KEY UPDATE value=?")
                 .bind(0, 1)
                 .bind(1, 10)
                 .bind(2, 20)
@@ -540,7 +539,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .collectList()
             .doOnNext(it -> assertThat(it).isEqualTo(Collections.singletonList(10)))
             .thenMany(connection.createStatement("INSERT INTO test VALUES(?,?) " +
-                "ON DUPLICATE KEY UPDATE value=?")
+                    "ON DUPLICATE KEY UPDATE value=?")
                 .bind(0, 1)
                 .bind(1, 10)
                 .bind(2, 20)
@@ -554,7 +553,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .collectList()
             .doOnNext(it -> assertThat(it).isEqualTo(Collections.singletonList(20)))
             .thenMany(connection.createStatement("INSERT INTO test VALUES(?,?) " +
-                "ON DUPLICATE KEY UPDATE value=?")
+                    "ON DUPLICATE KEY UPDATE value=?")
                 .bind(0, 1)
                 .bind(1, 10)
                 .bind(2, 20)
@@ -625,22 +624,6 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         return Flux.from(result.map((row, metadata) -> row.get(0, Integer.class)));
     }
 
-    private static <T> Flux<Tuple2<Long, T>> extractOk(Result result, Class<T> type) {
-        return Flux.from(result.flatMap(segment -> {
-            try {
-                if (segment instanceof Result.UpdateCount && segment instanceof Result.RowSegment) {
-                    long affected = ((Result.UpdateCount) segment).value();
-                    T t = Objects.requireNonNull(((Result.RowSegment) segment).row().get(0, type));
-                    return Mono.just(Tuples.of(affected, t));
-                } else {
-                    return Mono.empty();
-                }
-            } finally {
-                ReferenceCountUtil.release(segment);
-            }
-        }));
-    }
-
     @SuppressWarnings("unchecked")
     private static <T> Flux<Optional<T>> extractOptionalField(Result result, Type type) {
         if (type instanceof Class<?>) {
@@ -652,9 +635,9 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
 
     private static Mono<Void> testTimeDuration(Connection connection, Duration origin, LocalTime time) {
         return Mono.from(connection.createStatement("INSERT INTO test VALUES(DEFAULT,?)")
-            .bind(0, origin)
-            .returnGeneratedValues("id")
-            .execute())
+                .bind(0, origin)
+                .returnGeneratedValues("id")
+                .execute())
             .flatMapMany(QueryIntegrationTestSupport::extractFirstInteger)
             .concatMap(id -> connection.createStatement("SELECT value FROM test WHERE id=?")
                 .bind(0, id)
@@ -690,14 +673,13 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             }
         }
 
-        return Mono.from(insert.returnGeneratedValues("id")
-            .execute())
-            .flatMap(result -> extractOk(result, Integer.class)
-                .collectList()
-                .map(ids -> {
-                    assertThat(ids).hasSize(1).first().extracting(Tuple2::getT1).isEqualTo(1L);
-                    return ids.get(0).getT2();
-                }))
+        return Mono.from(insert.returnGeneratedValues("id").execute())
+            .flatMapMany(QueryIntegrationTestSupport::extractFirstInteger)
+            .collectList()
+            .map(ids -> {
+                assertThat(ids).hasSize(1).first().isNotNull();
+                return ids.get(0);
+            })
             .flatMap(id -> Mono.from(connection.createStatement("SELECT value FROM test WHERE id=?")
                 .bind(0, id)
                 .execute()))

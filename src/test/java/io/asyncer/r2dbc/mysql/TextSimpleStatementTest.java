@@ -28,8 +28,6 @@ class TextSimpleStatementTest implements StatementTestSupport<TextSimpleStatemen
 
     private final Client client = mock(Client.class);
 
-    private final ConnectionContext context = ConnectionContextTest.mock();
-
     private final Codecs codecs = mock(Codecs.class);
 
     @Override
@@ -53,8 +51,8 @@ class TextSimpleStatementTest implements StatementTestSupport<TextSimpleStatemen
     }
 
     @Override
-    public TextSimpleStatement makeInstance(String ignored, String sql) {
-        return new TextSimpleStatement(client, codecs, context, sql);
+    public TextSimpleStatement makeInstance(boolean isMariaDB, String ignored, String sql) {
+        return new TextSimpleStatement(client, codecs, ConnectionContextTest.mock(isMariaDB), sql);
     }
 
     @Override

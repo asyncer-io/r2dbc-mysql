@@ -38,17 +38,21 @@ public final class PreparedTextQueryMessage extends AtomicReference<MySqlParamet
 
     private final Query query;
 
+    private final String returning;
+
     /**
      * Creates a {@link PreparedTextQueryMessage} with parameters.
      *
-     * @param query  the parsed {@link Query}.
-     * @param values the parameter values.
+     * @param query     the parsed {@link Query}.
+     * @param returning the {@code RETURNING} identifiers.
+     * @param values    the parameter values.
      * @throws IllegalArgumentException if {@code query} or {@code values} is {@code null}.
      */
-    public PreparedTextQueryMessage(Query query, MySqlParameter[] values) {
+    public PreparedTextQueryMessage(Query query, String returning, MySqlParameter[] values) {
         super(requireNonNull(values, "values must not be null"));
 
         this.query = requireNonNull(query, "query must not be null");
+        this.returning = requireNonNull(returning, "returning must not be null");
     }
 
     @Override
@@ -83,16 +87,22 @@ public final class PreparedTextQueryMessage extends AtomicReference<MySqlParamet
             return Flux.fromArray(values);
         });
 
-        return ParamWriter.publish(query, parameters).map(it -> {
+        return ParamWriter.publish(query, parameters).handle((it, sink) -> {
             ByteBuf buf = allocator.buffer();
 
             try {
                 buf.writeByte(TextQueryMessage.QUERY_FLAG).writeCharSequence(it, charset);
-                return buf;
+
+                if (!returning.isEmpty()) {
+                    buf.writeCharSequence(" RETURNING ", charset);
+                    buf.writeCharSequence(returning, charset);
+                }
+
+                sink.next(buf);
             } catch (Throwable e) {
                 // Maybe IndexOutOfBounds or OOM (too large sql)
                 buf.release();
-                throw e;
+                sink.error(e);
             }
         });
     }

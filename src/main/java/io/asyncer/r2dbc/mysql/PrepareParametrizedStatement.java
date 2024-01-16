@@ -19,6 +19,7 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -42,8 +43,11 @@ final class PrepareParametrizedStatement extends ParametrizedStatementSupport {
 
     @Override
     public Flux<MySqlResult> execute(List<Binding> bindings) {
-        return QueryFlow.execute(client, query.getFormattedSql(), bindings, fetchSize, prepareCache)
-            .map(messages -> MySqlResult.toResult(true, codecs, context, generatedKeyName, messages));
+        return Flux.defer(() -> QueryFlow.execute(client,
+                StringUtils.extendReturning(query.getFormattedSql(), returningIdentifiers()),
+                bindings, fetchSize, prepareCache
+            ))
+            .map(messages -> MySqlResult.toResult(true, codecs, context, syntheticKeyName(), messages));
     }
 
     @Override

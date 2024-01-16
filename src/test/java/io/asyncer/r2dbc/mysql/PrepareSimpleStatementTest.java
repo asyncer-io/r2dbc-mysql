@@ -31,8 +31,6 @@ class PrepareSimpleStatementTest implements StatementTestSupport<PrepareSimpleSt
 
     private final Client client = mock(Client.class);
 
-    private final ConnectionContext context = ConnectionContextTest.mock();
-
     private final Codecs codecs = mock(Codecs.class);
 
     private final Field fetchSize = PrepareSimpleStatement.class.getDeclaredField("fetchSize");
@@ -62,8 +60,14 @@ class PrepareSimpleStatementTest implements StatementTestSupport<PrepareSimpleSt
     }
 
     @Override
-    public PrepareSimpleStatement makeInstance(String ignored, String sql) {
-        return new PrepareSimpleStatement(client, codecs, context, sql, Caches.createPrepareCache(0));
+    public PrepareSimpleStatement makeInstance(boolean isMariaDB, String ignored, String sql) {
+        return new PrepareSimpleStatement(
+            client,
+            codecs,
+            ConnectionContextTest.mock(isMariaDB),
+            sql,
+            Caches.createPrepareCache(0)
+        );
     }
 
     @Override

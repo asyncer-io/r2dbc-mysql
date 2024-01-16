@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
@@ -27,31 +28,84 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 abstract class MySqlStatementSupport implements MySqlStatement {
 
+    private static final ServerVersion MARIA_10_5_1 = ServerVersion.create(10, 5, 1, true);
+
     private static final String LAST_INSERT_ID = "LAST_INSERT_ID";
 
+    protected final ConnectionContext context;
+
     @Nullable
-    String generatedKeyName = null;
+    private String[] generatedColumns = null;
+
+    MySqlStatementSupport(ConnectionContext context) {
+        this.context = requireNonNull(context, "context must not be null");
+    }
 
     @Override
     public final MySqlStatement returnGeneratedValues(String... columns) {
         requireNonNull(columns, "columns must not be null");
 
-        switch (columns.length) {
-            case 0:
-                this.generatedKeyName = LAST_INSERT_ID;
-                return this;
-            case 1:
-                requireNonEmpty(columns[0], "id name must not be empty");
-                this.generatedKeyName = columns[0];
-                return this;
+        int len = columns.length;
+
+        if (len == 0) {
+            this.generatedColumns = InternalArrays.EMPTY_STRINGS;
+        } else if (len == 1 || supportReturning()) {
+            String[] result = new String[len];
+
+            for (int i = 0; i < len; ++i) {
+                requireNonEmpty(columns[i], "returning column must not be empty");
+                result[i] = columns[i];
+            }
+
+            this.generatedColumns = result;
+        } else {
+            String db = context.isMariaDb() ? "MariaDB 10.5.0 or below" : "MySQL";
+            throw new IllegalArgumentException(db + " supports only LAST_INSERT_ID instead of RETURNING");
         }
 
-        throw new IllegalArgumentException("MySQL only supports single generated value");
+        return this;
     }
 
     @Override
     public MySqlStatement fetchSize(int rows) {
         require(rows >= 0, "Fetch size must be greater or equal to zero");
         return this;
+    }
+
+    @Nullable
+    final String syntheticKeyName() {
+        String[] columns = this.generatedColumns;
+
+        // MariaDB should use `RETURNING` clause instead.
+        if (columns == null || supportReturning()) {
+            return null;
+        }
+
+        if (columns.length == 0) {
+            return LAST_INSERT_ID;
+        }
+
+        return columns[0];
+    }
+
+    final String returningIdentifiers() {
+        String[] columns = this.generatedColumns;
+
+        if (columns == null || !supportReturning()) {
+            return "";
+        }
+
+        if (columns.length == 0) {
+            return "*";
+        }
+
+        // Columns should not be quoted, it can be an expression. e.g. RETURNING CURRENT_TIMESTAMP
+        // It would be confusing if we quoted it, e.g. RETURNING `CURRENT_TIMESTAMP`
+        // Keep columns raw and let ORM/QueryBuilder handle it.
+        return String.join(",", columns);
+    }
+
+    private boolean supportReturning() {
+        return context.isMariaDb() && context.getServerVersion().isGreaterThanOrEqualTo(MARIA_10_5_1);
     }
 }

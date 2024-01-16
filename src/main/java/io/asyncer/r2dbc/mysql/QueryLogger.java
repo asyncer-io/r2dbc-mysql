@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
@@ -31,9 +32,10 @@ final class QueryLogger {
         logger.debug("Executing direct query: {}", query);
     }
 
-    static void log(Query query) {
+    static void log(Query query, String returning) {
         if (logger.isDebugEnabled()) {
-            logger.debug("Executing format query: {}", query.getFormattedSql());
+            logger.debug("Executing format query: {}",
+                StringUtils.extendReturning(query.getFormattedSql(), returning));
         }
     }
 

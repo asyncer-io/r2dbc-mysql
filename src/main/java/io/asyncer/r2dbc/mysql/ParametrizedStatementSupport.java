@@ -45,19 +45,18 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
 
     protected final Query query;
 
-    protected final ConnectionContext context;
-
     private final Bindings bindings;
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
     ParametrizedStatementSupport(Client client, Codecs codecs, Query query, ConnectionContext context) {
+        super(context);
+
         requireNonNull(query, "query must not be null");
         require(query.getParameters() > 0, "parameters must be a positive integer");
 
         this.client = requireNonNull(client, "client must not be null");
         this.codecs = requireNonNull(codecs, "codecs must not be null");
-        this.context = requireNonNull(context, "context must not be null");
         this.query = query;
         this.bindings = new Bindings(query.getParameters());
     }

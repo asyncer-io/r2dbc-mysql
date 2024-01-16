@@ -33,7 +33,7 @@ final class TextParametrizedStatement extends ParametrizedStatementSupport {
 
     @Override
     protected Flux<MySqlResult> execute(List<Binding> bindings) {
-        return QueryFlow.execute(client, query, bindings)
-            .map(messages -> MySqlResult.toResult(false, codecs, context, generatedKeyName, messages));
+        return Flux.defer(() -> QueryFlow.execute(client, query, returningIdentifiers(), bindings))
+            .map(messages -> MySqlResult.toResult(false, codecs, context, syntheticKeyName(), messages));
     }
 }

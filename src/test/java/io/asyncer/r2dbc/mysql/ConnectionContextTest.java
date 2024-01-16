@@ -68,13 +68,18 @@ public class ConnectionContextTest {
     }
 
     public static ConnectionContext mock() {
-        return mock(ZoneId.systemDefault());
+        return mock(false, ZoneId.systemDefault());
     }
 
-    public static ConnectionContext mock(ZoneId zoneId) {
+    public static ConnectionContext mock(boolean isMariaDB) {
+        return mock(isMariaDB, ZoneId.systemDefault());
+    }
+
+    public static ConnectionContext mock(boolean isMariaDB, ZoneId zoneId) {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, zoneId);
 
-        context.init(1, ServerVersion.parse("8.0.11.MOCKED"), Capability.of(-1));
+        context.init(1, ServerVersion.parse(isMariaDB ? "11.2.22.MOCKED" : "8.0.11.MOCKED"),
+            Capability.of(~(isMariaDB ? 1 : 0)));
         context.setServerStatuses(ServerStatuses.AUTO_COMMIT);
 
         return context;
