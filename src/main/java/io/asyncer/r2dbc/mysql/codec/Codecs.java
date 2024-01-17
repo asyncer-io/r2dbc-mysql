@@ -62,7 +62,7 @@ public interface Codecs {
         CodecContext context);
 
     /**
-     * Decode the last inserted ID from {@code OkMessage} as a specified {@link ParameterizedType type}.
+     * Decode the last inserted ID from {@code OkMessage} as a specified {@link Class type}.
      *
      * @param <T>   the generic result type.
      * @param value the last inserted ID.

@@ -36,6 +36,8 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
 
     private static final int MIN_SIZE = 7;
 
+    private final boolean isEndOfRows;
+
     private final long affectedRows;
 
     /**
@@ -49,13 +51,18 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
 
     private final String information;
 
-    private OkMessage(long affectedRows, long lastInsertId, short serverStatuses, int warnings,
-        String information) {
+    private OkMessage(boolean isEndOfRows, long affectedRows, long lastInsertId, short serverStatuses,
+        int warnings, String information) {
+        this.isEndOfRows = isEndOfRows;
         this.affectedRows = affectedRows;
         this.lastInsertId = lastInsertId;
         this.serverStatuses = serverStatuses;
         this.warnings = warnings;
         this.information = requireNonNull(information, "information must not be null");
+    }
+
+    public boolean isEndOfRows() {
+        return isEndOfRows;
     }
 
     public long getAffectedRows() {
@@ -92,7 +99,8 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
 
         OkMessage okMessage = (OkMessage) o;
 
-        return affectedRows == okMessage.affectedRows &&
+        return isEndOfRows == okMessage.isEndOfRows &&
+            affectedRows == okMessage.affectedRows &&
             lastInsertId == okMessage.lastInsertId &&
             serverStatuses == okMessage.serverStatuses &&
             warnings == okMessage.warnings &&
@@ -101,7 +109,8 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
 
     @Override
     public int hashCode() {
-        int result = (int) (affectedRows ^ (affectedRows >>> 32));
+        int result = (isEndOfRows ? 1 : 0);
+        result = 31 * result + (int) (affectedRows ^ (affectedRows >>> 32));
         result = 31 * result + (int) (lastInsertId ^ (lastInsertId >>> 32));
         result = 31 * result + serverStatuses;
         result = 31 * result + warnings;
@@ -111,21 +120,26 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
     @Override
     public String toString() {
         if (warnings == 0) {
-            return "OkMessage{affectedRows=" + Long.toUnsignedString(affectedRows) + ", lastInsertId=" + 
-                Long.toUnsignedString(lastInsertId) + ", serverStatuses=" + Integer.toHexString(serverStatuses) + 
+            return "OkMessage{isEndOfRows=" + isEndOfRows +
+                ", affectedRows=" + Long.toUnsignedString(affectedRows) +
+                ", lastInsertId=" + Long.toUnsignedString(lastInsertId) +
+                ", serverStatuses=" + Integer.toHexString(serverStatuses) +
                 ", information='" + information + "'}";
         }
 
-        return "OkMessage{affectedRows=" + Long.toUnsignedString(affectedRows) + ", lastInsertId=" + 
-            Long.toUnsignedString(lastInsertId) + ", serverStatuses=" + Integer.toHexString(serverStatuses) + 
-            ", warnings=" + warnings + ", information='" + information + "'}";
+        return "OkMessage{isEndOfRows=" + isEndOfRows +
+            ", affectedRows=" + Long.toUnsignedString(affectedRows) +
+            ", lastInsertId=" + Long.toUnsignedString(lastInsertId) +
+            ", serverStatuses=" + Integer.toHexString(serverStatuses) +
+            ", warnings=" + warnings +
+            ", information='" + information + "'}";
     }
 
     static boolean isValidSize(int bytes) {
         return bytes >= MIN_SIZE;
     }
 
-    static OkMessage decode(ByteBuf buf, ConnectionContext context) {
+    static OkMessage decode(boolean isEndOfRows, ByteBuf buf, ConnectionContext context) {
         buf.skipBytes(1); // OK message header, 0x00 or 0xFE
 
         Capability capability = context.getCapability();
@@ -149,8 +163,8 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
             int sizeAfterVarInt = VarIntUtils.checkNextVarInt(buf);
 
             if (sizeAfterVarInt < 0) {
-                return new OkMessage(affectedRows, lastInsertId, serverStatuses, warnings,
-                    buf.toString(charset));
+                return new OkMessage(isEndOfRows, affectedRows, lastInsertId, serverStatuses,
+                    warnings, buf.toString(charset));
             }
 
             int readerIndex = buf.readerIndex();
@@ -165,10 +179,11 @@ public final class OkMessage implements WarningMessage, ServerStatusMessage, Com
             }
 
             // Ignore session track, it is not human-readable and useless for R2DBC client.
-            return new OkMessage(affectedRows, lastInsertId, serverStatuses, warnings, information);
+            return new OkMessage(isEndOfRows, affectedRows, lastInsertId, serverStatuses, warnings,
+                information);
         }
 
         // Maybe have no human-readable message
-        return new OkMessage(affectedRows, lastInsertId, serverStatuses, warnings, "");
+        return new OkMessage(isEndOfRows, affectedRows, lastInsertId, serverStatuses, warnings, "");
     }
 }

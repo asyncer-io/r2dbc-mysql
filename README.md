@@ -31,6 +31,7 @@ This driver provides the following features:
 - [x] Transactions with savepoint.
 - [x] Native ping command that can be verifying when argument is `ValidationDepth.REMOTE`
 - [x] Extensible, e.g. extend built-in `Codec`(s).
+- [x] MariaDB `RETURNING` clause.
 
 ## Maintainer
 
@@ -543,10 +544,12 @@ If you want to raise an issue, please follow the recommendations below:
 ## Before use
 
 - The MySQL data fields encoded by index-based natively, get fields by an index will have **better** performance than get by column name.
-- Each `Result` should be used (call `getRowsUpdated` or `map`, even table definition), can **NOT** just ignore any `Result`, otherwise inbound stream is unable to align. (like `ResultSet.close` in jdbc, `Result` auto-close after used by once)
+- Each `Result` should be used (call `getRowsUpdated` or `map`/`flatMap`, even table definition), can **NOT** just ignore any `Result`, otherwise inbound stream is unable to align. (like `ResultSet.close` in jdbc, `Result` auto-close after used by once)
 - The MySQL server does not **actively** return time zone when query `DATETIME` or `TIMESTAMP`, this driver does not attempt time zone conversion. That means should always use `LocalDateTime` for SQL type `DATETIME` or `TIMESTAMP`. Execute `SHOW VARIABLES LIKE '%time_zone%'` to get more information.
 - Should not turn-on the `trace` log level unless debugging. Otherwise, the security information may be exposed through `ByteBuf` dump.
-- If `Statement` bound `returnGeneratedValues`, the `Result` of the `Statement` can be called both: `getRowsUpdated` to get affected rows, and `map` to get last inserted ID.
+- If `Statement` bound `returnGeneratedValues`, the `Result` of the `Statement` can be called both of `getRowsUpdated` and `map`/`flatMap`.
+  - If server is MariaDB 10.5.1 and above: the statement will attempt to use `RETURNING` clause, zero arguments will make the statement like `... RETURNING *`.
+  - Otherwise: `returnGeneratedValues` can only be called with one or zero arguments, and `map`/`flatMap` will emit the last inserted id.
 - The MySQL may be not support well for searching rows by a binary field, like `BIT` and `JSON`
   - `BIT`: cannot select 'BIT(64)' with value greater than 'Long.MAX_VALUE' (or equivalent in binary)
   - `JSON`: different MySQL may have different serialization formats, e.g. MariaDB and MySQL

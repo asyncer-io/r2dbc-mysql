@@ -49,7 +49,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
 
         if (len == 0) {
             this.generatedColumns = InternalArrays.EMPTY_STRINGS;
-        } else if (len == 1 || supportReturning()) {
+        } else if (len == 1 || supportReturning(context)) {
             String[] result = new String[len];
 
             for (int i = 0; i < len; ++i) {
@@ -60,7 +60,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
             this.generatedColumns = result;
         } else {
             String db = context.isMariaDb() ? "MariaDB 10.5.0 or below" : "MySQL";
-            throw new IllegalArgumentException(db + " supports only LAST_INSERT_ID instead of RETURNING");
+            throw new IllegalArgumentException(db + " can have only one column");
         }
 
         return this;
@@ -77,7 +77,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
         String[] columns = this.generatedColumns;
 
         // MariaDB should use `RETURNING` clause instead.
-        if (columns == null || supportReturning()) {
+        if (columns == null || supportReturning(this.context)) {
             return null;
         }
 
@@ -91,7 +91,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
     final String returningIdentifiers() {
         String[] columns = this.generatedColumns;
 
-        if (columns == null || !supportReturning()) {
+        if (columns == null || !supportReturning(context)) {
             return "";
         }
 
@@ -105,7 +105,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
         return String.join(",", columns);
     }
 
-    private boolean supportReturning() {
+    static boolean supportReturning(ConnectionContext context) {
         return context.isMariaDb() && context.getServerVersion().isGreaterThanOrEqualTo(MARIA_10_5_1);
     }
 }

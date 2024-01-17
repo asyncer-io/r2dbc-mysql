@@ -196,7 +196,7 @@ public final class ServerMessageDecoder {
                 return ErrorMessage.decode(buf);
             case OK:
                 if (OkMessage.isValidSize(buf.readableBytes())) {
-                    return OkMessage.decode(buf, context);
+                    return OkMessage.decode(false, buf, context);
                 }
 
                 break;
@@ -209,7 +209,7 @@ public final class ServerMessageDecoder {
                     // so if readable bytes upper than 7, it means if it is column count,
                     // column count is already upper than (1 << 24) - 1 = 16777215, it is impossible.
                     // So it must be OK message, not be column count.
-                    return OkMessage.decode(buf, context);
+                    return OkMessage.decode(false, buf, context);
                 } else if (EofMessage.isValidSize(byteSize)) {
                     return EofMessage.decode(buf);
                 }
@@ -231,7 +231,7 @@ public final class ServerMessageDecoder {
         switch (header) {
             case OK:
                 if (OkMessage.isValidSize(buf.readableBytes())) {
-                    return OkMessage.decode(buf, context);
+                    return OkMessage.decode(false, buf, context);
                 }
 
                 break;
@@ -333,7 +333,7 @@ public final class ServerMessageDecoder {
                 ByteBuf combined = NettyBufferUtils.composite(buffers);
 
                 try {
-                    return OkMessage.decode(combined, context);
+                    return OkMessage.decode(true, combined, context);
                 } finally {
                     combined.release();
                 }

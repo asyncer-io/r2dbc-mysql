@@ -134,6 +134,21 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
         );
     }
 
+    @Test
+    void returningGetRowUpdated() {
+        complete(conn -> conn.createStatement("CREATE TEMPORARY TABLE test(" +
+            "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,value INT NOT NULL)")
+            .execute()
+            .flatMap(IntegrationTestSupport::extractRowsUpdated)
+            .thenMany(conn.createStatement("INSERT INTO test(value) VALUES (?),(?)")
+                .bind(0, 2)
+                .bind(1, 4)
+                .returnGeneratedValues()
+                .execute())
+            .flatMap(IntegrationTestSupport::extractRowsUpdated)
+            .doOnNext(it -> assertThat(it).isEqualTo(2)));
+    }
+
     private static final class DataEntity {
 
         private final int id;
