@@ -19,6 +19,7 @@ package io.asyncer.r2dbc.mysql.message.client;
 import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import java.util.Objects;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
@@ -65,6 +66,23 @@ public final class TextQueryMessage implements ClientMessage {
                 throw e;
             }
         });
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        TextQueryMessage that = (TextQueryMessage) o;
+        return Objects.equals(sql, that.sql);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sql);
     }
 
     @Override

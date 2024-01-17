@@ -19,13 +19,20 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
+import io.asyncer.r2dbc.mysql.message.client.TextQueryMessage;
 import io.r2dbc.spi.IsolationLevel;
 import org.assertj.core.api.ThrowableTypeAssert;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link MySqlConnection}.
@@ -123,6 +130,18 @@ class MySqlConnectionTest {
     @Test
     void badSetTransactionIsolationLevel() {
         assertThatIllegalArgumentException().isThrownBy(() -> noPrepare.setTransactionIsolationLevel(null));
+    }
+
+    @Test
+    void shouldSetTransactionIsolationLevelSuccessfully() {
+        ClientMessage message = new TextQueryMessage("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE");
+        when(client.exchange(eq(message), any())).thenReturn(Flux.empty());
+
+        noPrepare.setTransactionIsolationLevel(IsolationLevel.SERIALIZABLE)
+            .as(StepVerifier::create)
+            .verifyComplete();
+
+        assertThat(noPrepare.getSessionTransactionIsolationLevel()).isEqualTo(IsolationLevel.SERIALIZABLE);
     }
 
     @SuppressWarnings("ConstantConditions")
