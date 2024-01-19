@@ -32,8 +32,6 @@ class PrepareParametrizedStatementTest implements StatementTestSupport<PreparePa
 
     private final Client client = mock(Client.class);
 
-    private final ConnectionContext context = ConnectionContextTest.mock();
-
     private final Codecs codecs = Codecs.builder(UnpooledByteBufAllocator.DEFAULT).build();
 
     private final Field fetchSize = PrepareParametrizedStatement.class.getDeclaredField("fetchSize");
@@ -48,9 +46,14 @@ class PrepareParametrizedStatementTest implements StatementTestSupport<PreparePa
     }
 
     @Override
-    public PrepareParametrizedStatement makeInstance(String sql, String ignored) {
-        return new PrepareParametrizedStatement(client, codecs, Query.parse(sql), context,
-            Caches.createPrepareCache(0));
+    public PrepareParametrizedStatement makeInstance(boolean isMariaDB, String sql, String ignored) {
+        return new PrepareParametrizedStatement(
+            client,
+            codecs,
+            Query.parse(sql),
+            ConnectionContextTest.mock(isMariaDB),
+            Caches.createPrepareCache(0)
+        );
     }
 
     @Override

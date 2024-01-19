@@ -70,8 +70,8 @@ final class Binding {
         return new PreparedExecuteMessage(statementId, immediate, drainValues());
     }
 
-    PreparedTextQueryMessage toTextMessage(Query query) {
-        return new PreparedTextQueryMessage(query, drainValues());
+    PreparedTextQueryMessage toTextMessage(Query query, String returning) {
+        return new PreparedTextQueryMessage(query, returning, drainValues());
     }
 
     /**

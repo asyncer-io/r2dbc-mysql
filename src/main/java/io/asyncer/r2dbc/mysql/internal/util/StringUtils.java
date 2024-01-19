@@ -25,6 +25,12 @@ public final class StringUtils {
 
     private static final char QUOTE = '`';
 
+    /**
+     * Quotes identifier with backticks, it will escape backticks in the identifier.
+     *
+     * @param identifier the identifier
+     * @return quoted identifier
+     */
     public static String quoteIdentifier(String identifier) {
         requireNonEmpty(identifier, "identifier must not be empty");
 
@@ -51,6 +57,17 @@ public final class StringUtils {
         }
 
         return builder.append(QUOTE).toString();
+    }
+
+    /**
+     * Extends a SQL statement with {@code RETURNING} clause.
+     *
+     * @param sql the original SQL statement.
+     * @param returning quoted column identifiers.
+     * @return the SQL statement with {@code RETURNING} clause.
+     */
+    public static String extendReturning(String sql, String returning) {
+        return returning.isEmpty() ? sql : sql + " RETURNING " + returning;
     }
 
     private StringUtils() {

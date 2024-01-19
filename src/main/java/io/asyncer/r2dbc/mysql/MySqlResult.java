@@ -40,6 +40,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -51,8 +52,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * An implementation of {@link Result} representing the results of a query against the MySQL database.
  * <p>
  * A {@link Segment} provided by this implementation may be both {@link UpdateCount} and {@link RowSegment},
- * see also {@link MySqlOkSegment}. It's based on a {@link OkMessage}, when the {@code generatedKeyName} is
- * not {@code null}.
+ * see also {@link MySqlOkSegment}.
  */
 public final class MySqlResult implements Result {
 
@@ -155,14 +155,14 @@ public final class MySqlResult implements Result {
     }
 
     static MySqlResult toResult(boolean binary, Codecs codecs, ConnectionContext context,
-                                @Nullable String generatedKeyName, Flux<ServerMessage> messages) {
+                                @Nullable String syntheticKeyName, Flux<ServerMessage> messages) {
         requireNonNull(codecs, "codecs must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(messages, "messages must not be null");
 
         return new MySqlResult(OperatorUtils.discardOnCancel(messages)
             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
-            .handle(new MySqlSegments(binary, codecs, context, generatedKeyName)));
+            .handle(new MySqlSegments(binary, codecs, context, syntheticKeyName)));
     }
 
     private static final class MySqlMessage implements Message {
@@ -228,34 +228,35 @@ public final class MySqlResult implements Result {
 
     private static class MySqlUpdateCount implements UpdateCount {
 
-        protected final OkMessage message;
+        protected final long rows;
 
-        private MySqlUpdateCount(OkMessage message) {
-            this.message = message;
-        }
+        private MySqlUpdateCount(long rows) { this.rows = rows; }
 
         @Override
         public long value() {
-            return message.getAffectedRows();
+            return rows;
         }
     }
 
     private static final class MySqlOkSegment extends MySqlUpdateCount implements RowSegment {
 
+        private final long lastInsertId;
+
         private final Codecs codecs;
 
         private final String keyName;
 
-        private MySqlOkSegment(OkMessage message, Codecs codecs, String keyName) {
-            super(message);
+        private MySqlOkSegment(long rows, long lastInsertId, Codecs codecs, String keyName) {
+            super(rows);
 
+            this.lastInsertId = lastInsertId;
             this.codecs = codecs;
             this.keyName = keyName;
         }
 
         @Override
         public Row row() {
-            return new InsertSyntheticRow(codecs, keyName, message.getLastInsertId());
+            return new InsertSyntheticRow(codecs, keyName, lastInsertId);
         }
     }
 
@@ -268,21 +269,26 @@ public final class MySqlResult implements Result {
         private final ConnectionContext context;
 
         @Nullable
-        private final String generatedKeyName;
+        private final String syntheticKeyName;
+
+        private final AtomicLong rowCount = new AtomicLong(0);
 
         private MySqlRowMetadata rowMetadata;
 
         private MySqlSegments(boolean binary, Codecs codecs, ConnectionContext context,
-            @Nullable String generatedKeyName) {
+            @Nullable String syntheticKeyName) {
             this.binary = binary;
             this.codecs = codecs;
             this.context = context;
-            this.generatedKeyName = generatedKeyName;
+            this.syntheticKeyName = syntheticKeyName;
         }
 
         @Override
         public void accept(ServerMessage message, SynchronousSink<Segment> sink) {
             if (message instanceof RowMessage) {
+                // Updated rows can be identified either by OK or rows in case of RETURNING
+                rowCount.getAndIncrement();
+
                 MySqlRowMetadata metadata = this.rowMetadata;
 
                 if (metadata == null) {
@@ -309,10 +315,17 @@ public final class MySqlResult implements Result {
 
                 this.rowMetadata = MySqlRowMetadata.create(metadataMessages);
             } else if (message instanceof OkMessage) {
-                Segment segment = generatedKeyName == null ? new MySqlUpdateCount((OkMessage) message) :
-                    new MySqlOkSegment((OkMessage) message, codecs, generatedKeyName);
+                OkMessage msg = (OkMessage) message;
 
-                sink.next(segment);
+                if (MySqlStatementSupport.supportReturning(context) && msg.isEndOfRows()) {
+                    sink.next(new MySqlUpdateCount(rowCount.getAndSet(0)));
+                } else {
+                    long rows = msg.getAffectedRows();
+                    Segment segment = syntheticKeyName == null ? new MySqlUpdateCount(rows) :
+                        new MySqlOkSegment(rows, msg.getLastInsertId(), codecs, syntheticKeyName);
+
+                    sink.next(segment);
+                }
             } else if (message instanceof ErrorMessage) {
                 sink.next(new MySqlMessage((ErrorMessage) message));
             } else {

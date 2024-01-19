@@ -30,14 +30,13 @@ abstract class SimpleStatementSupport extends MySqlStatementSupport {
 
     protected final Codecs codecs;
 
-    protected final ConnectionContext context;
-
     protected final String sql;
 
     SimpleStatementSupport(Client client, Codecs codecs, ConnectionContext context, String sql) {
+        super(context);
+
         this.client = requireNonNull(client, "client must not be null");
         this.codecs = requireNonNull(codecs, "codecs must not be null");
-        this.context = requireNonNull(context, "context must not be null");
         this.sql = requireNonNull(sql, "sql must not be null");
     }
 

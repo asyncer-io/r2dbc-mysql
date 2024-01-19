@@ -63,7 +63,7 @@ abstract class DateTimeCodecTestSupport<T extends Temporal> implements CodecTest
 
     @Override
     public CodecContext context() {
-        return ConnectionContextTest.mock(ENCODE_SERVER_ZONE);
+        return ConnectionContextTest.mock(false, ENCODE_SERVER_ZONE);
     }
 
     protected final String toText(Temporal dateTime) {

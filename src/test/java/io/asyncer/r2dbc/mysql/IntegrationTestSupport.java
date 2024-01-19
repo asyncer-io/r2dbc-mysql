@@ -136,4 +136,16 @@ abstract class IntegrationTestSupport {
 
         return ver.isLessThan(ServerVersion.create(5, 7, 0));
     }
+
+    static boolean envIsMariaDb10_5_1() {
+        String type = System.getProperty("test.db.type");
+
+        if (!"mariadb".equalsIgnoreCase(type)) {
+            return false;
+        }
+
+        ServerVersion ver = ServerVersion.parse(System.getProperty("test.mysql.version"));
+
+        return ver.isGreaterThanOrEqualTo(ServerVersion.create(10, 5, 1));
+    }
 }

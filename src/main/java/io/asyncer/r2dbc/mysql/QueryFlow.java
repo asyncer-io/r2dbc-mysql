@@ -104,7 +104,7 @@ final class QueryFlow {
      * by {@link CompleteMessage} after receive the last result for the last binding.
      *
      * @param client    the {@link Client} to exchange messages with.
-     * @param sql       the original statement for exception tracing.
+     * @param sql       the statement for exception tracing.
      * @param bindings  the data of bindings.
      * @param fetchSize the size of fetching, if it less than or equal to {@literal 0} means fetch all rows.
      * @param cache     the cache of server-preparing result.
@@ -129,18 +129,21 @@ final class QueryFlow {
      * will emit an exception and cancel subsequent {@link Binding}s. This exchange will be completed by
      * {@link CompleteMessage} after receive the last result for the last binding.
      *
-     * @param client   the {@link Client} to exchange messages with.
-     * @param query    the {@link Query} for synthetic client-preparing statement.
-     * @param bindings the data of bindings.
+     * @param client    the {@link Client} to exchange messages with.
+     * @param query     the {@link Query} for synthetic client-preparing statement.
+     * @param returning the {@code RETURNING} identifiers.
+     * @param bindings  the data of bindings.
      * @return the messages received in response to this exchange.
      */
-    static Flux<Flux<ServerMessage>> execute(Client client, Query query, List<Binding> bindings) {
+    static Flux<Flux<ServerMessage>> execute(
+        Client client, Query query, String returning, List<Binding> bindings
+    ) {
         return Flux.defer(() -> {
             if (bindings.isEmpty()) {
                 return Flux.empty();
             }
 
-            return client.exchange(new TextQueryExchangeable(query, bindings.iterator()))
+            return client.exchange(new TextQueryExchangeable(query, returning, bindings.iterator()))
                 .windowUntil(RESULT_DONE);
         });
     }
@@ -195,7 +198,7 @@ final class QueryFlow {
      * @return the messages received in response to the login exchange.
      */
     static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
-                              @Nullable CharSequence password, ConnectionContext context) {
+        @Nullable CharSequence password, ConnectionContext context) {
         return client.exchange(new LoginExchangeable(client, sslMode, database, user, password, context))
             .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
             .then(Mono.just(client));
@@ -263,13 +266,14 @@ final class QueryFlow {
      * Commits or rollbacks current transaction.  It will recover statuses of the {@link ConnectionState} in
      * the initial connection state.
      *
-     * @param client          the {@link Client} to exchange messages with.
-     * @param state           the connection state for checks and resets transaction statuses.
-     * @param commit          if commit, otherwise rollback.
-     * @param batchSupported  if connection supports batch query.
+     * @param client         the {@link Client} to exchange messages with.
+     * @param state          the connection state for checks and resets transaction statuses.
+     * @param commit         if commit, otherwise rollback.
+     * @param batchSupported if connection supports batch query.
      * @return receives complete signal.
      */
-    static Mono<Void> doneTransaction(Client client, ConnectionState state, boolean commit, boolean batchSupported) {
+    static Mono<Void> doneTransaction(Client client, ConnectionState state, boolean commit,
+        boolean batchSupported) {
         final CommitRollbackState commitState = new CommitRollbackState(state, commit);
 
         if (batchSupported) {
@@ -279,7 +283,8 @@ final class QueryFlow {
         return client.exchange(new TransactionMultiExchangeable(commitState)).then();
     }
 
-    static Mono<Void> createSavepoint(Client client, ConnectionState state, String name, boolean batchSupported) {
+    static Mono<Void> createSavepoint(Client client, ConnectionState state, String name,
+        boolean batchSupported) {
         final CreateSavepointState savepointState = new CreateSavepointState(state, name);
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(savepointState)).then();
@@ -357,10 +362,13 @@ final class TextQueryExchangeable extends BaseFluxExchangeable {
 
     private final Query query;
 
+    private final String returning;
+
     private final Iterator<Binding> bindings;
 
-    TextQueryExchangeable(Query query, Iterator<Binding> bindings) {
+    TextQueryExchangeable(Query query, String returning, Iterator<Binding> bindings) {
         this.query = query;
+        this.returning = returning;
         this.bindings = bindings;
     }
 
@@ -384,9 +392,9 @@ final class TextQueryExchangeable extends BaseFluxExchangeable {
     @Override
     protected void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink) {
         if (this.bindings.hasNext()) {
-            QueryLogger.log(this.query);
+            QueryLogger.log(this.query, this.returning);
 
-            PreparedTextQueryMessage message = this.bindings.next().toTextMessage(this.query);
+            PreparedTextQueryMessage message = this.bindings.next().toTextMessage(this.query, this.returning);
             Sinks.EmitResult result = this.requests.tryEmitNext(message);
 
             if (result == Sinks.EmitResult.OK) {
@@ -404,7 +412,7 @@ final class TextQueryExchangeable extends BaseFluxExchangeable {
 
     @Override
     protected String offendingSql() {
-        return query.getFormattedSql();
+        return StringUtils.extendReturning(query.getFormattedSql(), returning);
     }
 }
 
@@ -1153,7 +1161,8 @@ final class StartTransactionState extends AbstractTransactionState {
                 }
                 return true;
             case ISOLATION_LEVEL:
-                final IsolationLevel isolationLevel = definition.getAttribute(TransactionDefinition.ISOLATION_LEVEL);
+                final IsolationLevel isolationLevel =
+                    definition.getAttribute(TransactionDefinition.ISOLATION_LEVEL);
                 if (isolationLevel != null) {
                     state.setIsolationLevel(isolationLevel);
                 }
@@ -1253,7 +1262,6 @@ final class CreateSavepointState extends AbstractTransactionState {
 }
 
 final class TransactionBatchExchangeable extends FluxExchangeable<Void> {
-
 
     private final AbstractTransactionState state;
 

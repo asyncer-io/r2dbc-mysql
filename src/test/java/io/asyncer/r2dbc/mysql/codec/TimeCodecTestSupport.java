@@ -55,7 +55,7 @@ abstract class TimeCodecTestSupport<T extends Temporal> implements CodecTestSupp
 
     @Override
     public CodecContext context() {
-        return ConnectionContextTest.mock(ENCODE_SERVER_ZONE);
+        return ConnectionContextTest.mock(false, ENCODE_SERVER_ZONE);
     }
 
     protected final String toText(Temporal time) {
