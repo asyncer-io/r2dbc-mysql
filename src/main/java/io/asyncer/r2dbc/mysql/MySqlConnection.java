@@ -124,7 +124,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     private final MySqlConnectionMetadata metadata;
 
-    private final IsolationLevel sessionLevel;
+    private volatile IsolationLevel sessionLevel;
 
     private final QueryCache queryCache;
 
@@ -298,13 +298,27 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         return currentLevel;
     }
 
+    /**
+     * Gets session transaction isolation level(Only for testing).
+     *
+     * @return session transaction isolation level.
+     */
+    IsolationLevel getSessionTransactionIsolationLevel() {
+        return sessionLevel;
+    }
+
     @Override
     public Mono<Void> setTransactionIsolationLevel(IsolationLevel isolationLevel) {
         requireNonNull(isolationLevel, "isolationLevel must not be null");
 
-        // Set next transaction isolation level.
-        return QueryFlow.executeVoid(client, "SET TRANSACTION ISOLATION LEVEL " + isolationLevel.asSql())
-            .doOnSuccess(ignored -> setIsolationLevel(isolationLevel));
+        // Set subsequent transaction isolation level.
+        return QueryFlow.executeVoid(client, "SET SESSION TRANSACTION ISOLATION LEVEL " + isolationLevel.asSql())
+            .doOnSuccess(ignored -> {
+                this.sessionLevel = isolationLevel;
+                if (!this.isInTransaction()) {
+                    this.currentLevel = isolationLevel;
+                }
+            });
     }
 
     @Override

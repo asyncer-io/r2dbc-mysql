@@ -140,6 +140,51 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void setTransactionLevelNotInTransaction() {
+        complete(connection ->
+            // check initial session isolation level
+            Mono.fromSupplier(connection::getTransactionIsolationLevel)
+                .doOnSuccess(it -> assertThat(it).isEqualTo(REPEATABLE_READ))
+                .then(connection.beginTransaction())
+                .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                .then(Mono.fromSupplier(connection::getTransactionIsolationLevel))
+                .doOnSuccess(it -> assertThat(it).isEqualTo(REPEATABLE_READ))
+                .then(connection.rollbackTransaction())
+                .then(connection.setTransactionIsolationLevel(READ_COMMITTED))
+                // ensure that session isolation level is changed
+                .then(Mono.fromSupplier(connection::getTransactionIsolationLevel))
+                .doOnSuccess(it -> assertThat(it).isEqualTo(READ_COMMITTED))
+                .then(connection.beginTransaction())
+                .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+                // ensure transaction isolation level applies to subsequent transactions
+                .then(Mono.fromSupplier(connection::getTransactionIsolationLevel))
+                .doOnSuccess(it -> assertThat(it).isEqualTo(READ_COMMITTED))
+        );
+    }
+
+    @Test
+    void setTransactionLevelInTransaction() {
+        complete(connection ->
+            // check initial session transaction isolation level
+            Mono.fromSupplier(connection::getTransactionIsolationLevel)
+                .doOnSuccess(it -> assertThat(it).isEqualTo(REPEATABLE_READ))
+                .then(connection.beginTransaction())
+                .then(connection.setTransactionIsolationLevel(READ_COMMITTED))
+                // ensure that current transaction isolation level is not changed
+                .then(Mono.fromSupplier(connection::getTransactionIsolationLevel))
+                .doOnSuccess(it -> assertThat(it).isNotEqualTo(READ_COMMITTED))
+                .then(connection.rollbackTransaction())
+                .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
+                // ensure that session isolation level is changed after rollback
+                .then(Mono.fromSupplier(connection::getTransactionIsolationLevel))
+                .doOnSuccess(it -> assertThat(it).isEqualTo(READ_COMMITTED))
+                // ensure transaction isolation level applies to subsequent transactions
+                .then(connection.beginTransaction())
+                .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+        );
+    }
+
+    @Test
     void transactionDefinition() {
         // The WITH CONSISTENT SNAPSHOT phrase can only be used with the REPEATABLE READ isolation level.
         complete(connection -> connection.beginTransaction(MySqlTransactionDefinition.builder()
