@@ -41,7 +41,7 @@ class BooleanCodecTest implements CodecTestSupport<Boolean> {
 
     @Override
     public Object[] stringifyParameters() {
-        return Arrays.stream(booleans).map(it -> it ? "b'1'" : "b'0'").toArray();
+        return Arrays.stream(booleans).map(it -> it ? "1" : "0").toArray();
     }
 
     @Override
