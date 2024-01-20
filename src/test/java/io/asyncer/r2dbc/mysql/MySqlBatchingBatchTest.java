@@ -61,9 +61,9 @@ class MySqlBatchingBatchTest {
     }
 
     @Test
-    void executeNothing() {
-        MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class),
+    void addNothing() {
+        final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class),
             ConnectionContextTest.mock());
-        assertEquals(batch.execute().blockFirst(), null);
+        assertEquals(batch.getSql(), "");
     }
 }
