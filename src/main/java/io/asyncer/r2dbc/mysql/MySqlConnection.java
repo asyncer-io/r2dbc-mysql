@@ -424,7 +424,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         // mariadb: https://mariadb.com/kb/en/aborting-statements/
         // mysql: https://dev.mysql.com/blog-archive/server-side-select-statement-timeouts/
         // ref: https://github.com/mariadb-corporation/mariadb-connector-r2dbc
-        if (isMariaDb && serverVersion.isGreaterThanOrEqualTo(MARIA_10_2_0)
+        if (isMariaDb && serverVersion.isGreaterThanOrEqualTo(MARIA_10_1_1)
             || !isMariaDb && serverVersion.isGreaterThanOrEqualTo(MYSQL_5_7_4)) {
             return QueryFlow.executeVoid(client, sql);
         }
