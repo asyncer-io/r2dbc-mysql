@@ -33,6 +33,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.Lifecycle;
+import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
@@ -73,6 +74,10 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     private static final ServerVersion MYSQL_5_7_20 = ServerVersion.create(5, 7, 20);
 
     private static final ServerVersion MYSQL_8 = ServerVersion.create(8, 0, 0);
+
+    private static final ServerVersion MYSQL_5_7_4 = ServerVersion.create(5, 7, 4);
+
+    private static final ServerVersion MARIA_10_1_1 = ServerVersion.create(10, 1, 1, true);
 
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
         if (message instanceof ErrorMessage) {
@@ -410,9 +415,28 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> setStatementTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
+        final boolean isMariaDb = context.isMariaDb();
+        final ServerVersion serverVersion = context.getServerVersion();
+        final long timeoutMs = timeout.toMillis();
+        final String sql = isMariaDb ? "SET max_statement_time=" + timeoutMs / 1000.0
+                : "SET SESSION MAX_EXECUTION_TIME=" + timeoutMs;
 
-        // TODO: implement me
-        return Mono.empty();
+        // mariadb: https://mariadb.com/kb/en/aborting-statements/
+        // mysql: https://dev.mysql.com/blog-archive/server-side-select-statement-timeouts/
+        // ref: https://github.com/mariadb-corporation/mariadb-connector-r2dbc
+        if (isMariaDb && serverVersion.isGreaterThanOrEqualTo(MARIA_10_1_1)
+            || !isMariaDb && serverVersion.isGreaterThanOrEqualTo(MYSQL_5_7_4)) {
+            return QueryFlow.executeVoid(client, sql);
+        }
+
+        return Mono.error(
+                new R2dbcNonTransientResourceException(
+                        "Statement timeout is not supported by server version " + serverVersion,
+                        "HY000",
+                        -1,
+                        sql
+                )
+        );
     }
 
     boolean isSessionAutoCommit() {
