@@ -165,7 +165,7 @@ abstract class IntegrationTestSupport {
         String type = System.getProperty("test.db.type");
 
         if ("mariadb".equalsIgnoreCase(type)) {
-            return ver.isLessThan(ServerVersion.create(10, 2, 0));
+            return ver.isLessThan(ServerVersion.create(10, 1, 1));
         }
 
         return ver.isLessThan(ServerVersion.create(5, 7, 4));
