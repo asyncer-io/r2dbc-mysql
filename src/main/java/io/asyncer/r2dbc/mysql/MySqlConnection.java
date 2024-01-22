@@ -77,7 +77,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     private static final ServerVersion MYSQL_5_7_4 = ServerVersion.create(5, 7, 4);
 
-    private static final ServerVersion MARIA_10_2_0 = ServerVersion.create(10, 2, 0, true);
+    private static final ServerVersion MARIA_10_1_1 = ServerVersion.create(10, 1, 1, true);
 
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
         if (message instanceof ErrorMessage) {
