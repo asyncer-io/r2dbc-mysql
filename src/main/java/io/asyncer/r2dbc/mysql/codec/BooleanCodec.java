@@ -76,7 +76,7 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
         @Override
         public Mono<Void> publishText(ParameterWriter writer) {
-            return Mono.fromRunnable(() -> writer.writeBinary(value));
+            return Mono.fromRunnable(() -> writer.writeInt(value ? 1 : 0));
         }
 
         @Override
