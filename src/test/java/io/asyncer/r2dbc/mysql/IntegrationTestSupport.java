@@ -154,7 +154,7 @@ abstract class IntegrationTestSupport {
         return ver.isGreaterThanOrEqualTo(ServerVersion.create(10, 5, 1));
     }
 
-    boolean envIsLessThanMySql574OrMariaDb102() {
+    boolean envIsLessThanMySql574OrMariaDb1011() {
         String version = System.getProperty("test.mysql.version");
 
         if (version == null || version.isEmpty()) {
