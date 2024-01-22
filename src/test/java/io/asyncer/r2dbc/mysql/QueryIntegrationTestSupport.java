@@ -611,7 +611,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     @Test
-    @DisabledIf("envIsLessThanMySql574OrMariaDb102")
+    @DisabledIf("envIsLessThanMySql574OrMariaDb1011")
     void setStatementTimeoutTest() {
         final String sql = "SELECT 1 WHERE SLEEP(1) > 1";
         timeout(connection -> connection.setStatementTimeout(Duration.ofMillis(500))
