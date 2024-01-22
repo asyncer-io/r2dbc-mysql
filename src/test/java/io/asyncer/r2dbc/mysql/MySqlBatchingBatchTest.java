@@ -59,4 +59,11 @@ class MySqlBatchingBatchTest {
     void badAdd() {
         assertThrows(IllegalArgumentException.class, () -> batch.add(null));
     }
+
+    @Test
+    void addNothing() {
+        final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class),
+            ConnectionContextTest.mock());
+        assertEquals(batch.getSql(), "");
+    }
 }

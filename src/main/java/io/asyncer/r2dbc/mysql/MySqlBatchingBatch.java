@@ -20,6 +20,8 @@ import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import reactor.core.publisher.Flux;
 
+import java.util.StringJoiner;
+
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -34,7 +36,7 @@ final class MySqlBatchingBatch extends MySqlBatch {
 
     private final ConnectionContext context;
 
-    private StringBuilder builder;
+    private final StringJoiner queries = new StringJoiner(";");
 
     MySqlBatchingBatch(Client client, Codecs codecs, ConnectionContext context) {
         this.client = requireNonNull(client, "client must not be null");
@@ -50,9 +52,9 @@ final class MySqlBatchingBatch extends MySqlBatch {
 
         if (index >= 0 && sql.charAt(index) == ';') {
             // Skip last ';' and whitespaces that following last ';'.
-            requireBuilder().append(sql, 0, index);
+            queries.add(sql.substring(0, index));
         } else {
-            requireBuilder().append(sql);
+            queries.add(sql);
         }
 
         return this;
@@ -75,15 +77,7 @@ final class MySqlBatchingBatch extends MySqlBatch {
      * @return current batching SQL statement
      */
     String getSql() {
-        return builder.toString();
-    }
-
-    private StringBuilder requireBuilder() {
-        if (builder == null) {
-            return (builder = new StringBuilder());
-        }
-
-        return builder.append(';');
+        return queries.toString();
     }
 
     private static int lastNonWhitespace(String sql) {
