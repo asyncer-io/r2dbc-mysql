@@ -415,7 +415,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public Mono<Void> setStatementTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
-        final boolean isMariaDb = context.getCapability().isMariaDb();
+        final boolean isMariaDb = context.isMariaDb();
         final ServerVersion serverVersion = context.getServerVersion();
         final long timeoutMs = timeout.toMillis();
         final String sql = isMariaDb ? "SET max_statement_time=" + timeoutMs / 1000.0
