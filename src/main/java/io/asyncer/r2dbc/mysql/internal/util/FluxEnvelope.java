@@ -32,7 +32,7 @@ import reactor.util.context.Context;
  * An implementation of {@link Flux}{@code <}{@link ByteBuf}{@code >} that considers cumulate buffers as
  * envelopes of the MySQL socket protocol.
  */
-final class FluxCumulateEnvelope extends FluxOperator<ByteBuf, ByteBuf> {
+final class FluxEnvelope extends FluxOperator<ByteBuf, ByteBuf> {
 
     private final ByteBufAllocator alloc;
 
@@ -40,17 +40,132 @@ final class FluxCumulateEnvelope extends FluxOperator<ByteBuf, ByteBuf> {
 
     private final int start;
 
-    FluxCumulateEnvelope(Flux<? extends ByteBuf> source, ByteBufAllocator alloc, int size, int start) {
+    private final boolean cumulate;
+
+    FluxEnvelope(Flux<? extends ByteBuf> source, ByteBufAllocator alloc, int size, int start,
+        boolean cumulate) {
         super(source);
 
         this.alloc = alloc;
         this.size = size;
         this.start = start;
+        this.cumulate = cumulate;
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super ByteBuf> actual) {
-        this.source.subscribe(new CumulateEnvelopeSubscriber(actual, alloc, size, start));
+        if (cumulate) {
+            this.source.subscribe(new CumulateEnvelopeSubscriber(actual, alloc, size, start));
+        } else {
+            this.source.subscribe(new DirectEnvelopeSubscriber(actual, alloc, size, start));
+        }
+    }
+}
+
+final class DirectEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scannable, Subscription {
+
+    private final CoreSubscriber<? super ByteBuf> actual;
+
+    private final ByteBufAllocator alloc;
+
+    private final int size;
+
+    private boolean done;
+
+    private Subscription s;
+
+    private int envelopeId;
+
+    DirectEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc, int size,
+        int start) {
+        this.actual = actual;
+        this.alloc = alloc;
+        this.size = size;
+        this.envelopeId = start;
+    }
+
+    @Override
+    public void onSubscribe(Subscription s) {
+        if (Operators.validate(this.s, s)) {
+            this.s = s;
+            this.actual.onSubscribe(this);
+        }
+    }
+
+    @Override
+    public void onNext(ByteBuf buf) {
+        if (done) {
+            // Do not release the buffer, it should be handled by OperatorUtils.discardOnCancel() or Context.
+            Operators.onNextDropped(buf, actual.currentContext());
+            return;
+        }
+
+        try {
+            ByteBuf header = this.alloc.buffer(Envelopes.PART_HEADER_SIZE)
+                .writeMediumLE(buf.readableBytes())
+                .writeByte(this.envelopeId++);
+
+            this.actual.onNext(header);
+            this.actual.onNext(buf);
+        } catch (Throwable e) {
+            Throwable t = Operators.onNextError(buf, e, this.actual.currentContext(), this.s);
+
+            if (t == null) {
+                s.request(1);
+            } else {
+                onError(t);
+            }
+        }
+    }
+
+    @Override
+    public void onError(Throwable t) {
+        if (this.done) {
+            Operators.onErrorDropped(t, this.actual.currentContext());
+            return;
+        }
+
+        this.done = true;
+        this.actual.onError(t);
+    }
+
+    @Override
+    public void onComplete() {
+        if (this.done) {
+            return;
+        }
+
+        this.done = true;
+        this.actual.onComplete();
+    }
+
+    @Override
+    public void request(long n) {
+        this.s.request(n);
+    }
+
+    @Override
+    public void cancel() {
+        this.s.cancel();
+    }
+
+    @Override
+    public Context currentContext() {
+        return this.actual.currentContext();
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public Object scanUnsafe(Attr key) {
+        if (key == Attr.PARENT) {
+            return this.s;
+        } else if (key == Attr.ACTUAL) {
+            return this.actual;
+        } else if (key == Attr.TERMINATED) {
+            return this.done;
+        } else {
+            return null;
+        }
     }
 }
 
@@ -95,7 +210,7 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
         }
 
         if (!buf.isReadable()) {
-            // Ignore empty buffer, useless for MySQL protocol.
+            // Ignore empty buffer, useless for cumulated buffers.
             buf.release();
             return;
         }

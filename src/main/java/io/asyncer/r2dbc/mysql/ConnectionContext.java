@@ -119,6 +119,10 @@ public final class ConnectionContext implements CodecContext {
         return zeroDateOption;
     }
 
+    public int getLocalInfileBufferSize() {
+        return 64 * 1024;
+    }
+
     /**
      * Get the bitmap of server statuses.
      *

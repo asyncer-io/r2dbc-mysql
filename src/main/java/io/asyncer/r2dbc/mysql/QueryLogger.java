@@ -47,5 +47,9 @@ final class QueryLogger {
         logger.debug("Executing prepared statement {} with {}", statementId, values);
     }
 
+    static void logLocalInfile(String path) {
+        logger.debug("Loading data from: {}", path);
+    }
+
     private QueryLogger() { }
 }

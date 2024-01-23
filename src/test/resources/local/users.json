@@ -1,0 +1,26 @@
+[
+  {
+    "id": "earth",
+    "name": "earth",
+    "age": 4543000000,
+    "bio": "I'm a planet.\nI have \"Humans\" on me"
+  },
+  {
+    "id": "goku",
+    "name": "Goku",
+    "age": 40,
+    "bio": "I'm a saiyan, I'm hungry"
+  },
+  {
+    "id": "mirromutth",
+    "name": "Mirro Mutth",
+    "age": 3000,
+    "bio": ""
+  },
+  {
+    "id": "superman",
+    "name": "Superman",
+    "age": null,
+    "bio": "I'm a superhero"
+  }
+]

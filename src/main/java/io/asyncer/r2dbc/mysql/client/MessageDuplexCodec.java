@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.client;
 import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
-import io.asyncer.r2dbc.mysql.message.client.LoginClientMessage;
+import io.asyncer.r2dbc.mysql.message.client.SubsequenceClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.PrepareQueryMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedFetchMessage;
 import io.asyncer.r2dbc.mysql.message.client.SslRequest;
@@ -86,22 +86,22 @@ final class MessageDuplexCodec extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof ClientMessage) {
             ByteBufAllocator allocator = ctx.alloc();
-
             Flux<ByteBuf> encoded;
-            int envelopeId;
 
-            if (msg instanceof LoginClientMessage) {
-                LoginClientMessage message = (LoginClientMessage) msg;
+            if (msg instanceof SubsequenceClientMessage) {
+                SubsequenceClientMessage message = (SubsequenceClientMessage) msg;
 
                 encoded = Flux.from(message.encode(allocator, this.context));
-                envelopeId = message.getEnvelopeId();
+                int envelopeId = message.getEnvelopeId();
+
+                OperatorUtils.envelope(encoded, allocator, envelopeId, false)
+                    .subscribe(new WriteSubscriber(ctx, promise));
             } else {
                 encoded = Flux.from(((ClientMessage) msg).encode(allocator, this.context));
-                envelopeId = 0;
-            }
 
-            OperatorUtils.cumulateEnvelope(encoded, allocator, envelopeId)
-                .subscribe(new WriteSubscriber(ctx, promise));
+                OperatorUtils.envelope(encoded, allocator, 0, true)
+                    .subscribe(new WriteSubscriber(ctx, promise));
+            }
 
             if (msg instanceof PrepareQueryMessage) {
                 setDecodeContext(DecodeContext.prepareQuery());

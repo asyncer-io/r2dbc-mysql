@@ -26,7 +26,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * A message that contains only an authentication, used by full authentication or change authentication
  * response.
  */
-public final class AuthResponse extends SizedClientMessage implements LoginClientMessage {
+public final class AuthResponse extends SizedClientMessage implements SubsequenceClientMessage {
 
     private final int envelopeId;
 

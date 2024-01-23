@@ -36,9 +36,9 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link FluxCumulateEnvelope}.
+ * Unit tests for {@link FluxEnvelope}.
  */
-class FluxCumulateEnvelopeTest {
+class FluxEnvelopeTest {
 
     private static final byte[] RD_PATTERN = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz"
         .getBytes(StandardCharsets.US_ASCII);
@@ -262,7 +262,7 @@ class FluxCumulateEnvelopeTest {
     }
 
     private Flux<ByteBuf> envelopes(Flux<ByteBuf> source, int envelopeSize) {
-        return new FluxCumulateEnvelope(source, allocator, envelopeSize, 0);
+        return new FluxEnvelope(source, allocator, envelopeSize, 0, true);
     }
 
     private Consumer<List<ByteBuf>> assertBuffers(String origin, int envelopeSize, int lastSize,

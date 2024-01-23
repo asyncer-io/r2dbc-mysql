@@ -18,18 +18,57 @@ package io.asyncer.r2dbc.mysql.internal.util;
 
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
+import reactor.core.publisher.Flux;
 
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An internal utility considers the use of safe release buffers (array or {@link List}). It uses standard
  * netty {@link ReferenceCountUtil#safeRelease} to suppress release errors.
  */
 public final class NettyBufferUtils {
+
+    /**
+     * Reads all bytes from a file asynchronously.
+     *
+     * @param path       The path of the file want to be read.
+     * @param allocator  The {@link ByteBufAllocator} used to allocate {@link ByteBuf}s.
+     * @param bufferSize The size of the buffer used to read the file.
+     * @return A {@link Flux} emits {@link ByteBuf}s read from the file.
+     */
+    public static Flux<ByteBuf> readFile(Path path, ByteBufAllocator allocator, int bufferSize) {
+        requireNonNull(path, "path must not be null");
+        requireNonNull(allocator, "allocator must not be null");
+        require(bufferSize > 0, "bufferSize must be positive");
+
+        return Flux.<ByteBuf>create(sink -> {
+            ReadCompletionHandler handler;
+
+            try {
+                // AsynchronousFileChannel can only be opened in blocking mode :(
+                @SuppressWarnings("BlockingMethodInNonBlockingContext")
+                AsynchronousFileChannel channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+
+                handler = new ReadCompletionHandler(channel, allocator, bufferSize, sink);
+            } catch (Throwable e) {
+                sink.error(e);
+                return;
+            }
+
+            sink.onCancel(handler::cancel);
+            sink.onRequest(handler::request);
+        }).doOnDiscard(ByteBuf.class, ReferenceCountUtil::safeRelease);
+    }
 
     /**
      * Combine {@link ByteBuf}s through composite buffer.

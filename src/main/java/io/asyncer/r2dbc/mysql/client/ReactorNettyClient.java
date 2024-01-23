@@ -184,7 +184,8 @@ final class ReactorNettyClient implements Client {
                     .asFlux()
                     .doOnSubscribe(ignored -> exchangeable.subscribe(
                             this::emitNextRequest,
-                            e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
+                            e ->
+                                requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
                     )
                     .handle(exchangeable)
                     .doOnTerminate(() -> {

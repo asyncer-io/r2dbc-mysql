@@ -23,7 +23,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 /**
  * An abstraction of {@link ClientMessage} that considers SSL request for handshake.
  */
-public interface SslRequest extends LoginClientMessage {
+public interface SslRequest extends SubsequenceClientMessage {
 
     /**
      * Get current {@link Capability} of the connection.

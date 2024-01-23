@@ -17,12 +17,14 @@
 package io.asyncer.r2dbc.mysql.message.client;
 
 /**
- * An abstraction of {@link ClientMessage} considers login phase messages.
+ * An abstraction of {@link ClientMessage} considers as a subsequence of a request message.
+ * <p>
+ * All encoded buffers will not be cumulated.
  */
-public interface LoginClientMessage extends ClientMessage {
+public interface SubsequenceClientMessage extends ClientMessage {
 
     /**
-     * Get the current envelope ID used to serialize subsequent request messages.
+     * Gets the current envelope ID used to serialize subsequent request messages.
      *
      * @return the current envelope ID.
      */

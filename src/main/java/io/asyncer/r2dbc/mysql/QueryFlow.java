@@ -22,12 +22,12 @@ import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.client.FluxExchangeable;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
-import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.message.client.AuthResponse;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.HandshakeResponse;
-import io.asyncer.r2dbc.mysql.message.client.LoginClientMessage;
+import io.asyncer.r2dbc.mysql.message.client.LocalInfileResponse;
+import io.asyncer.r2dbc.mysql.message.client.SubsequenceClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.PingMessage;
 import io.asyncer.r2dbc.mysql.message.client.PrepareQueryMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedCloseMessage;
@@ -44,6 +44,7 @@ import io.asyncer.r2dbc.mysql.message.server.EofMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
 import io.asyncer.r2dbc.mysql.message.server.HandshakeHeader;
 import io.asyncer.r2dbc.mysql.message.server.HandshakeRequest;
+import io.asyncer.r2dbc.mysql.message.server.LocalInfileRequest;
 import io.asyncer.r2dbc.mysql.message.server.OkMessage;
 import io.asyncer.r2dbc.mysql.message.server.PreparedOkMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
@@ -74,6 +75,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -209,36 +211,26 @@ final class QueryFlow {
      * terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage}
      * will emit an exception. The exchange will be completed by {@link CompleteMessage} after receive the
      * last result for the last binding.
+     * <p>
+     * Note: this method does not support {@code LOCAL INFILE} due to it should be used for excepted queries.
      *
      * @param client the {@link Client} to exchange messages with.
      * @param sql    the query to execute, can be contains multi-statements.
      * @return receives complete signal.
      */
     static Mono<Void> executeVoid(Client client, String sql) {
-        return Mono.defer(() -> execute0(client, sql).doOnNext(EXECUTE_VOID).then());
-    }
+        return Mono.defer(() -> client.<ServerMessage>exchange(new TextQueryMessage(sql), (message, sink) -> {
+            if (message instanceof ErrorMessage) {
+                sink.next(((ErrorMessage) message).offendedBy(sql));
+                sink.complete();
+            } else {
+                sink.next(message);
 
-    /**
-     * Execute multiple simple queries with one-by-one and return a {@link Mono} for the complete signal or
-     * error. Query execution terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. The
-     * {@link ErrorMessage} will emit an exception and cancel subsequent statements execution. The exchange
-     * will be completed by {@link CompleteMessage} after receive the last result for the last binding.
-     *
-     * @param client     the {@link Client} to exchange messages with.
-     * @param statements the queries to execute, each element can be contains multi-statements.
-     * @return receives complete signal.
-     */
-    static Mono<Void> executeVoid(Client client, String... statements) {
-        switch (statements.length) {
-            case 0:
-                return Mono.empty();
-            case 1:
-                return executeVoid(client, statements[0]);
-            default:
-                return client.exchange(new MultiQueryExchangeable(InternalArrays.asIterator(statements)))
-                    .doOnNext(EXECUTE_VOID)
-                    .then();
-        }
+                if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
+                    sink.complete();
+                }
+            }
+        }).doOnSubscribe(ignored -> QueryLogger.log(sql)).doOnNext(EXECUTE_VOID).then());
     }
 
     /**
@@ -303,18 +295,7 @@ final class QueryFlow {
      * @return the messages received in response to this exchange.
      */
     private static Flux<ServerMessage> execute0(Client client, String sql) {
-        return client.<ServerMessage>exchange(new TextQueryMessage(sql), (message, sink) -> {
-            if (message instanceof ErrorMessage) {
-                sink.next(((ErrorMessage) message).offendedBy(sql));
-                sink.complete();
-            } else {
-                sink.next(message);
-
-                if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
-                    sink.complete();
-                }
-            }
-        }).doOnSubscribe(ignored -> QueryLogger.log(sql));
+        return client.exchange(new SimpleQueryExchangeable(sql));
     }
 
     private QueryFlow() { }
@@ -339,6 +320,16 @@ abstract class BaseFluxExchangeable extends FluxExchangeable<ServerMessage> {
         if (message instanceof ErrorMessage) {
             sink.next(((ErrorMessage) message).offendedBy(offendingSql()));
             sink.complete();
+        } else if (message instanceof LocalInfileRequest) {
+            LocalInfileRequest request = (LocalInfileRequest) message;
+            String path = request.getPath();
+
+            QueryLogger.logLocalInfile(path);
+
+            requests.emitNext(
+                new LocalInfileResponse(request.getEnvelopeId() + 1, path, sink),
+                Sinks.EmitFailureHandler.FAIL_FAST
+            );
         } else {
             sink.next(message);
 
@@ -351,6 +342,59 @@ abstract class BaseFluxExchangeable extends FluxExchangeable<ServerMessage> {
     abstract protected void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink);
 
     abstract protected String offendingSql();
+}
+
+final class SimpleQueryExchangeable extends BaseFluxExchangeable {
+
+    private static final int INIT = 0;
+
+    private static final int EXECUTE = 1;
+
+    private static final int DISPOSE = 2;
+
+    private final AtomicInteger state = new AtomicInteger(INIT);
+
+    private final String sql;
+
+    SimpleQueryExchangeable(String sql) {
+        this.sql = sql;
+    }
+
+    @Override
+    public void dispose() {
+        if (state.getAndSet(DISPOSE) != DISPOSE) {
+            requests.tryEmitComplete();
+        }
+    }
+
+    @Override
+    public boolean isDisposed() {
+        return state.get() == DISPOSE;
+    }
+
+    @Override
+    protected void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink) {
+        if (state.compareAndSet(INIT, EXECUTE)) {
+            QueryLogger.log(sql);
+
+            Sinks.EmitResult result = requests.tryEmitNext(new TextQueryMessage(sql));
+
+            if (result == Sinks.EmitResult.OK) {
+                return;
+            }
+
+            QueryFlow.logger.error("Emit request failed due to {}", result);
+        }
+
+        if (sink != null) {
+            sink.complete();
+        }
+    }
+
+    @Override
+    protected String offendingSql() {
+        return sql;
+    }
 }
 
 /**
@@ -770,8 +814,8 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
     private static final int HANDSHAKE_VERSION = 10;
 
-    private final Sinks.Many<LoginClientMessage> requests = Sinks.many().unicast()
-        .onBackpressureBuffer(Queues.<LoginClientMessage>one().get());
+    private final Sinks.Many<SubsequenceClientMessage> requests = Sinks.many().unicast()
+        .onBackpressureBuffer(Queues.<SubsequenceClientMessage>one().get());
 
     private final Client client;
 
@@ -879,7 +923,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         this.requests.tryEmitComplete();
     }
 
-    private void emitNext(LoginClientMessage message, SynchronousSink<Void> sink) {
+    private void emitNext(SubsequenceClientMessage message, SynchronousSink<Void> sink) {
         Sinks.EmitResult result = requests.tryEmitNext(message);
 
         if (result != Sinks.EmitResult.OK) {
@@ -903,8 +947,6 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
         builder.disableDatabasePinned();
         builder.disableCompression();
-        // TODO: support LOAD DATA LOCAL INFILE
-        builder.disableLoadDataInfile();
         builder.disableIgnoreAmbiguitySpace();
         builder.disableInteractiveTimeout();
 
