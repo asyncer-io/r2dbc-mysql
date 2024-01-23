@@ -25,9 +25,9 @@ import java.util.Map;
 import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
 
 /**
- * An abstraction of {@link LoginClientMessage} considers handshake response.
+ * An abstraction of {@link SubsequenceClientMessage} considers handshake response.
  */
-public interface HandshakeResponse extends LoginClientMessage {
+public interface HandshakeResponse extends SubsequenceClientMessage {
 
     /**
      * Construct an instance of {@link HandshakeResponse}, it is implemented by the protocol version that is

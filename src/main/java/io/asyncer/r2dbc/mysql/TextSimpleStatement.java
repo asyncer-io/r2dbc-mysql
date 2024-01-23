@@ -34,7 +34,7 @@ final class TextSimpleStatement extends SimpleStatementSupport {
     public Flux<MySqlResult> execute() {
         return Flux.defer(() -> QueryFlow.execute(
             client,
-            StringUtils.extendReturning(sql, returningIdentifiers()))
-        ).map(messages -> MySqlResult.toResult(false, codecs, context, syntheticKeyName(), messages));
+            StringUtils.extendReturning(sql, returningIdentifiers())
+        ).map(messages -> MySqlResult.toResult(false, codecs, context, syntheticKeyName(), messages)));
     }
 }

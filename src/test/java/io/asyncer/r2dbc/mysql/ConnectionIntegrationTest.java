@@ -16,15 +16,31 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.r2dbc.spi.ColumnMetadata;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ArrayNode;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ObjectNode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 
 import static io.r2dbc.spi.IsolationLevel.READ_COMMITTED;
 import static io.r2dbc.spi.IsolationLevel.READ_UNCOMMITTED;
@@ -37,8 +53,25 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ConnectionIntegrationTest extends IntegrationTestSupport {
 
+    private static final MySqlConnectionConfiguration config = configuration(
+        "r2dbc", false, false, null, null);
+
     ConnectionIntegrationTest() {
-        super(configuration("r2dbc", false, false, null, null));
+        super(config);
+    }
+
+    @BeforeAll
+    static void initGlobalVariables() {
+        // TODO: move it to GitHub Actions instead of test code
+        MySqlConnectionFactory.from(config)
+            .create()
+            .flatMap(conn -> conn.createStatement("SET GLOBAL local_infile=ON")
+                .execute()
+                .flatMap(MySqlResult::getRowsUpdated)
+                .then(conn.close())
+                .onErrorResume(e -> conn.close().then(Mono.error(e))))
+            .as(StepVerifier::create)
+            .verifyComplete();
     }
 
     @Test
@@ -401,7 +434,70 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
                              .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class)))
                              .doOnNext(count -> assertThat(count).isEqualTo(1L)))
         );
+    }
 
+    @ParameterizedTest
+    @ValueSource(strings = { "stations", "users" })
+    void loadDataLocalInfile(String name) throws URISyntaxException, IOException {
+        URL tdlUrl = Objects.requireNonNull(getClass().getResource(String.format("/local/%s.sql", name)));
+        URL csvUrl = Objects.requireNonNull(getClass().getResource(String.format("/local/%s.csv", name)));
+        URL jsonUrl = Objects.requireNonNull(getClass().getResource(String.format("/local/%s.json", name)));
+        String tdl = new String(Files.readAllBytes(Paths.get(tdlUrl.toURI())), StandardCharsets.UTF_8);
+        String path = Paths.get(csvUrl.toURI()).toString();
+        String loadData = String.format("LOAD DATA LOCAL INFILE '%s' INTO TABLE `%s` " +
+            "FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"'", path, name);
+        String select = String.format("SELECT * FROM `%s` ORDER BY `id`", name);
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode arrayNode = (ArrayNode) mapper.readTree(jsonUrl);
+        String json = mapper.writeValueAsString(arrayNode);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        complete(conn -> conn.createStatement(tdl)
+            .execute()
+            .flatMap(IntegrationTestSupport::extractRowsUpdated)
+            .thenMany(conn.createStatement(loadData).execute())
+            .flatMap(IntegrationTestSupport::extractRowsUpdated)
+            .doOnNext(it -> assertThat(it).isEqualTo(arrayNode.size()))
+            .thenMany(conn.createStatement(select).execute())
+            .flatMap(result -> result.map((row, metadata) -> {
+                ObjectNode node = mapper.createObjectNode();
+
+                for (ColumnMetadata column : metadata.getColumnMetadatas()) {
+                    String columnName = column.getName();
+                    Object value = row.get(columnName);
+
+                    if (value instanceof TemporalAccessor) {
+                        node.set(columnName, node.textNode(formatter.format((TemporalAccessor) value)));
+                    } else if (value instanceof Long) {
+                        node.set(columnName, node.numberNode(((Long) value)));
+                    } else if (value instanceof Integer) {
+                        node.set(columnName, node.numberNode(((Integer) value)));
+                    } else if (value instanceof String) {
+                        node.set(columnName, node.textNode(((String) value)));
+                    } else if (value == null) {
+                        node.set(columnName, node.nullNode());
+                    } else {
+                        throw new IllegalArgumentException("Unsupported type: " + value.getClass());
+                    }
+                }
+
+                return node;
+            }))
+            .collectList()
+            .<String>handle((list, sink) -> {
+                ArrayNode array = mapper.createArrayNode();
+
+                for (ObjectNode node : list) {
+                    array.add(node);
+                }
+
+                try {
+                    sink.next(mapper.writeValueAsString(array));
+                } catch (JsonProcessingException e) {
+                    sink.error(e);
+                }
+            })
+            .doOnNext(it -> assertThat(it).isEqualTo(json)));
     }
 
     @Test

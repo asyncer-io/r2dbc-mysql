@@ -48,6 +48,11 @@ public final class ServerMessageDecoder {
 
     private static final short ERROR = 0xFF;
 
+    /**
+     * Note: it can be a column count message, so the packet size should be checked.
+     */
+    private static final short LOCAL_INFILE = 0xFB;
+
     private final List<ByteBuf> parts = new ArrayList<>();
 
     /**
@@ -99,7 +104,7 @@ public final class ServerMessageDecoder {
 
         try {
             if (decodeContext instanceof CommandDecodeContext) {
-                return decodeCommandMessage(combined, context);
+                return decodeCommandMessage(envelopeId, combined, context);
             } else if (decodeContext instanceof PreparedMetadataDecodeContext) {
                 return decodePreparedMetadata(combined, context,
                     (PreparedMetadataDecodeContext) decodeContext);
@@ -189,7 +194,8 @@ public final class ServerMessageDecoder {
             " on prepare query phase");
     }
 
-    private static ServerMessage decodeCommandMessage(ByteBuf buf, ConnectionContext context) {
+    private static ServerMessage decodeCommandMessage(int envelopeId, ByteBuf buf,
+        ConnectionContext context) {
         short header = buf.getUnsignedByte(buf.readerIndex());
         switch (header) {
             case ERROR:
@@ -212,6 +218,10 @@ public final class ServerMessageDecoder {
                     return OkMessage.decode(false, buf, context);
                 } else if (EofMessage.isValidSize(byteSize)) {
                     return EofMessage.decode(buf);
+                }
+            case LOCAL_INFILE:
+                if (buf.readableBytes() > 1) {
+                    return LocalInfileRequest.decode(envelopeId, buf, context);
                 }
         }
 

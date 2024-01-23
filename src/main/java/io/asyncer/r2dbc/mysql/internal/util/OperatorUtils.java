@@ -55,13 +55,13 @@ public final class OperatorUtils {
         return new FluxDiscardOnCancel<>(source);
     }
 
-    public static Flux<ByteBuf> cumulateEnvelope(Flux<? extends ByteBuf> source, ByteBufAllocator allocator,
-        int envelopeIdStart) {
+    public static Flux<ByteBuf> envelope(Flux<? extends ByteBuf> source, ByteBufAllocator allocator,
+        int envelopeIdStart, boolean cumulate) {
         requireNonNull(source, "source must not be null");
         requireNonNull(allocator, "allocator must not be null");
 
-        return new FluxCumulateEnvelope(source, allocator, Envelopes.MAX_ENVELOPE_SIZE,
-            envelopeIdStart & 0xFF);
+        return new FluxEnvelope(source, allocator, Envelopes.MAX_ENVELOPE_SIZE,
+            envelopeIdStart & 0xFF, cumulate);
     }
 
     private OperatorUtils() { }
