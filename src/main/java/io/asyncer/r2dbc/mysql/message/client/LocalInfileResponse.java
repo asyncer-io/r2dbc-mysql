@@ -20,10 +20,13 @@ import io.asyncer.r2dbc.mysql.ConnectionContext;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.r2dbc.spi.R2dbcNonTransientResourceException;
+import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
 
-import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,22 +55,37 @@ public final class LocalInfileResponse implements SubsequenceClientMessage {
     @Override
     public Flux<ByteBuf> encode(ByteBufAllocator allocator, ConnectionContext context) {
         return Flux.defer(() -> {
+            int bufferSize = context.getLocalInfileBufferSize();
             AtomicReference<Throwable> error = new AtomicReference<>();
-            Path path = Paths.get(this.path);
 
-            return NettyBufferUtils.readFile(path, allocator, context.getLocalInfileBufferSize())
-                .onErrorComplete(e -> {
-                    error.set(e);
-                    return true;
-                })
-                .concatWith(Flux.just(allocator.buffer(0, 0)))
-                .doAfterTerminate(() -> {
-                    Throwable e = error.getAndSet(null);
+            return Mono.<Path>create(sink -> {
+                try {
+                    Path safePath = context.getLocalInfilePath();
+                    Path file = Paths.get(this.path);
 
-                    if (e != null) {
-                        errorSink.error(e);
+                    if (safePath == null || file.startsWith(safePath)) {
+                        sink.success(file);
+                    } else {
+                        String message = String.format("The file '%s' is not under the safe path '%s'",
+                            file, safePath);
+                        sink.error(new R2dbcPermissionDeniedException(message));
                     }
-                });
+                } catch (InvalidPathException e) {
+                    sink.error(new R2dbcNonTransientResourceException("Invalid path: " + this.path, e));
+                } catch (Throwable e) {
+                    sink.error(e);
+                }
+            }).flatMapMany(p -> NettyBufferUtils.readFile(p, allocator, bufferSize)).onErrorComplete(e -> {
+                // Server needs an empty buffer, so emit error to upstream instead of encoding stream.
+                error.set(e);
+                return true;
+            }).concatWith(Flux.just(allocator.buffer(0, 0))).doAfterTerminate(() -> {
+                Throwable e = error.getAndSet(null);
+
+                if (e != null) {
+                    errorSink.error(e);
+                }
+            });
         });
     }
 

@@ -22,6 +22,7 @@ import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.time.ZoneId;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -43,6 +44,11 @@ public final class ConnectionContext implements CodecContext {
     private final ZeroDateOption zeroDateOption;
 
     @Nullable
+    private final Path localInfilePath;
+
+    private final int localInfileBufferSize;
+
+    @Nullable
     private ZoneId serverZoneId;
 
     /**
@@ -53,8 +59,11 @@ public final class ConnectionContext implements CodecContext {
 
     private volatile Capability capability = null;
 
-    ConnectionContext(ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId) {
+    ConnectionContext(ZeroDateOption zeroDateOption, @Nullable Path localInfilePath,
+        int localInfileBufferSize, @Nullable ZoneId serverZoneId) {
         this.zeroDateOption = requireNonNull(zeroDateOption, "zeroDateOption must not be null");
+        this.localInfilePath = localInfilePath;
+        this.localInfileBufferSize = localInfileBufferSize;
         this.serverZoneId = serverZoneId;
     }
 
@@ -119,8 +128,23 @@ public final class ConnectionContext implements CodecContext {
         return zeroDateOption;
     }
 
+    /**
+     * Gets the allowed local infile path.
+     *
+     * @return the path.
+     */
+    @Nullable
+    public Path getLocalInfilePath() {
+        return localInfilePath;
+    }
+
+    /**
+     * Gets the local infile buffer size.
+     *
+     * @return the buffer size.
+     */
     public int getLocalInfileBufferSize() {
-        return 64 * 1024;
+        return localInfileBufferSize;
     }
 
     /**

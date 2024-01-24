@@ -973,6 +973,10 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             builder.disableConnectWithDatabase();
         }
 
+        if (context.getLocalInfilePath() == null) {
+            builder.disableLoadDataLocalInfile();
+        }
+
         if (ATTRIBUTES.isEmpty()) {
             builder.disableConnectAttributes();
         }
