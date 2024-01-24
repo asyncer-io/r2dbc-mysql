@@ -191,6 +191,9 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Object> USE_SERVER_PREPARE_STATEMENT =
         Option.valueOf("useServerPrepareStatement");
 
+    public static final Option<String> ALLOW_LOAD_LOCAL_INFILE_IN_PATH =
+        Option.valueOf("allowLoadLocalInfileInPath");
+
     /**
      * Option to set the maximum size of the {@link Query} parsing cache.  Default to {@code 256}.
      *
@@ -266,6 +269,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::zeroDateOption);
         mapper.optional(USE_SERVER_PREPARE_STATEMENT).prepare(builder::useClientPrepareStatement,
             builder::useServerPrepareStatement, builder::useServerPrepareStatement);
+        mapper.optional(ALLOW_LOAD_LOCAL_INFILE_IN_PATH).asString()
+            .to(builder::allowLoadLocalInfileInPath);
         mapper.optional(QUERY_CACHE_SIZE).asInt()
             .to(builder::queryCacheSize);
         mapper.optional(PREPARE_CACHE_SIZE).asInt()

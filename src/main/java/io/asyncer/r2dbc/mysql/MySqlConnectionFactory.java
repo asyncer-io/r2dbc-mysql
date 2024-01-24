@@ -90,8 +90,12 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             String user = configuration.getUser();
             CharSequence password = configuration.getPassword();
             SslMode sslMode = ssl.getSslMode();
-            ConnectionContext context = new ConnectionContext(configuration.getZeroDateOption(),
-                configuration.getServerZoneId());
+            ConnectionContext context = new ConnectionContext(
+                configuration.getZeroDateOption(),
+                configuration.getLoadLocalInfilePath(),
+                configuration.getLocalInfileBufferSize(),
+                configuration.getServerZoneId()
+            );
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();

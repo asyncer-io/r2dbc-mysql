@@ -141,6 +141,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(Option.valueOf("sslContextBuilderCustomizer"), "com.example.demo.MyCustomizer") // optional, default is no-op customizer
     .option(Option.valueOf("zeroDate"), "use_null") // optional, default "use_null"
     .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
+    .option(Option.valueOf("allowLoadLocalInfileInPath"), "/opt") // optional, default null, null means LOCAL INFILE not be allowed
     .option(Option.valueOf("tcpKeepAlive"), true) // optional, default false
     .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
     .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
@@ -189,6 +190,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .sslContextBuilderCustomizer(MyCustomizer.INSTANCE) // optional, default is no-op customizer
     .zeroDateOption(ZeroDateOption.USE_NULL) // optional, default ZeroDateOption.USE_NULL
     .useServerPrepareStatement() // Use server-preparing statements, default use client-preparing statements
+    .allowLoadLocalInfileInPath("/opt") // optional, default null, null means LOCAL INFILE not be allowed
     .tcpKeepAlive(true) // optional, controls TCP Keep Alive, default is false
     .tcpNoDelay(true) // optional, controls TCP No Delay, default is false
     .autodetectExtensions(false) // optional, controls extension auto-detect, default is true
@@ -242,6 +244,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | zeroDateOption | Any value of `ZeroDateOption` | Optional, default `USE_NULL` | The option indicates "zero date" handling, see following notice |
 | autodetectExtensions | `true` or `false` | Optional, default is `true` | Controls auto-detect `Extension`s |
 | useServerPrepareStatement | `true`, `false` or `Predicate<String>` | Optional, default is `false` | See following notice |
+| allowLoadLocalInfileInPath | A path | Optional, default is `null` | The path that allows `LOAD DATA LOCAL INFILE` to load file data |
 | passwordPublisher | A `Publisher<String>` | Optional, default is `null` | The password publisher, see following notice |
 
 - `SslMode` Considers security level and verification for SSL, make sure the database server supports SSL before you want change SSL mode to `REQUIRED` or higher. **The Unix Domain Socket only offers "DISABLED" available**
@@ -584,6 +587,7 @@ If you want to raise an issue, please follow the recommendations below:
 - The MySQL may be not support well for searching rows by a binary field, like `BIT` and `JSON`
   - `BIT`: cannot select 'BIT(64)' with value greater than 'Long.MAX_VALUE' (or equivalent in binary)
   - `JSON`: different MySQL may have different serialization formats, e.g. MariaDB and MySQL
+- MySQL 8.0+ disables `@@global.local_infile` by default, make sure `@@local_infile` is `ON` before enable `allowLoadLocalInfileInPath` of the driver. e.g. run `SET GLOBAL local_infile=ON`, or set it in `mysql.cnf`.
 
 ## License
 

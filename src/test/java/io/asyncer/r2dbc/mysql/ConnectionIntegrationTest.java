@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.ColumnMetadata;
+import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +35,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
@@ -434,6 +436,23 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
                              .flatMap(result -> Mono.from(result.map((row, metadata) -> row.get(0, Long.class)))
                              .doOnNext(count -> assertThat(count).isEqualTo(1L)))
         );
+    }
+
+    @Test
+    void loadDataLocalInfileRestricted() throws URISyntaxException {
+        URL safeUrl = Objects.requireNonNull(getClass().getResource("/local/"));
+        URL unsafeUrl = Objects.requireNonNull(getClass().getResource("/"));
+        Path safePath = Paths.get(safeUrl.toURI());
+        Path path = Paths.get(unsafeUrl.toURI()).resolve("logback-test.xml");
+
+        process(connection -> Mono.from(connection.createStatement("CREATE TEMPORARY TABLE test" +
+                "(id INT NOT NULL PRIMARY KEY, name VARCHAR(50))").execute())
+            .flatMap(IntegrationTestSupport::extractRowsUpdated)
+            .thenMany(connection.createStatement("LOAD DATA LOCAL INFILE '" + path +
+                "' INTO TABLE test").execute())
+            .flatMap(IntegrationTestSupport::extractRowsUpdated))
+            .verifyErrorMatches(msg -> msg instanceof R2dbcPermissionDeniedException &&
+                msg.getMessage().contains(path.toString()) && msg.getMessage().contains(safePath.toString()));
     }
 
     @ParameterizedTest

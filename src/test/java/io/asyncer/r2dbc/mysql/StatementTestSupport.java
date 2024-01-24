@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.NoSuchElementException;
 

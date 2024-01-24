@@ -361,7 +361,7 @@ public final class Capability {
             this.bitmap &= ~COMPRESS;
         }
 
-        void disableLoadDataInfile() {
+        void disableLoadDataLocalInfile() {
             this.bitmap &= ~LOCAL_FILES;
         }
 

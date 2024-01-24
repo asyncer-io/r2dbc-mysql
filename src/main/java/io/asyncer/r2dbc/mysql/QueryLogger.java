@@ -16,7 +16,6 @@
 
 package io.asyncer.r2dbc.mysql;
 
-
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;

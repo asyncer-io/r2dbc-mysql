@@ -25,6 +25,8 @@ import org.reactivestreams.Publisher;
 
 import javax.net.ssl.HostnameVerifier;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -89,6 +91,11 @@ public final class MySqlConnectionConfiguration {
     @Nullable
     private final Predicate<String> preferPrepareStatement;
 
+    @Nullable
+    private final Path loadLocalInfilePath;
+
+    private final int localInfileBufferSize;
+
     private final int queryCacheSize;
 
     private final int prepareCacheSize;
@@ -104,6 +111,7 @@ public final class MySqlConnectionConfiguration {
         @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
+        @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
         int queryCacheSize, int prepareCacheSize, Extensions extensions,
         @Nullable Publisher<String> passwordPublisher
     ) {
@@ -122,6 +130,8 @@ public final class MySqlConnectionConfiguration {
         this.database = database == null || database.isEmpty() ? "" : database;
         this.createDatabaseIfNotExist = createDatabaseIfNotExist;
         this.preferPrepareStatement = preferPrepareStatement;
+        this.loadLocalInfilePath = loadLocalInfilePath;
+        this.localInfileBufferSize = localInfileBufferSize;
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
         this.extensions = extensions;
@@ -207,6 +217,15 @@ public final class MySqlConnectionConfiguration {
         return preferPrepareStatement;
     }
 
+    @Nullable
+    Path getLoadLocalInfilePath() {
+        return loadLocalInfilePath;
+    }
+
+    int getLocalInfileBufferSize() {
+        return localInfileBufferSize;
+    }
+
     int getQueryCacheSize() {
         return queryCacheSize;
     }
@@ -248,6 +267,8 @@ public final class MySqlConnectionConfiguration {
             database.equals(that.database) &&
             createDatabaseIfNotExist == that.createDatabaseIfNotExist &&
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
+            Objects.equals(loadLocalInfilePath, that.loadLocalInfilePath) &&
+            localInfileBufferSize == that.localInfileBufferSize &&
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
             extensions.equals(that.extensions) &&
@@ -258,7 +279,8 @@ public final class MySqlConnectionConfiguration {
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
             socketTimeout, serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
-            preferPrepareStatement, queryCacheSize, prepareCacheSize, extensions, passwordPublisher);
+            preferPrepareStatement, loadLocalInfilePath, localInfileBufferSize, queryCacheSize,
+            prepareCacheSize, extensions, passwordPublisher);
     }
 
     @Override
@@ -269,16 +291,21 @@ public final class MySqlConnectionConfiguration {
                 connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
                 ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
-                ", preferPrepareStatement=" + preferPrepareStatement + ", queryCacheSize=" + queryCacheSize +
-                ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions +
-                ", passwordPublisher=" + passwordPublisher + '}';
+                ", preferPrepareStatement=" + preferPrepareStatement +
+                ", loadLocalInfilePath=" + loadLocalInfilePath +
+                ", localInfileBufferSize=" + localInfileBufferSize +
+                ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+                ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
         }
 
         return "MySqlConnectionConfiguration{unixSocket='" + domain + "', connectTimeout=" +
             connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
-            ", preferPrepareStatement=" + preferPrepareStatement + ", queryCacheSize=" + queryCacheSize +
+            ", preferPrepareStatement=" + preferPrepareStatement +
+            ", loadLocalInfilePath=" + loadLocalInfilePath +
+            ", localInfileBufferSize=" + localInfileBufferSize +
+            ", queryCacheSize=" + queryCacheSize +
             ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions +
             ", passwordPublisher=" + passwordPublisher + '}';
     }
@@ -345,6 +372,11 @@ public final class MySqlConnectionConfiguration {
         @Nullable
         private Predicate<String> preferPrepareStatement;
 
+        @Nullable
+        private Path loadLocalInfilePath;
+
+        private int localInfileBufferSize = 8192;
+
         private int queryCacheSize = 0;
 
         private int prepareCacheSize = 256;
@@ -379,7 +411,8 @@ public final class MySqlConnectionConfiguration {
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
                 connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
-                createDatabaseIfNotExist, preferPrepareStatement, queryCacheSize, prepareCacheSize,
+                createDatabaseIfNotExist, preferPrepareStatement, loadLocalInfilePath,
+                localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
         }
 
@@ -755,6 +788,38 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
+         * Configures to allow the {@code LOAD DATA LOCAL INFILE} statement in the given {@code path} or
+         * disallow the statement.  Default to {@code null} which means not allow the statement.
+         *
+         * @param path which parent path are allowed to load file data, {@code null} means not be allowed.
+         * @return {@link Builder this}.
+         * @throws java.nio.file.InvalidPathException if the string cannot be converted to a {@link Path}.
+         * @since 1.1.0
+         */
+        public Builder allowLoadLocalInfileInPath(@Nullable String path) {
+            this.loadLocalInfilePath = path == null ? null : Paths.get(path);
+
+            return this;
+        }
+
+        /**
+         * Configures the buffer size for {@code LOAD DATA LOCAL INFILE} statement.  Default to {@code 8192}.
+         * <p>
+         * It is used only if {@link #allowLoadLocalInfileInPath(String)} is set.
+         *
+         * @param localInfileBufferSize the buffer size.
+         * @return {@link Builder this}.
+         * @throws IllegalArgumentException if {@code localInfileBufferSize} is not positive.
+         * @since 1.1.0
+         */
+        public Builder localInfileBufferSize(int localInfileBufferSize) {
+            require(localInfileBufferSize > 0, "localInfileBufferSize must be positive");
+
+            this.localInfileBufferSize = localInfileBufferSize;
+            return this;
+        }
+
+        /**
          * Configures the maximum size of the {@link Query} parsing cache. Usually it should be power of two.
          * Default to {@code 0}. Driver will use unbounded cache if size is less than {@code 0}.
          * <p>
@@ -823,6 +888,7 @@ public final class MySqlConnectionConfiguration {
 
         /**
          * Registers a password publisher function.
+         *
          * @param passwordPublisher function to retrieve password before making connection.
          * @return this {@link Builder}.
          */

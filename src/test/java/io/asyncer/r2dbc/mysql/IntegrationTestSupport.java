@@ -25,8 +25,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -63,7 +68,7 @@ abstract class IntegrationTestSupport {
         return connectionFactory.create();
     }
 
-    private StepVerifier.FirstStep<Void> process(Function<? super MySqlConnection, Publisher<?>> runner) {
+    StepVerifier.FirstStep<Void> process(Function<? super MySqlConnection, Publisher<?>> runner) {
         return create()
             .flatMap(connection -> Flux.from(runner.apply(connection))
                 .onErrorResume(e -> connection.close().then(Mono.error(e)))
@@ -86,6 +91,16 @@ abstract class IntegrationTestSupport {
             .isNotNull()
             .isNotEmpty();
 
+        String localInfilePath;
+
+        try {
+            URL url = Objects.requireNonNull(IntegrationTestSupport.class.getResource("/local/"));
+            Path path = Paths.get(url.toURI());
+            localInfilePath = path.toString();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
         MySqlConnectionConfiguration.Builder builder = MySqlConnectionConfiguration.builder()
             .host("127.0.0.1")
             .connectTimeout(Duration.ofSeconds(3))
@@ -93,6 +108,7 @@ abstract class IntegrationTestSupport {
             .password(password)
             .database(database)
             .createDatabaseIfNotExist(createDatabaseIfNotExist)
+            .allowLoadLocalInfileInPath(localInfilePath)
             .autodetectExtensions(autodetectExtensions);
 
         if (serverZoneId != null) {

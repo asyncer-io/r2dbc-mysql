@@ -34,7 +34,9 @@ public class ConnectionContextTest {
     void getServerZoneId() {
         for (int i = -12; i <= 12; ++i) {
             String id = i < 0 ? "UTC" + i : "UTC+" + i;
-            ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, ZoneId.of(id));
+            ConnectionContext context = new ConnectionContext(
+                ZeroDateOption.USE_NULL, null,
+                8192, ZoneId.of(id));
 
             assertThat(context.getServerZoneId()).isEqualTo(ZoneId.of(id));
         }
@@ -42,7 +44,8 @@ public class ConnectionContextTest {
 
     @Test
     void shouldSetServerZoneId() {
-        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null);
+        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
+            8192, null);
         assertThat(context.shouldSetServerZoneId()).isTrue();
         context.setServerZoneId(ZoneId.systemDefault());
         assertThat(context.shouldSetServerZoneId()).isFalse();
@@ -50,20 +53,23 @@ public class ConnectionContextTest {
 
     @Test
     void shouldNotSetServerZoneId() {
-        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, ZoneId.systemDefault());
+        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
+            8192, ZoneId.systemDefault());
         assertThat(context.shouldSetServerZoneId()).isFalse();
     }
 
     @Test
     void setTwiceServerZoneId() {
-        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null);
+        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
+            8192, null);
         context.setServerZoneId(ZoneId.systemDefault());
         assertThatIllegalStateException().isThrownBy(() -> context.setServerZoneId(ZoneId.systemDefault()));
     }
 
     @Test
     void badSetServerZoneId() {
-        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, ZoneId.systemDefault());
+        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
+            8192, ZoneId.systemDefault());
         assertThatIllegalStateException().isThrownBy(() -> context.setServerZoneId(ZoneId.systemDefault()));
     }
 
@@ -76,7 +82,8 @@ public class ConnectionContextTest {
     }
 
     public static ConnectionContext mock(boolean isMariaDB, ZoneId zoneId) {
-        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, zoneId);
+        ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
+            8192, zoneId);
 
         context.init(1, ServerVersion.parse(isMariaDB ? "11.2.22.MOCKED" : "8.0.11.MOCKED"),
             Capability.of(~(isMariaDB ? 1 : 0)));
