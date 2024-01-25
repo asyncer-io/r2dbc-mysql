@@ -19,7 +19,6 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
@@ -63,12 +62,6 @@ abstract class MySqlStatementSupport implements MySqlStatement {
             throw new IllegalArgumentException(db + " can have only one column");
         }
 
-        return this;
-    }
-
-    @Override
-    public MySqlStatement fetchSize(int rows) {
-        require(rows >= 0, "Fetch size must be greater or equal to zero");
         return this;
     }
 

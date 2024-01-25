@@ -38,6 +38,7 @@ import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
 
@@ -61,6 +62,8 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     private static final int DEFAULT_LOCK_WAIT_TIMEOUT = 50;
 
+    private static final String PING_MARKER = "/* ping */";
+
     private static final String ZONE_PREFIX_POSIX = "posix/";
 
     private static final String ZONE_PREFIX_RIGHT = "right/";
@@ -79,15 +82,28 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     private static final ServerVersion MARIA_10_1_1 = ServerVersion.create(10, 1, 1, true);
 
-    private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> PING = (message, sink) -> {
+    private static final Function<ServerMessage, Boolean> VALIDATE = message -> {
+        if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
+            return true;
+        }
+
         if (message instanceof ErrorMessage) {
             ErrorMessage msg = (ErrorMessage) message;
             logger.debug("Remote validate failed: [{}] [{}] {}", msg.getCode(), msg.getSqlState(),
                 msg.getMessage());
-            sink.next(false);
+        } else {
+            ReferenceCountUtil.safeRelease(message);
+        }
+
+        return false;
+    };
+
+    private static final BiConsumer<ServerMessage, SynchronousSink<ServerMessage>> PING = (message, sink) -> {
+        if (message instanceof ErrorMessage) {
+            sink.next(message);
             sink.complete();
         } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
-            sink.next(true);
+            sink.next(message);
             sink.complete();
         } else {
             ReferenceCountUtil.safeRelease(message);
@@ -190,9 +206,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     @Override
     public Mono<Void> beginTransaction(TransactionDefinition definition) {
-        return Mono.defer(() -> {
-            return QueryFlow.beginTransaction(client, this, batchSupported, definition);
-        });
+        return Mono.defer(() -> QueryFlow.beginTransaction(client, this, batchSupported, definition));
     }
 
     @Override
@@ -209,9 +223,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
 
     @Override
     public Mono<Void> commitTransaction() {
-        return Mono.defer(() -> {
-            return QueryFlow.doneTransaction(client, this, true, batchSupported);
-        });
+        return Mono.defer(() -> QueryFlow.doneTransaction(client, this, true, batchSupported));
     }
 
     @Override
@@ -231,6 +243,10 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     @Override
     public MySqlStatement createStatement(String sql) {
         requireNonNull(sql, "sql must not be null");
+
+        if (sql.startsWith(PING_MARKER)) {
+            return new PingStatement(this, codecs, context);
+        }
 
         Query query = queryCache.get(sql);
 
@@ -339,8 +355,9 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
                 return Mono.just(false);
             }
 
-            return client.exchange(PingMessage.INSTANCE, PING)
+            return doPingInternal()
                 .last()
+                .map(VALIDATE)
                 .onErrorResume(e -> {
                     // `last` maybe emit a NoSuchElementException, exchange maybe emit exception by Netty.
                     // But should NEVER emit any exception, so logging exception and emit false.
@@ -437,6 +454,10 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
                         sql
                 )
         );
+    }
+
+    Flux<ServerMessage> doPingInternal() {
+        return client.exchange(PingMessage.INSTANCE, PING);
     }
 
     boolean isSessionAutoCommit() {

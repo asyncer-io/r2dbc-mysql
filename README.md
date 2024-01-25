@@ -29,7 +29,7 @@ This driver provides the following features:
 - [x] Secure connection with verification (SSL/TLS), auto-select TLS version for community and enterprise editions.
 - [x] SSL tunnel for proxy protocol of MySQL.
 - [x] Transactions with savepoint.
-- [x] Native ping command that can be verifying when argument is `ValidationDepth.REMOTE`
+- [x] Native ping can be sent via `Connection.validate(ValidationDepth.REMOTE)` and the lightweight ping syntax `/* ping */ ...`.
 - [x] Extensible, e.g. extend built-in `Codec`(s).
 - [x] MariaDB `RETURNING` clause.
 
