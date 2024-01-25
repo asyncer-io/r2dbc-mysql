@@ -19,6 +19,9 @@ package io.asyncer.r2dbc.mysql;
 import io.r2dbc.spi.Statement;
 import reactor.core.publisher.Flux;
 
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+
 /**
  * A strongly typed implementation of {@link Statement} for the MySQL database.
  */
@@ -58,17 +61,23 @@ public interface MySqlStatement extends Statement {
      * {@inheritDoc}
      */
     @Override
-    MySqlStatement returnGeneratedValues(String... columns);
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     Flux<MySqlResult> execute();
 
     /**
      * {@inheritDoc}
      */
     @Override
-    MySqlStatement fetchSize(int rows);
+    default MySqlStatement returnGeneratedValues(String... columns) {
+        requireNonNull(columns, "columns must not be null");
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    default MySqlStatement fetchSize(int rows) {
+        require(rows >= 0, "Fetch size must be greater or equal to zero");
+        return this;
+    }
 }

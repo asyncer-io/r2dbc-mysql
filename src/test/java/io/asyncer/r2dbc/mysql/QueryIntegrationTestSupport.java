@@ -22,6 +22,8 @@ import io.r2dbc.spi.Result;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.JsonNode;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
@@ -90,6 +92,26 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(Flux.fromIterable(convertOptional(values))
                 .concatMap(value -> testOne(connection, type, valueSelect, value.orElse(null)))));
+    }
+
+    @Test
+    void lightweightPing() {
+        complete(connection -> Flux.from(connection.createStatement("/* ping */ SELECT 1").execute())
+            .flatMap(result -> result.map(r -> 1))
+            .reduce(0, Integer::sum)
+            .doOnNext(number -> assertThat(number).isEqualTo(0)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/* PING */ SELECT 1", "SELECT 1 /* ping*/", " /* ping */ SELECT 1",
+        "/*ping*/ SELECT 1", "/*to ping or not to ping*/ SELECT 1"
+    })
+    void badLightweightPing(String value) {
+        complete(connection -> Flux.from(connection.createStatement(value).execute())
+            .flatMap(result -> result.map(r -> r.get(0, Integer.class)))
+            .reduce(0, Integer::sum)
+            .doOnNext(number -> assertThat(number).isEqualTo(1)));
     }
 
     @Test
