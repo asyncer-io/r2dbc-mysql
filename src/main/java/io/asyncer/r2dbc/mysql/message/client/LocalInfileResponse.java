@@ -63,7 +63,11 @@ public final class LocalInfileResponse implements SubsequenceClientMessage {
                     Path safePath = context.getLocalInfilePath();
                     Path file = Paths.get(this.path);
 
-                    if (safePath == null || file.startsWith(safePath)) {
+                    if (safePath == null) {
+                        String message = "Allowed local file path not set, but attempted to load '" + file +
+                            '\'';
+                        sink.error(new R2dbcPermissionDeniedException(message));
+                    } else if (file.startsWith(safePath)) {
                         sink.success(file);
                     } else {
                         String message = String.format("The file '%s' is not under the safe path '%s'",

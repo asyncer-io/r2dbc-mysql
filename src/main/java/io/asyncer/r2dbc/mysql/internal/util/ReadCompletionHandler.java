@@ -28,7 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * TODO: add javadoc here
+ * An implementation of {@link CompletionHandler} that reads data from an asynchronous file channel and emits
+ * file data or I/O exception to a {@link FluxSink}.
  */
 final class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuf> {
 
