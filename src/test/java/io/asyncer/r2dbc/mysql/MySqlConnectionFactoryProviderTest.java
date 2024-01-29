@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -24,6 +25,8 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.Option;
 import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -34,6 +37,7 @@ import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -177,8 +181,8 @@ class MySqlConnectionFactoryProviderTest {
 
     @Test
     void invalidProgrammatic() {
-        assertThatIllegalStateException().isThrownBy(() ->
-            MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
+        assertThatIllegalStateException()
+            .isThrownBy(() -> MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(PORT, 3307)
                 .option(USER, "root")
@@ -198,8 +202,8 @@ class MySqlConnectionFactoryProviderTest {
                 .build()))
             .withMessageContaining("host");
 
-        assertThatIllegalStateException().isThrownBy(() ->
-            MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
+        assertThatIllegalStateException()
+            .isThrownBy(() -> MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(HOST, "127.0.0.1")
                 .option(PORT, 3307)
@@ -207,8 +211,8 @@ class MySqlConnectionFactoryProviderTest {
                 .build()))
             .withMessageContaining("user");
 
-        assertThatIllegalArgumentException().isThrownBy(() ->
-            MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
+        assertThatIllegalArgumentException()
+            .isThrownBy(() -> MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(HOST, "127.0.0.1")
                 .option(PORT, 3307)
@@ -220,8 +224,8 @@ class MySqlConnectionFactoryProviderTest {
                 .build()))
             .withMessageContaining("sslCert and sslKey");
 
-        assertThatIllegalArgumentException().isThrownBy(() ->
-            MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
+        assertThatIllegalArgumentException()
+            .isThrownBy(() -> MySqlConnectionFactoryProvider.setup(ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(HOST, "127.0.0.1")
                 .option(PORT, 3307)
@@ -391,6 +395,40 @@ class MySqlConnectionFactoryProviderTest {
                 .option(HOST, "127.0.0.1")
                 .option(USER, "root")
                 .option(USE_SERVER_PREPARE_STATEMENT, NotPredicate.class.getPackage() + "NonePredicate")
+                .build()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "uncompressed",
+        "zlib",
+        "zstd",
+        "zlib,uncompressed",
+        "zstd,uncompressed",
+        "zstd,zlib",
+        "zstd,zlib,uncompressed",
+    })
+    void validCompressionAlgorithms(String name) {
+        Set<CompressionAlgorithm> algorithms = MySqlConnectionFactoryProvider.setup(
+            ConnectionFactoryOptions.builder()
+                .option(DRIVER, "mysql")
+                .option(HOST, "127.0.0.1")
+                .option(USER, "root")
+                .option(Option.valueOf("compressionAlgorithms"), name)
+                .build()).getCompressionAlgorithms();
+
+        assertThat(algorithms).hasSize(name.split(",").length);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "", "gzip", "lz4", "lz4hc", "none", "snappy", "zlib,none", "zstd,none" })
+    void invalidCompressionAlgorithms(String name) {
+        assertThatIllegalArgumentException().isThrownBy(() -> MySqlConnectionFactoryProvider.setup(
+            ConnectionFactoryOptions.builder()
+                .option(DRIVER, "mysql")
+                .option(HOST, "127.0.0.1")
+                .option(USER, "root")
+                .option(Option.valueOf("compressionAlgorithms"), name)
                 .build()));
     }
 

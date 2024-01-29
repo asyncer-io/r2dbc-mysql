@@ -19,7 +19,6 @@ package io.asyncer.r2dbc.mysql;
 import io.r2dbc.spi.R2dbcBadGrammarException;
 import io.r2dbc.spi.R2dbcTimeoutException;
 import io.r2dbc.spi.Result;
-import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,10 +29,8 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,8 +79,7 @@ abstract class IntegrationTestSupport {
     }
 
     static MySqlConnectionConfiguration configuration(
-        String database, boolean createDatabaseIfNotExist, boolean autodetectExtensions,
-        @Nullable ZoneId serverZoneId, @Nullable Predicate<String> preferPrepared
+        Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
     ) {
         String password = System.getProperty("test.mysql.password");
 
@@ -106,22 +102,10 @@ abstract class IntegrationTestSupport {
             .connectTimeout(Duration.ofSeconds(3))
             .user("root")
             .password(password)
-            .database(database)
-            .createDatabaseIfNotExist(createDatabaseIfNotExist)
-            .allowLoadLocalInfileInPath(localInfilePath)
-            .autodetectExtensions(autodetectExtensions);
+            .database("r2dbc")
+            .allowLoadLocalInfileInPath(localInfilePath);
 
-        if (serverZoneId != null) {
-            builder.serverZoneId(serverZoneId);
-        }
-
-        if (preferPrepared == null) {
-            builder.useClientPrepareStatement();
-        } else {
-            builder.useServerPrepareStatement(preferPrepared);
-        }
-
-        return builder.build();
+        return customizer.apply(builder).build();
     }
 
     boolean envIsLessThanMySql56() {

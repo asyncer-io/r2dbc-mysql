@@ -25,6 +25,6 @@ import org.junit.jupiter.api.condition.EnabledIf;
 class MariaDbTextIntegrationTest extends MariaDbIntegrationTestSupport {
 
     MariaDbTextIntegrationTest() {
-        super(null);
+        super(builder -> builder);
     }
 }

@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -181,8 +182,40 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Object> USE_SERVER_PREPARE_STATEMENT =
         Option.valueOf("useServerPrepareStatement");
 
+    /**
+     * Option to set the allowed local infile path.
+     *
+     * @since 1.1.0
+     */
     public static final Option<String> ALLOW_LOAD_LOCAL_INFILE_IN_PATH =
         Option.valueOf("allowLoadLocalInfileInPath");
+
+    /**
+     * Option to set compression algorithms.  Default to [{@link CompressionAlgorithm#UNCOMPRESSED}].
+     * <p>
+     * It will auto choose an algorithm that's contained in the list and supported by the server, preferring
+     * zstd, then zlib. If the list does not contain {@link CompressionAlgorithm#UNCOMPRESSED} and the server
+     * does not support any algorithm in the list, an exception will be thrown when connecting.
+     * <p>
+     * Note: zstd requires a dependency {@code com.github.luben:zstd-jni}.
+     *
+     * @since 1.1.0
+     */
+    public static final Option<CompressionAlgorithm[]> COMPRESSION_ALGORITHMS =
+        Option.valueOf("compressionAlgorithms");
+
+    /**
+     * Option to set the zstd compression level.  Default to {@code 3}.
+     * <p>
+     * It is only used if zstd is chosen for the connection.
+     * <p>
+     * Note: MySQL protocol does not allow to set the zlib compression level of the server, only zstd is
+     * configurable.
+     *
+     * @since 1.1.0
+     */
+    public static final Option<Integer> ZSTD_COMPRESSION_LEVEL =
+        Option.valueOf("zstdCompressionLevel");
 
     /**
      * Option to set the maximum size of the {@link Query} parsing cache.  Default to {@code 256}.
@@ -206,10 +239,9 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<Boolean> AUTODETECT_EXTENSIONS = Option.valueOf("autodetectExtensions");
 
     /**
-     * Password Publisher function can be used to retrieve password before creating a connection.
-     * This can be used with Amazon RDS Aurora IAM authentication, wherein it requires token to be generated.
-     * The token is valid for 15 minutes, and this token will be used as password.
-     *
+     * Password Publisher function can be used to retrieve password before creating a connection. This can be
+     * used with Amazon RDS Aurora IAM authentication, wherein it requires token to be generated. The token is
+     * valid for 15 minutes, and this token will be used as password.
      */
     public static final Option<Publisher<String>> PASSWORD_PUBLISHER = Option.valueOf("passwordPublisher");
 
@@ -273,6 +305,13 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::database);
         mapper.optional(CREATE_DATABASE_IF_NOT_EXIST).asBoolean()
             .to(builder::createDatabaseIfNotExist);
+        mapper.optional(COMPRESSION_ALGORITHMS).asArray(
+            CompressionAlgorithm[].class,
+            it -> CompressionAlgorithm.valueOf(it.toUpperCase()),
+            CompressionAlgorithm[]::new
+        ).to(builder::compressionAlgorithms);
+        mapper.optional(ZSTD_COMPRESSION_LEVEL).asInt()
+            .to(builder::zstdCompressionLevel);
         mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
             .to(builder::passwordPublisher);
 
@@ -295,7 +334,7 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(isSsl -> builder.sslMode(isSsl ? SslMode.REQUIRED : SslMode.DISABLED));
         mapper.optional(SSL_MODE).as(SslMode.class, id -> SslMode.valueOf(id.toUpperCase()))
             .to(builder::sslMode);
-        mapper.optional(TLS_VERSION).asStrings()
+        mapper.optional(TLS_VERSION).asArray(String[].class, Function.identity(), String[]::new)
             .to(builder::tlsVersion);
         mapper.optional(SSL_HOSTNAME_VERIFIER).as(HostnameVerifier.class)
             .to(builder::sslHostnameVerifier);

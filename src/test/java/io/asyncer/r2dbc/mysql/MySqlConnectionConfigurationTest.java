@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.TlsVersions;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
@@ -240,6 +241,8 @@ class MySqlConnectionConfigurationTest {
             .sslKey("/path/to/mysql/client-key.pem")
             .sslKeyPassword("pem-password-in-here")
             .tlsVersion(TlsVersions.TLS1_1, TlsVersions.TLS1_2, TlsVersions.TLS1_3)
+            .compressionAlgorithms(CompressionAlgorithm.ZSTD, CompressionAlgorithm.ZLIB,
+                CompressionAlgorithm.UNCOMPRESSED)
             .serverZoneId(ZoneId.systemDefault())
             .zeroDateOption(ZeroDateOption.USE_NULL)
             .sslHostnameVerifier((host, s) -> true)

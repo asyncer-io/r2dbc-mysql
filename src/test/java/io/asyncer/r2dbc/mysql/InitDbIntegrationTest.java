@@ -15,10 +15,7 @@ class InitDbIntegrationTest extends IntegrationTestSupport {
     private static final String DATABASE = "test-" + ThreadLocalRandom.current().nextInt(10000);
 
     InitDbIntegrationTest() {
-        super(configuration(
-            DATABASE, true, false,
-            null, null
-        ));
+        super(configuration(builder -> builder.database(DATABASE).createDatabaseIfNotExist(true)));
     }
 
     @Test

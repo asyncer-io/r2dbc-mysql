@@ -53,11 +53,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ConnectionIntegrationTest extends IntegrationTestSupport {
 
-    private static final MySqlConnectionConfiguration config = configuration(
-        "r2dbc", false, false, null, null);
-
     ConnectionIntegrationTest() {
-        super(config);
+        super(configuration(builder -> builder));
     }
 
     @Test

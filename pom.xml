@@ -78,6 +78,7 @@
     <jackson.version>2.16.0</jackson.version>
     <mbr.version>0.3.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
+    <zstd-jni.version>1.5.5-11</zstd-jni.version>
     <java-annotations.version>24.1.0</java-annotations.version>
     <bouncy-castle.version>1.77</bouncy-castle.version>
   </properties>
@@ -151,6 +152,13 @@
       <artifactId>jsr305</artifactId>
       <version>${jsr305.version}</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.luben</groupId>
+      <artifactId>zstd-jni</artifactId>
+      <version>${zstd-jni.version}</version>
+      <optional>true</optional>
     </dependency>
 
     <dependency>

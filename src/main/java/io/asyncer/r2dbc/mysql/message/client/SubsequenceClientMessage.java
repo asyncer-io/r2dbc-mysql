@@ -24,10 +24,8 @@ package io.asyncer.r2dbc.mysql.message.client;
  */
 public interface SubsequenceClientMessage extends ClientMessage {
 
-    /**
-     * Gets the current envelope ID used to serialize subsequent request messages.
-     *
-     * @return the current envelope ID.
-     */
-    int getEnvelopeId();
+    @Override
+    default boolean isSequenceReset() {
+        return false;
+    }
 }

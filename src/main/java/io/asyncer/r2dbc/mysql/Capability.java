@@ -158,7 +158,7 @@ public final class Capability {
     // Allow the server not to send column metadata in result set,
     // should NEVER enable this option.
 //    private static final long OPTIONAL_RESULT_SET_METADATA = 1L << 25;
-//    private static final long Z_STD_COMPRESSION = 1L << 26;
+    private static final long ZSTD_COMPRESS = 1L << 26;
 
     // A reserved flag, used to extend the 32-bits capability bitmap to 64-bits.
     // There is no available MySql server version/edition to support it.
@@ -175,7 +175,7 @@ public final class Capability {
     private static final long ALL_SUPPORTED = CLIENT_MYSQL | FOUND_ROWS | LONG_FLAG | CONNECT_WITH_DB |
         NO_SCHEMA | COMPRESS | LOCAL_FILES | IGNORE_SPACE | PROTOCOL_41 | INTERACTIVE | SSL |
         TRANSACTIONS | SECURE_SALT | MULTI_STATEMENTS | MULTI_RESULTS | PS_MULTI_RESULTS |
-        PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | SESSION_TRACK | DEPRECATE_EOF;
+        PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | SESSION_TRACK | DEPRECATE_EOF | ZSTD_COMPRESS;
 
     private final long bitmap;
 
@@ -279,6 +279,33 @@ public final class Capability {
     }
 
     /**
+     * Checks if any compression enabled.
+     *
+     * @return if any compression enabled.
+     */
+    public boolean isCompression() {
+        return (bitmap & (COMPRESS | ZSTD_COMPRESS)) != 0;
+    }
+
+    /**
+     * Checks if zlib compression enabled.
+     *
+     * @return if zlib compression enabled.
+     */
+    public boolean isZlibCompression() {
+        return (bitmap & COMPRESS) != 0;
+    }
+
+    /**
+     * Checks if zstd compression enabled.
+     *
+     * @return if zstd compression enabled.
+     */
+    public boolean isZstdCompression() {
+        return (bitmap & ZSTD_COMPRESS) != 0;
+    }
+
+    /**
      * Extends MariaDB capabilities.
      *
      * @param hiCapabilities the bitmap of extend capabilities.
@@ -362,7 +389,15 @@ public final class Capability {
         }
 
         void disableCompression() {
+            this.bitmap &= ~(COMPRESS | ZSTD_COMPRESS);
+        }
+
+        void disableZlibCompression() {
             this.bitmap &= ~COMPRESS;
+        }
+
+        void disableZstdCompression() {
+            this.bitmap &= ~ZSTD_COMPRESS;
         }
 
         void disableLoadDataLocalInfile() {

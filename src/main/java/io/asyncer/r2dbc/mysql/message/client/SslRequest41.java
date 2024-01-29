@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.message.client;
 
 import io.asyncer.r2dbc.mysql.Capability;
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.netty.buffer.ByteBuf;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
@@ -34,23 +34,15 @@ final class SslRequest41 extends SizedClientMessage implements SslRequest {
     private static final int BUF_SIZE = Integer.BYTES + Integer.BYTES + Byte.BYTES +
         RESERVED_SIZE + MARIA_DB_CAPABILITY_SIZE;
 
-    private final int envelopeId;
-
     private final Capability capability;
 
     private final int collationId;
 
-    SslRequest41(int envelopeId, Capability capability, int collationId) {
+    SslRequest41(Capability capability, int collationId) {
         require(collationId > 0, "collationId must be a positive integer");
 
-        this.envelopeId = envelopeId;
         this.capability = capability;
         this.collationId = collationId;
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     @Override
@@ -64,22 +56,19 @@ final class SslRequest41 extends SizedClientMessage implements SslRequest {
 
         SslRequest41 that = (SslRequest41) o;
 
-        return envelopeId == that.envelopeId &&
-            collationId == that.collationId &&
+        return collationId == that.collationId &&
             capability.equals(that.capability);
     }
 
     @Override
     public int hashCode() {
-        int result = 31 * envelopeId + capability.hashCode();
+        int result = capability.hashCode();
         return 31 * result + collationId;
     }
 
     @Override
     public String toString() {
-        return "SslRequest41{envelopeId=" + envelopeId +
-            ", capability=" + capability +
-            ", collationId=" + collationId + '}';
+        return "SslRequest41{capability=" + capability + ", collationId=" + collationId + '}';
     }
 
     @Override
@@ -95,7 +84,7 @@ final class SslRequest41 extends SizedClientMessage implements SslRequest {
     @Override
     protected void writeTo(ByteBuf buf) {
         buf.writeIntLE(capability.getBaseBitmap())
-            .writeIntLE(Envelopes.MAX_ENVELOPE_SIZE)
+            .writeIntLE(Packets.MAX_PAYLOAD_SIZE)
             .writeByte(collationId & 0xFF); // only low 8-bits
 
         if (capability.isMariaDb()) {

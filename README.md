@@ -20,6 +20,7 @@ Refer to the table below to determine the appropriate version of r2dbc-mysql for
 This driver provides the following features:
 
 - [x] Unix domain socket.
+- [x] Compression protocols, including zstd and zlib.
 - [x] Execution of simple or batch statements without bindings.
 - [x] Execution of prepared statements with bindings.
 - [x] Reactive LOB types (e.g. BLOB, CLOB)
@@ -143,6 +144,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(Option.valueOf("allowLoadLocalInfileInPath"), "/opt") // optional, default null, null means LOCAL INFILE not be allowed (since 1.1.0)
     .option(Option.valueOf("tcpKeepAlive"), true) // optional, default false
     .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
+    .option(Option.valueOf("compressionAlgorithms"), "zstd") // optional, default UNCOMPRESSED
     .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
     .option(Option.valueOf("passwordPublisher"), Mono.just("password")) // optional, default null, null means has no passwordPublisher (since 1.0.5 / 0.9.6)
     .build();
@@ -191,6 +193,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .allowLoadLocalInfileInPath("/opt") // optional, default null, null means LOCAL INFILE not be allowed
     .tcpKeepAlive(true) // optional, controls TCP Keep Alive, default is false
     .tcpNoDelay(true) // optional, controls TCP No Delay, default is false
+    .compressionAlgorithms(CompressionAlgorithm.ZSTD, CompressionAlgotihm.ZLIB) // optional, default is UNCOMPRESSED
     .autodetectExtensions(false) // optional, controls extension auto-detect, default is true
     .extendWith(MyExtension.INSTANCE) // optional, manual extend an extension into extensions, default using auto-detect
     .passwordPublisher(Mono.just("password")) // optional, default null, null means has no password publisher (since 1.0.5 / 0.9.6)
@@ -242,6 +245,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | autodetectExtensions | `true` or `false` | Optional, default is `true` | Controls auto-detect `Extension`s |
 | useServerPrepareStatement | `true`, `false` or `Predicate<String>` | Optional, default is `false` | See following notice |
 | allowLoadLocalInfileInPath | A path | Optional, default is `null` | The path that allows `LOAD DATA LOCAL INFILE` to load file data |
+| compressionAlgorithms | A list of `CompressionAlgorithm` | Optional, default is `UNCOMPRESSED` | The compression algorithms for MySQL connection |
 | passwordPublisher | A `Publisher<String>` | Optional, default is `null` | The password publisher, see following notice |
 
 - `SslMode` Considers security level and verification for SSL, make sure the database server supports SSL before you want change SSL mode to `REQUIRED` or higher. **The Unix Domain Socket only offers "DISABLED" available**
@@ -269,6 +273,11 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
   - The `Extensions` will not remove duplicates, make sure it would be not extended twice or more
   - The auto-detected `Extension`s will not affect manual extends and will not remove duplicates
 - `passwordPublisher` Every time the client attempts to authenticate, it will use the password provided by the `passwordPublisher`.(Since `1.0.5` / `0.9.6`) e.g., You can employ this method for IAM-based authentication when connecting to an AWS Aurora RDS database.
+- `compressionAlgorithms` Considers compression protocol for MySQL connection, it is **NOT** RECOMMENDED to use compression protocol in the general case, because it will increase the CPU usage and decrease the performance.
+  - `UNCOMPRESSED` (default) No compression
+  - `ZLIB` Use Zlib compression protocol, it is available on almost all MySQL versions (`5.x` and above)
+  - `ZSTD` Use Z-standard compression protocol, it is available since MySQL `8.0.18` or above, requires an extern dependency `com.github.luben:zstd-jni`
+  - For scenarios where the network environment is poor or the amount of data is always large, using a compression protocol may be useful
 
 Should use `enum` in [Programmatic](#programmatic-configuration) configuration that not like discovery configurations, except `TlsVersions` (All elements of `TlsVersions` will be always `String` which is case-sensitive).
 

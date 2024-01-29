@@ -28,18 +28,10 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class AuthResponse extends SizedClientMessage implements SubsequenceClientMessage {
 
-    private final int envelopeId;
-
     private final byte[] authentication;
 
-    public AuthResponse(int envelopeId, byte[] authentication) {
-        this.envelopeId = envelopeId;
+    public AuthResponse(byte[] authentication) {
         this.authentication = requireNonNull(authentication, "authentication must not be null");
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     @Override
@@ -58,17 +50,17 @@ public final class AuthResponse extends SizedClientMessage implements Subsequenc
 
         AuthResponse that = (AuthResponse) o;
 
-        return envelopeId == that.envelopeId && Arrays.equals(authentication, that.authentication);
+        return Arrays.equals(authentication, that.authentication);
     }
 
     @Override
     public int hashCode() {
-        return 31 * envelopeId + Arrays.hashCode(authentication);
+        return Arrays.hashCode(authentication);
     }
 
     @Override
     public String toString() {
-        return "AuthResponse{envelopeId=" + envelopeId + ", authentication=REDACTED}";
+        return "AuthResponse{authentication=REDACTED}";
     }
 
     @Override

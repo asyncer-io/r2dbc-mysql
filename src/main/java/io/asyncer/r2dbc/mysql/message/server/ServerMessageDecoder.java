@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.message.server;
 
 import io.asyncer.r2dbc.mysql.ConnectionContext;
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
@@ -58,24 +58,25 @@ public final class ServerMessageDecoder {
     /**
      * Decode a server-side message from {@link #parts} and current envelope.
      *
-     * @param envelope      the current envelope.
+     * @param payload       the payload of the current packet.
      * @param context       the connection context.
      * @param decodeContext the decode context.
      * @return the server-side message, or {@code null} if {@code envelope} is not last packet.
      */
     @Nullable
-    public ServerMessage decode(ByteBuf envelope, ConnectionContext context, DecodeContext decodeContext) {
-        requireNonNull(envelope, "envelope must not be null");
+    public ServerMessage decode(ByteBuf payload, ConnectionContext context, DecodeContext decodeContext) {
+        requireNonNull(payload, "payload must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(decodeContext, "decodeContext must not be null");
 
-        List<ByteBuf> buffers = this.parts;
-        Byte id = readNotFinish(buffers, envelope);
-        if (id == null) {
+        parts.add(payload);
+
+        if (payload.readableBytes() == Packets.MAX_PAYLOAD_SIZE) {
+            // Not last packet.
             return null;
         }
 
-        return decodeMessage(buffers, id.intValue() & 0xFF, context, decodeContext);
+        return decodeMessage(parts, context, decodeContext);
     }
 
     /**
@@ -91,8 +92,8 @@ public final class ServerMessageDecoder {
     }
 
     @Nullable
-    private static ServerMessage decodeMessage(List<ByteBuf> buffers, int envelopeId,
-        ConnectionContext context, DecodeContext decodeContext) {
+    private static ServerMessage decodeMessage(List<ByteBuf> buffers, ConnectionContext context,
+        DecodeContext decodeContext) {
         if (decodeContext instanceof ResultDecodeContext) {
             return decodeResult(buffers, context, (ResultDecodeContext) decodeContext);
         }
@@ -104,14 +105,14 @@ public final class ServerMessageDecoder {
 
         try {
             if (decodeContext instanceof CommandDecodeContext) {
-                return decodeCommandMessage(envelopeId, combined, context);
+                return decodeCommandMessage(combined, context);
             } else if (decodeContext instanceof PreparedMetadataDecodeContext) {
                 return decodePreparedMetadata(combined, context,
                     (PreparedMetadataDecodeContext) decodeContext);
             } else if (decodeContext instanceof PrepareQueryDecodeContext) {
                 return decodePrepareQuery(combined);
             } else if (decodeContext instanceof LoginDecodeContext) {
-                return decodeLogin(envelopeId, combined, context);
+                return decodeLogin(combined, context);
             }
         } finally {
             combined.release();
@@ -194,8 +195,7 @@ public final class ServerMessageDecoder {
             " on prepare query phase");
     }
 
-    private static ServerMessage decodeCommandMessage(int envelopeId, ByteBuf buf,
-        ConnectionContext context) {
+    private static ServerMessage decodeCommandMessage(ByteBuf buf, ConnectionContext context) {
         short header = buf.getUnsignedByte(buf.readerIndex());
         switch (header) {
             case ERROR:
@@ -221,8 +221,9 @@ public final class ServerMessageDecoder {
                 }
             case LOCAL_INFILE:
                 if (buf.readableBytes() > 1) {
-                    return LocalInfileRequest.decode(envelopeId, buf, context);
+                    return LocalInfileRequest.decode(buf, context);
                 }
+                break;
         }
 
         if (VarIntUtils.checkNextVarInt(buf) == 0) {
@@ -236,7 +237,7 @@ public final class ServerMessageDecoder {
             " on command phase");
     }
 
-    private static ServerMessage decodeLogin(int envelopeId, ByteBuf buf, ConnectionContext context) {
+    private static ServerMessage decodeLogin(ByteBuf buf, ConnectionContext context) {
         short header = buf.getUnsignedByte(buf.readerIndex());
         switch (header) {
             case OK:
@@ -246,10 +247,10 @@ public final class ServerMessageDecoder {
 
                 break;
             case AUTH_MORE_DATA: // Auth more data
-                return AuthMoreDataMessage.decode(envelopeId, buf);
+                return AuthMoreDataMessage.decode(buf);
             case HANDSHAKE_V9:
             case HANDSHAKE_V10: // Handshake V9 (not supported) or V10
-                return HandshakeRequest.decode(envelopeId, buf);
+                return HandshakeRequest.decode(buf);
             case ERROR: // Error
                 return ErrorMessage.decode(buf);
             case EOF: // Auth exchange message or EOF message
@@ -257,38 +258,12 @@ public final class ServerMessageDecoder {
                     return EofMessage.decode(buf);
                 }
 
-                return ChangeAuthMessage.decode(envelopeId, buf);
+                return ChangeAuthMessage.decode(buf);
         }
 
         throw new R2dbcPermissionDeniedException("Unknown message header 0x" +
             Integer.toHexString(header) + " and readable bytes is " + buf.readableBytes() +
             " on connection phase");
-    }
-
-    @Nullable
-    private static Byte readNotFinish(List<ByteBuf> buffers, ByteBuf envelope) {
-        try {
-            int size = envelope.readUnsignedMediumLE();
-            if (size < Envelopes.MAX_ENVELOPE_SIZE) {
-                Byte envelopeId = envelope.readByte();
-
-                buffers.add(envelope);
-                // success, no need release
-                envelope = null;
-                return envelopeId;
-            }
-
-            // skip the sequence Id
-            envelope.skipBytes(1);
-            buffers.add(envelope);
-            // success, no need release
-            envelope = null;
-            return null;
-        } finally {
-            if (envelope != null) {
-                envelope.release();
-            }
-        }
     }
 
     private static boolean isRow(List<ByteBuf> buffers, ByteBuf firstBuf, short header) {

@@ -14,17 +14,29 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql;
-
-import org.junit.jupiter.api.condition.EnabledIf;
+package io.asyncer.r2dbc.mysql.constant;
 
 /**
- * Integration tests for MariaDB with server-preparing statements.
+ * The compression algorithm for client/server communication.
  */
-@EnabledIf("envIsMariaDb10_5_1")
-class MariaDbPrepareIntegrationTest extends MariaDbIntegrationTestSupport {
+public enum CompressionAlgorithm {
 
-    MariaDbPrepareIntegrationTest() {
-        super(builder -> builder.useServerPrepareStatement(sql -> true));
-    }
+    /**
+     * Do not use compression protocol.
+     */
+    UNCOMPRESSED,
+
+    /**
+     * Use zlib compression algorithm for client/server communication.
+     * <p>
+     * If zlib is not available, the connection will throw an exception when logging in.
+     */
+    ZLIB,
+
+    /**
+     * Use Z-Standard compression algorithm for client/server communication.
+     * <p>
+     * If zstd is not available, the connection will throw an exception when logging in.
+     */
+    ZSTD,
 }

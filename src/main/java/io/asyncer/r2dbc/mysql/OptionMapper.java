@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 
 /**
@@ -105,21 +106,38 @@ final class Source<T> {
         throw new IllegalArgumentException(toMessage(value, type.getTypeName()));
     }
 
-    Source<String[]> asStrings() {
+    <R> Source<R[]> asArray(Class<R[]> arrayType, Function<String, R> mapper, IntFunction<R[]> generator) {
         if (value == null) {
             return nilSource();
         }
 
-        if (value instanceof String[]) {
-            return new Source<>((String[]) value);
+        if (arrayType.isInstance(value)) {
+            return new Source<>(arrayType.cast(value));
+        } else if (value instanceof String[]) {
+            return new Source<>(mapArray((String[]) value, mapper, generator));
         } else if (value instanceof String) {
-            return new Source<>(((String) value).split(","));
+            String[] strings = ((String) value).split(",");
+
+            if (arrayType.isInstance(strings)) {
+                return new Source<>(arrayType.cast(strings));
+            }
+
+            return new Source<>(mapArray(strings, mapper, generator));
         } else if (value instanceof Collection<?>) {
-            return new Source<>(((Collection<?>) value).stream()
-                .map(String.class::cast).toArray(String[]::new));
+            @SuppressWarnings("unchecked")
+            Class<R> type = (Class<R>) arrayType.getComponentType();
+            R[] array = ((Collection<?>) value).stream().map(e -> {
+                if (type.isInstance(e)) {
+                    return type.cast(e);
+                } else {
+                    return mapper.apply(e.toString());
+                }
+            }).toArray(generator);
+
+            return new Source<>(array);
         }
 
-        throw new IllegalArgumentException(toMessage(value, "String[]"));
+        throw new IllegalArgumentException(toMessage(value, arrayType.getTypeName()));
     }
 
     Source<Boolean> asBoolean() {
@@ -235,6 +253,16 @@ final class Source<T> {
 
     private static String toMessage(Object value, String type) {
         return "Cannot convert value " + value + " to " + type;
+    }
+
+    private static <O> O[] mapArray(String[] input, Function<String, O> mapper, IntFunction<O[]> generator) {
+        O[] output = generator.apply(input.length);
+
+        for (int i = 0; i < input.length; i++) {
+            output[i] = mapper.apply(input[i]);
+        }
+
+        return output;
     }
 }
 

@@ -38,18 +38,20 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class LocalInfileResponse implements SubsequenceClientMessage {
 
-    private final int envelopeId;
-
     private final String path;
 
     private final SynchronousSink<?> errorSink;
 
-    public LocalInfileResponse(int envelopeId, String path, SynchronousSink<?> errorSink) {
+    public LocalInfileResponse(String path, SynchronousSink<?> errorSink) {
         requireNonNull(path, "path must not be null");
 
-        this.envelopeId = envelopeId;
         this.path = path;
         this.errorSink = errorSink;
+    }
+
+    @Override
+    public boolean isCumulative() {
+        return false;
     }
 
     @Override
@@ -94,11 +96,6 @@ public final class LocalInfileResponse implements SubsequenceClientMessage {
     }
 
     @Override
-    public int getEnvelopeId() {
-        return envelopeId;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -109,17 +106,16 @@ public final class LocalInfileResponse implements SubsequenceClientMessage {
 
         LocalInfileResponse that = (LocalInfileResponse) o;
 
-        return envelopeId == that.envelopeId && path.equals(that.path);
+        return path.equals(that.path);
     }
 
     @Override
     public int hashCode() {
-        return 31 * envelopeId + path.hashCode();
+        return path.hashCode();
     }
 
     @Override
     public String toString() {
-        return "LocalInfileResponse{envelopeId=" + envelopeId +
-            ", path='" + path + "'}";
+        return "LocalInfileResponse{path='" + path + "'}";
     }
 }

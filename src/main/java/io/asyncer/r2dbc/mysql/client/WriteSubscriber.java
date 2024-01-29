@@ -27,6 +27,11 @@ import reactor.core.CoreSubscriber;
  * streaming {@link ByteBuf}s.
  * <p>
  * It ensures {@link #promise} will be complete.
+ * <p>
+ * Note: flush is required due to the message may be encoded by another thread, like:
+ * {@link io.asyncer.r2dbc.mysql.message.client.LocalInfileResponse LocalInfileResponse},
+ * {@link io.asyncer.r2dbc.mysql.message.client.PreparedExecuteMessage PreparedExecuteMessage} (Blob/Clob),
+ * etc.
  */
 final class WriteSubscriber implements CoreSubscriber<ByteBuf> {
 

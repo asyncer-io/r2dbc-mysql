@@ -22,6 +22,6 @@ package io.asyncer.r2dbc.mysql;
 class TextQueryIntegrationTest extends QueryIntegrationTestSupport {
 
     TextQueryIntegrationTest() {
-        super(configuration("r2dbc", false, false, null, null));
+        super(configuration(builder -> builder));
     }
 }

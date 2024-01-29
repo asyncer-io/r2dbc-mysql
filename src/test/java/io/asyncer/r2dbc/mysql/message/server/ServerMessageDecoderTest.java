@@ -21,7 +21,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,21 +33,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ServerMessageDecoderTest {
 
-    @Test
-    void okAndPreparedOk() {
-        AbstractObjectAssert<?, OkMessage> ok = assertThat(decode(okLike(), DecodeContext.command()))
-            .isExactlyInstanceOf(OkMessage.class)
-            .extracting(message -> (OkMessage) message);
+    @ParameterizedTest
+    @MethodSource(value = { "okLikePayload" })
+    void okAndPreparedOk(byte[] okLike) {
+        AbstractObjectAssert<?, OkMessage> ok = assertThat(decode(
+            Unpooled.wrappedBuffer(okLike), DecodeContext.command()
+        )).isExactlyInstanceOf(OkMessage.class).extracting(message -> (OkMessage) message);
 
         ok.extracting(OkMessage::getAffectedRows).isEqualTo(1L);
         ok.extracting(OkMessage::getLastInsertId).isEqualTo(0x10000L); // 65536
         ok.extracting(OkMessage::getServerStatuses).isEqualTo((short) 0x100); // 256
         ok.extracting(OkMessage::getWarnings).isEqualTo(0);
 
-        AbstractObjectAssert<?, PreparedOkMessage> preparedOk = assertThat(decode(okLike(),
-            DecodeContext.prepareQuery()))
-            .isExactlyInstanceOf(PreparedOkMessage.class)
-            .extracting(message -> (PreparedOkMessage) message);
+        AbstractObjectAssert<?, PreparedOkMessage> preparedOk = assertThat(decode(
+            Unpooled.wrappedBuffer(okLike), DecodeContext.prepareQuery()
+        )).isExactlyInstanceOf(PreparedOkMessage.class).extracting(message -> (PreparedOkMessage) message);
 
         preparedOk.extracting(PreparedOkMessage::getStatementId).isEqualTo(0xFD01); // 64769
         preparedOk.extracting(PreparedOkMessage::getTotalColumns).isEqualTo(1);
@@ -56,10 +59,8 @@ class ServerMessageDecoderTest {
         return new ServerMessageDecoder().decode(buf, ConnectionContextTest.mock(), decodeContext);
     }
 
-    private static ByteBuf okLike() {
-        return Unpooled.wrappedBuffer(new byte[] {
-            10, 0, 0, // envelope size
-            1, // sequence ID
+    static Stream<byte[]> okLikePayload() {
+        return Stream.of(new byte[] {
             0, // Heading both of OK and Prepared OK
             1, // OK: affected rows, Prepared OK: first byte of statement ID
             (byte) 0xFD,

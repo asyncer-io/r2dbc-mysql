@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -262,7 +263,7 @@ class FluxEnvelopeTest {
     }
 
     private Flux<ByteBuf> envelopes(Flux<ByteBuf> source, int envelopeSize) {
-        return new FluxEnvelope(source, allocator, envelopeSize, 0, true);
+        return new FluxEnvelope(source, allocator, envelopeSize, new AtomicInteger(0), true);
     }
 
     private Consumer<List<ByteBuf>> assertBuffers(String origin, int envelopeSize, int lastSize,
@@ -273,7 +274,7 @@ class FluxEnvelopeTest {
 
                 for (int i = 0, n = originBuffers.size(); i < n; i += 2) {
                     ByteBuf header = originBuffers.get(i);
-                    assertThat(header.readableBytes()).isEqualTo(Envelopes.PART_HEADER_SIZE);
+                    assertThat(header.readableBytes()).isEqualTo(Packets.NORMAL_HEADER_SIZE);
 
                     int size = header.readMediumLE();
                     if (size > 0) {

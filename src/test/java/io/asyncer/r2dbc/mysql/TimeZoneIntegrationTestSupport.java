@@ -16,7 +16,6 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -31,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.TimeZone;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,8 +64,10 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
             .isEqualTo(DST.atZone(SERVER_ZONE).plusHours(1));
     }
 
-    TimeZoneIntegrationTestSupport(@Nullable Predicate<String> preferPrepared) {
-        super(configuration("r2dbc", false, false, SERVER_ZONE, preferPrepared));
+    TimeZoneIntegrationTestSupport(
+        Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
+    ) {
+        super(configuration(builder -> customizer.apply(builder.serverZoneId(SERVER_ZONE))));
     }
 
     @Test

@@ -80,7 +80,7 @@ final class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuf>
     }
 
     private void read() {
-        ByteBuf buf = this.allocator.buffer(this.bufferSize);
+        ByteBuf buf = this.allocator.ioBuffer(this.bufferSize);
         ByteBuffer byteBuffer = buf.nioBuffer(buf.writerIndex(), buf.writableBytes());
 
         this.channel.read(byteBuffer, this.position.get(), buf, this);

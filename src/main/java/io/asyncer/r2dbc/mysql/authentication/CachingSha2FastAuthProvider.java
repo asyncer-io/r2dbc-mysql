@@ -19,7 +19,7 @@ package io.asyncer.r2dbc.mysql.authentication;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import org.jetbrains.annotations.Nullable;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**

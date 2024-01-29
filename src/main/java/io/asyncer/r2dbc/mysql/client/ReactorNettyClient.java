@@ -95,9 +95,7 @@ final class ReactorNettyClient implements Client {
         this.context = context;
 
         // Note: encoder/decoder should before reactor bridge.
-        connection.addHandlerLast(EnvelopeSlicer.NAME, new EnvelopeSlicer())
-            .addHandlerLast(MessageDuplexCodec.NAME,
-                new MessageDuplexCodec(context));
+        connection.addHandlerLast(MessageDuplexCodec.NAME, new MessageDuplexCodec(context));
 
         if (ssl.getSslMode().startSsl()) {
             connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl));
@@ -131,6 +129,10 @@ final class ReactorNettyClient implements Client {
             .concatMap(message -> {
                 if (DEBUG_ENABLED) {
                     logger.debug("Request: {}", message);
+                }
+
+                if (message.isSequenceReset()) {
+                    resetSequence(connection);
                 }
 
                 return connection.outbound().sendObject(message);
@@ -250,7 +252,15 @@ final class ReactorNettyClient implements Client {
 
     @Override
     public void loginSuccess() {
-        connection.channel().pipeline().fireUserEventTriggered(Lifecycle.COMMAND);
+        if (context.getCapability().isCompression()) {
+            connection.channel().pipeline().fireUserEventTriggered(PacketEvent.USE_COMPRESSION);
+        } else {
+            resetSequence(connection);
+        }
+    }
+
+    private static void resetSequence(Connection connection) {
+        connection.channel().pipeline().fireUserEventTriggered(PacketEvent.RESET_SEQUENCE);
     }
 
     @Override
