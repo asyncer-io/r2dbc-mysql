@@ -22,6 +22,6 @@ package io.asyncer.r2dbc.mysql;
 class JacksonTextIntegrationTest extends JacksonIntegrationTestSupport {
 
     JacksonTextIntegrationTest() {
-        super(configuration("r2dbc", false, true, null, null));
+        super(configuration(builder -> builder.autodetectExtensions(true)));
     }
 }

@@ -22,7 +22,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 
 /**
  * An utility for general authentication hashing algorithm.

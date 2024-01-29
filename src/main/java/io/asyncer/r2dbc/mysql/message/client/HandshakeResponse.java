@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 
 /**
  * An abstraction of {@link SubsequenceClientMessage} considers handshake response.
@@ -33,24 +33,24 @@ public interface HandshakeResponse extends SubsequenceClientMessage {
      * Construct an instance of {@link HandshakeResponse}, it is implemented by the protocol version that is
      * given by {@link Capability}.
      *
-     * @param envelopeId     the beginning envelope ID of this message.
-     * @param capability     the current {@link Capability}.
-     * @param collationId    the {@code CharCollation} ID, or 0 if server does not return a collation ID.
-     * @param user           the username for login.
-     * @param authentication the password authentication for login.
-     * @param authType       the authentication plugin type.
-     * @param database       the connecting database, may be empty.
-     * @param attributes     the connecting attributes.
+     * @param capability           the current {@link Capability}.
+     * @param collationId          the {@code CharCollation} ID, or 0 if server does not return.
+     * @param user                 the username for login.
+     * @param authentication       the password authentication for login.
+     * @param authType             the authentication plugin type.
+     * @param database             the connecting database, may be empty.
+     * @param attributes           the connecting attributes.
+     * @param zstdCompressionLevel the Zstd compression level.
      * @return the instance implemented by the specified protocol version.
      */
-    static HandshakeResponse from(int envelopeId, Capability capability, int collationId, String user,
-        byte[] authentication, String authType, String database, Map<String, String> attributes) {
+    static HandshakeResponse from(Capability capability, int collationId, String user, byte[] authentication,
+        String authType, String database, Map<String, String> attributes, int zstdCompressionLevel) {
         if (capability.isProtocol41()) {
-            return new HandshakeResponse41(envelopeId, capability, collationId, user, authentication,
-                authType, database, attributes);
+            return new HandshakeResponse41(capability, collationId, user, authentication, authType, database,
+                attributes, zstdCompressionLevel);
         }
 
-        return new HandshakeResponse320(envelopeId, capability, user, authentication, database);
+        return new HandshakeResponse320(capability, user, authentication, database);
     }
 
     /**

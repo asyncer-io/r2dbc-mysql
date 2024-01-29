@@ -33,13 +33,6 @@ public interface HandshakeRequest extends ServerMessage {
     HandshakeHeader getHeader();
 
     /**
-     * Get the envelope identifier of this message packet.
-     *
-     * @return envelope identifier.
-     */
-    int getEnvelopeId();
-
-    /**
      * Get the server-side capability.
      *
      * @return the server-side capability.
@@ -63,19 +56,18 @@ public interface HandshakeRequest extends ServerMessage {
     /**
      * Decode a {@link HandshakeRequest} from a envelope {@link ByteBuf}.
      *
-     * @param envelopeId envelope identifier.
-     * @param buf        the {@link ByteBuf}.
+     * @param buf the {@link ByteBuf}.
      * @return decoded {@link HandshakeRequest}.
      */
-    static HandshakeRequest decode(int envelopeId, ByteBuf buf) {
+    static HandshakeRequest decode(ByteBuf buf) {
         HandshakeHeader header = HandshakeHeader.decode(buf);
         int version = header.getProtocolVersion();
 
         switch (version) {
             case 10:
-                return HandshakeV10Request.decode(envelopeId, buf, header);
+                return HandshakeV10Request.decode(buf, header);
             case 9:
-                return HandshakeV9Request.decode(envelopeId, buf, header);
+                return HandshakeV9Request.decode(buf, header);
         }
 
         throw new R2dbcPermissionDeniedException("Does not support handshake protocol version " + version);

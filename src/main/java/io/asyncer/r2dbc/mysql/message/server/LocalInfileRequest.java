@@ -25,26 +25,19 @@ import io.netty.buffer.ByteBuf;
  */
 public final class LocalInfileRequest implements ServerMessage {
 
-    private final int envelopeId;
-
     private final String path;
 
-    private LocalInfileRequest(int envelopeId, String path) {
-        this.envelopeId = envelopeId;
+    private LocalInfileRequest(String path) {
         this.path = path;
-    }
-
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     public String getPath() {
         return path;
     }
 
-    static LocalInfileRequest decode(int envelopeId, ByteBuf buf, ConnectionContext context) {
+    static LocalInfileRequest decode(ByteBuf buf, ConnectionContext context) {
         buf.skipBytes(1); // Constant 0xFB
-        return new LocalInfileRequest(envelopeId, buf.toString(context.getClientCollation().getCharset()));
+        return new LocalInfileRequest(buf.toString(context.getClientCollation().getCharset()));
     }
 
     @Override
@@ -58,17 +51,16 @@ public final class LocalInfileRequest implements ServerMessage {
 
         LocalInfileRequest that = (LocalInfileRequest) o;
 
-        return envelopeId == that.envelopeId && path.equals(that.path);
+        return path.equals(that.path);
     }
 
     @Override
     public int hashCode() {
-        return 31 * envelopeId + path.hashCode();
+        return path.hashCode();
     }
 
     @Override
     public String toString() {
-        return "LocalInfileRequest{envelopeId=" + envelopeId +
-            ", path='" + path + "'}";
+        return "LocalInfileRequest{path='" + path + "'}";
     }
 }

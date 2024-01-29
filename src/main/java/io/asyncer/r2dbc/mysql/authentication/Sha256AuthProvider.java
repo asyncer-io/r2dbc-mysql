@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.CharBuffer;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**

@@ -17,11 +17,11 @@
 package io.asyncer.r2dbc.mysql.constant;
 
 /**
- * Constants for MySQL protocol envelopes (e.g. business layer packages).
+ * Constants for MySQL protocol packets.
  * <p>
  * WARNING: do NOT use it outer than {@literal r2dbc-mysql}.
  */
-public final class Envelopes {
+public final class Packets {
 
     /**
      * The length of the byte size field, it is 3 bytes.
@@ -29,19 +29,26 @@ public final class Envelopes {
     public static final int SIZE_FIELD_SIZE = 3;
 
     /**
-     * The byte size of header part.
+     * The max bytes size of payload, value is 16777215. (i.e. max value of int24, (2 ** 24) - 1)
      */
-    public static final int PART_HEADER_SIZE = SIZE_FIELD_SIZE + 1;
+    public static final int MAX_PAYLOAD_SIZE = 0xFFFFFF;
 
     /**
-     * The max bytes size of each envelope, value is 16777215. (i.e. max value of int24, (2 ** 24) - 1)
+     * The header size of a compression frame, which includes entire frame size (unsigned int24), compression
+     * sequence id (unsigned int8) and compressed size (unsigned int24).
      */
-    public static final int MAX_ENVELOPE_SIZE = (1 << (SIZE_FIELD_SIZE << 3)) - 1;
+    public static final int COMPRESS_HEADER_SIZE = SIZE_FIELD_SIZE + 1 + SIZE_FIELD_SIZE;
+
+    /**
+     * The header size of a normal frame, which includes entire frame size (unsigned int24) and normal
+     * sequence id (unsigned int8).
+     */
+    public static final int NORMAL_HEADER_SIZE = SIZE_FIELD_SIZE + 1;
 
     /**
      * The terminal of C-style string or C-style binary data.
      */
     public static final byte TERMINAL = 0;
 
-    private Envelopes() { }
+    private Packets() { }
 }

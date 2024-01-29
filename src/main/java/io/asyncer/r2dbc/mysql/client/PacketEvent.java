@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 asyncer.io projects
+ * Copyright 2024 asyncer.io projects
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,19 @@
 package io.asyncer.r2dbc.mysql.client;
 
 /**
- * The lifecycle of connection.
+ * A packet event considers how the handler should handle subsequent packets.
  */
-enum Lifecycle {
+enum PacketEvent {
 
-//    CONNECTION, // Useless for signal
+    /**
+     * Sequence is reset, all sequence IDs should be reset to 0.
+     */
+    RESET_SEQUENCE,
 
-    COMMAND,
-
-//    REPLICATION // Useless for r2dbc driver, just ignore
+    /**
+     * Compression is enabled, the handler should decode the next packet as a compression packet.
+     * <p>
+     * It should just reset the normal sequence ID to 0.
+     */
+    USE_COMPRESSION,
 }

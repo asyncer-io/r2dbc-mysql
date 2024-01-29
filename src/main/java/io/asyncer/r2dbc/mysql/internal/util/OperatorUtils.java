@@ -16,11 +16,13 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
@@ -56,12 +58,12 @@ public final class OperatorUtils {
     }
 
     public static Flux<ByteBuf> envelope(Flux<? extends ByteBuf> source, ByteBufAllocator allocator,
-        int envelopeIdStart, boolean cumulate) {
+        AtomicInteger sequenceId, boolean cumulate) {
         requireNonNull(source, "source must not be null");
         requireNonNull(allocator, "allocator must not be null");
+        requireNonNull(sequenceId, "sequenceId must not be null");
 
-        return new FluxEnvelope(source, allocator, Envelopes.MAX_ENVELOPE_SIZE,
-            envelopeIdStart & 0xFF, cumulate);
+        return new FluxEnvelope(source, allocator, Packets.MAX_PAYLOAD_SIZE, sequenceId, cumulate);
     }
 
     private OperatorUtils() { }

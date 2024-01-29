@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.message.client;
 
 import io.asyncer.r2dbc.mysql.Capability;
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.netty.buffer.ByteBuf;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
@@ -27,22 +27,14 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
  */
 final class SslRequest320 extends SizedClientMessage implements SslRequest {
 
-    private static final int SIZE = Short.BYTES + Envelopes.SIZE_FIELD_SIZE;
-
-    private final int envelopeId;
+    private static final int SIZE = Short.BYTES + Packets.SIZE_FIELD_SIZE;
 
     private final Capability capability;
 
-    SslRequest320(int envelopeId, Capability capability) {
+    SslRequest320(Capability capability) {
         require(!capability.isProtocol41(), "protocol 4.1 capability should never be set");
 
-        this.envelopeId = envelopeId;
         this.capability = capability;
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     @Override
@@ -61,18 +53,17 @@ final class SslRequest320 extends SizedClientMessage implements SslRequest {
 
         SslRequest320 that = (SslRequest320) o;
 
-        return envelopeId == that.envelopeId && capability.equals(that.capability);
+        return capability.equals(that.capability);
     }
 
     @Override
     public int hashCode() {
-        return 31 * envelopeId + capability.hashCode();
+        return capability.hashCode();
     }
 
     @Override
     public String toString() {
-        return "SslRequest320{envelopeId=" + envelopeId +
-            ", capability=" + capability + '}';
+        return "SslRequest320{capability=" + capability + '}';
     }
 
     @Override
@@ -84,6 +75,6 @@ final class SslRequest320 extends SizedClientMessage implements SslRequest {
     protected void writeTo(ByteBuf buf) {
         // Protocol 3.20 only allows low 16-bits capabilities.
         buf.writeShortLE(capability.getBaseBitmap() & 0xFFFF)
-            .writeMediumLE(Envelopes.MAX_ENVELOPE_SIZE);
+            .writeMediumLE(Packets.MAX_PAYLOAD_SIZE);
     }
 }

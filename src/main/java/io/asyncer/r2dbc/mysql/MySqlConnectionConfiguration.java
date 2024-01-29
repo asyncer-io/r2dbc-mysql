@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
@@ -30,9 +31,12 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -97,6 +101,10 @@ public final class MySqlConnectionConfiguration {
 
     private final int prepareCacheSize;
 
+    private final Set<CompressionAlgorithm> compressionAlgorithms;
+
+    private final int zstdCompressionLevel;
+
     private final Extensions extensions;
 
     @Nullable
@@ -109,8 +117,9 @@ public final class MySqlConnectionConfiguration {
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
         @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
-        int queryCacheSize, int prepareCacheSize, Extensions extensions,
-        @Nullable Publisher<String> passwordPublisher
+        int queryCacheSize, int prepareCacheSize,
+        Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
+        Extensions extensions, @Nullable Publisher<String> passwordPublisher
     ) {
         this.isHost = isHost;
         this.domain = domain;
@@ -130,6 +139,8 @@ public final class MySqlConnectionConfiguration {
         this.localInfileBufferSize = localInfileBufferSize;
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
+        this.compressionAlgorithms = compressionAlgorithms;
+        this.zstdCompressionLevel = zstdCompressionLevel;
         this.extensions = extensions;
         this.passwordPublisher = passwordPublisher;
     }
@@ -220,6 +231,14 @@ public final class MySqlConnectionConfiguration {
         return prepareCacheSize;
     }
 
+    Set<CompressionAlgorithm> getCompressionAlgorithms() {
+        return compressionAlgorithms;
+    }
+
+    int getZstdCompressionLevel() {
+        return zstdCompressionLevel;
+    }
+
     Extensions getExtensions() {
         return extensions;
     }
@@ -256,6 +275,8 @@ public final class MySqlConnectionConfiguration {
             localInfileBufferSize == that.localInfileBufferSize &&
             queryCacheSize == that.queryCacheSize &&
             prepareCacheSize == that.prepareCacheSize &&
+            compressionAlgorithms.equals(that.compressionAlgorithms) &&
+            zstdCompressionLevel == that.zstdCompressionLevel &&
             extensions.equals(that.extensions) &&
             Objects.equals(passwordPublisher, that.passwordPublisher);
     }
@@ -265,7 +286,7 @@ public final class MySqlConnectionConfiguration {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
             serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
             preferPrepareStatement, loadLocalInfilePath, localInfileBufferSize, queryCacheSize,
-            prepareCacheSize, extensions, passwordPublisher);
+            prepareCacheSize, compressionAlgorithms, zstdCompressionLevel, extensions, passwordPublisher);
     }
 
     @Override
@@ -280,6 +301,8 @@ public final class MySqlConnectionConfiguration {
                 ", loadLocalInfilePath=" + loadLocalInfilePath +
                 ", localInfileBufferSize=" + localInfileBufferSize +
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
+                ", compressionAlgorithms=" + compressionAlgorithms +
+                ", zstdCompressionLevel=" + zstdCompressionLevel +
                 ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
         }
 
@@ -291,8 +314,10 @@ public final class MySqlConnectionConfiguration {
             ", loadLocalInfilePath=" + loadLocalInfilePath +
             ", localInfileBufferSize=" + localInfileBufferSize +
             ", queryCacheSize=" + queryCacheSize +
-            ", prepareCacheSize=" + prepareCacheSize + ", extensions=" + extensions +
-            ", passwordPublisher=" + passwordPublisher + '}';
+            ", prepareCacheSize=" + prepareCacheSize +
+            ", compressionAlgorithms=" + compressionAlgorithms +
+            ", zstdCompressionLevel=" + zstdCompressionLevel +
+            ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
     }
 
     /**
@@ -363,6 +388,11 @@ public final class MySqlConnectionConfiguration {
 
         private int prepareCacheSize = 256;
 
+        private Set<CompressionAlgorithm> compressionAlgorithms =
+            Collections.singleton(CompressionAlgorithm.UNCOMPRESSED);
+
+        private int zstdCompressionLevel = 3;
+
         private boolean autodetectExtensions = true;
 
         private final List<Extension> extensions = new ArrayList<>();
@@ -395,6 +425,7 @@ public final class MySqlConnectionConfiguration {
                 connectTimeout, zeroDateOption, serverZoneId, user, password, database,
                 createDatabaseIfNotExist, preferPrepareStatement, loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
+                compressionAlgorithms, zstdCompressionLevel,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
         }
 
@@ -819,6 +850,64 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder prepareCacheSize(int prepareCacheSize) {
             this.prepareCacheSize = prepareCacheSize;
+            return this;
+        }
+
+        /**
+         * Configures the compression algorithms.  Default to [{@link CompressionAlgorithm#UNCOMPRESSED}].
+         * <p>
+         * It will auto choose an algorithm that's contained in the list and supported by the server,
+         * preferring zstd, then zlib. If the list does not contain {@link CompressionAlgorithm#UNCOMPRESSED}
+         * and the server does not support any algorithm in the list, an exception will be thrown when
+         * connecting.
+         * <p>
+         * Note: zstd requires a dependency {@code com.github.luben:zstd-jni}.
+         *
+         * @param compressionAlgorithms the list of compression algorithms.
+         * @return {@link Builder this}.
+         * @throws IllegalArgumentException if {@code compressionAlgorithms} is {@code null} or empty.
+         * @since 1.1.0
+         */
+        public Builder compressionAlgorithms(CompressionAlgorithm... compressionAlgorithms) {
+            requireNonNull(compressionAlgorithms, "compressionAlgorithms must not be null");
+            require(compressionAlgorithms.length != 0, "compressionAlgorithms must not be empty");
+
+            if (compressionAlgorithms.length == 1) {
+                requireNonNull(compressionAlgorithms[0], "compressionAlgorithms must not contain null");
+                this.compressionAlgorithms = Collections.singleton(compressionAlgorithms[0]);
+            } else {
+                Set<CompressionAlgorithm> algorithms = EnumSet.noneOf(CompressionAlgorithm.class);
+
+                for (CompressionAlgorithm algorithm : compressionAlgorithms) {
+                    requireNonNull(algorithm, "compressionAlgorithms must not contain null");
+                    algorithms.add(algorithm);
+                }
+
+                this.compressionAlgorithms = algorithms;
+            }
+
+            return this;
+        }
+
+        /**
+         * Configures the zstd compression level.  Default to {@code 3}.
+         * <p>
+         * It is only used if zstd is chosen for the connection.
+         * <p>
+         * Note: MySQL protocol does not allow to set the zlib compression level of the server, only zstd is
+         * configurable.
+         *
+         * @param level the compression level.
+         * @return {@link Builder this}.
+         * @throws IllegalArgumentException if {@code level} is not between 1 and 22.
+         * @since 1.1.0
+         * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/connection-options.html">
+         * MySQL Connection Options --zstd-compression-level</a>
+         */
+        public Builder zstdCompressionLevel(int level) {
+            require(level >= 1 && level <= 22, "level must be between 1 and 22");
+
+            this.zstdCompressionLevel = level;
             return this;
         }
 

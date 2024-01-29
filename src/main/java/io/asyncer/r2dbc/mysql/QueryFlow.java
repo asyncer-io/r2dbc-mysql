@@ -20,6 +20,7 @@ import io.asyncer.r2dbc.mysql.authentication.MySqlAuthProvider;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.client.FluxExchangeable;
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
@@ -56,6 +57,7 @@ import io.netty.util.ReferenceCounted;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.IsolationLevel;
+import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import io.r2dbc.spi.TransactionDefinition;
 import org.jetbrains.annotations.Nullable;
@@ -74,6 +76,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -191,17 +194,22 @@ final class QueryFlow {
      * Login a {@link Client} and receive the {@code client} after logon. It will emit an exception when
      * client receives a {@link ErrorMessage}.
      *
-     * @param client   the {@link Client} to exchange messages with.
-     * @param sslMode  the {@link SslMode} defines SSL capability and behavior.
-     * @param database the database that will be connected.
-     * @param user     the user that will be login.
-     * @param password the password of the {@code user}.
-     * @param context  the {@link ConnectionContext} for initialization.
+     * @param client                the {@link Client} to exchange messages with.
+     * @param sslMode               the {@link SslMode} defines SSL capability and behavior.
+     * @param database              the database that will be connected.
+     * @param user                  the user that will be login.
+     * @param password              the password of the {@code user}.
+     * @param compressionAlgorithms the list of compression algorithms.
+     * @param zstdCompressionLevel  the zstd compression level.
+     * @param context               the {@link ConnectionContext} for initialization.
      * @return the messages received in response to the login exchange.
      */
     static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password, ConnectionContext context) {
-        return client.exchange(new LoginExchangeable(client, sslMode, database, user, password, context))
+        @Nullable CharSequence password,
+        Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
+        ConnectionContext context) {
+        return client.exchange(new LoginExchangeable(client, sslMode, database, user, password,
+                compressionAlgorithms, zstdCompressionLevel, context))
             .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
             .then(Mono.just(client));
     }
@@ -327,7 +335,7 @@ abstract class BaseFluxExchangeable extends FluxExchangeable<ServerMessage> {
             QueryLogger.logLocalInfile(path);
 
             requests.emitNext(
-                new LocalInfileResponse(request.getEnvelopeId() + 1, path, sink),
+                new LocalInfileResponse(path, sink),
                 Sinks.EmitFailureHandler.FAIL_FAST
             );
         } else {
@@ -828,6 +836,10 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
     @Nullable
     private final CharSequence password;
 
+    private final Set<CompressionAlgorithm> compressions;
+
+    private final int zstdCompressionLevel;
+
     private final ConnectionContext context;
 
     private boolean handshake = true;
@@ -838,15 +850,16 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
     private boolean sslCompleted;
 
-    private int lastEnvelopeId;
-
     LoginExchangeable(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password, ConnectionContext context) {
+        @Nullable CharSequence password, Set<CompressionAlgorithm> compressions,
+        int zstdCompressionLevel, ConnectionContext context) {
         this.client = client;
         this.sslMode = sslMode;
         this.database = database;
         this.user = user;
         this.password = password;
+        this.compressions = compressions;
+        this.zstdCompressionLevel = zstdCompressionLevel;
         this.context = context;
         this.sslCompleted = sslMode == SslMode.TUNNEL;
     }
@@ -870,13 +883,10 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
                 HandshakeRequest request = (HandshakeRequest) message;
                 Capability capability = initHandshake(request);
 
-                lastEnvelopeId = request.getEnvelopeId() + 1;
-
                 if (capability.isSslEnabled()) {
-                    emitNext(SslRequest.from(lastEnvelopeId, capability,
-                        context.getClientCollation().getId()), sink);
+                    emitNext(SslRequest.from(capability, context.getClientCollation().getId()), sink);
                 } else {
-                    emitNext(createHandshakeResponse(lastEnvelopeId, capability), sink);
+                    emitNext(createHandshakeResponse(capability), sink);
                 }
             } else {
                 sink.error(new R2dbcPermissionDeniedException("Unexpected message type '" +
@@ -891,10 +901,9 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             sink.complete();
         } else if (message instanceof SyntheticSslResponseMessage) {
             sslCompleted = true;
-            emitNext(createHandshakeResponse(++lastEnvelopeId, context.getCapability()), sink);
+            emitNext(createHandshakeResponse(context.getCapability()), sink);
         } else if (message instanceof AuthMoreDataMessage) {
             AuthMoreDataMessage msg = (AuthMoreDataMessage) message;
-            lastEnvelopeId = msg.getEnvelopeId() + 1;
 
             if (msg.isFailed()) {
                 if (logger.isDebugEnabled()) {
@@ -902,15 +911,15 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
                         context.getConnectionId());
                 }
 
-                emitNext(createAuthResponse(lastEnvelopeId, "full authentication"), sink);
+                emitNext(createAuthResponse("full authentication"), sink);
             }
             // Otherwise success, wait until OK message or Error message.
         } else if (message instanceof ChangeAuthMessage) {
             ChangeAuthMessage msg = (ChangeAuthMessage) message;
-            lastEnvelopeId = msg.getEnvelopeId() + 1;
+
             authProvider = MySqlAuthProvider.build(msg.getAuthType());
             salt = msg.getSalt();
-            emitNext(createAuthResponse(lastEnvelopeId, "change authentication"), sink);
+            emitNext(createAuthResponse("change authentication"), sink);
         } else {
             sink.error(new R2dbcPermissionDeniedException("Unexpected message type '" +
                 message.getClass().getSimpleName() + "' in login phase"));
@@ -931,15 +940,14 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         }
     }
 
-    private AuthResponse createAuthResponse(int envelopeId, String phase) {
+    private AuthResponse createAuthResponse(String phase) {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
         if (authProvider.isSslNecessary() && !sslCompleted) {
             throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), phase), CLI_SPECIFIC);
         }
 
-        return new AuthResponse(envelopeId,
-            authProvider.authentication(password, salt, context.getClientCollation()));
+        return new AuthResponse(authProvider.authentication(password, salt, context.getClientCollation()));
     }
 
     private Capability clientCapability(Capability serverCapability) {
@@ -947,7 +955,6 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
         builder.disableSessionTrack();
         builder.disableDatabasePinned();
-        builder.disableCompression();
         builder.disableIgnoreAmbiguitySpace();
         builder.disableInteractiveTimeout();
 
@@ -968,6 +975,32 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             if (!sslMode.startSsl()) {
                 builder.disableSsl();
             }
+        }
+
+        if (isZstdAllowed(serverCapability)) {
+            if (isZstdSupported()) {
+                builder.disableZlibCompression();
+            } else {
+                logger.warn("Server supports zstd, but zstd-jni dependency is missing");
+
+                if (isZlibAllowed(serverCapability)) {
+                    builder.disableZstdCompression();
+                } else if (compressions.contains(CompressionAlgorithm.UNCOMPRESSED)) {
+                    builder.disableCompression();
+                } else {
+                    throw new R2dbcNonTransientResourceException(
+                        "Environment does not support a compression algorithm in " + compressions +
+                            ", config does not allow uncompressed mode", CLI_SPECIFIC);
+                }
+            }
+        } else if (isZlibAllowed(serverCapability)) {
+            builder.disableZstdCompression();
+        } else if (compressions.contains(CompressionAlgorithm.UNCOMPRESSED)) {
+            builder.disableCompression();
+        } else {
+            throw new R2dbcPermissionDeniedException(
+                "Environment does not support a compression algorithm in " + compressions +
+                    ", config does not allow uncompressed mode", CLI_SPECIFIC);
         }
 
         if (database.isEmpty()) {
@@ -1011,7 +1044,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         return authProvider;
     }
 
-    private HandshakeResponse createHandshakeResponse(int envelopeId, Capability capability) {
+    private HandshakeResponse createHandshakeResponse(Capability capability) {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
         if (authProvider.isSslNecessary() && !sslCompleted) {
@@ -1028,12 +1061,30 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             authType = MySqlAuthProvider.CACHING_SHA2_PASSWORD;
         }
 
-        return HandshakeResponse.from(envelopeId, capability, context.getClientCollation().getId(),
-            user, authorization, authType, database, ATTRIBUTES);
+        return HandshakeResponse.from(capability, context.getClientCollation().getId(), user, authorization,
+            authType, database, ATTRIBUTES, zstdCompressionLevel);
+    }
+
+    private boolean isZstdAllowed(Capability capability) {
+        return capability.isZstdCompression() && compressions.contains(CompressionAlgorithm.ZSTD);
+    }
+
+    private boolean isZlibAllowed(Capability capability) {
+        return capability.isZlibCompression() && compressions.contains(CompressionAlgorithm.ZLIB);
     }
 
     private static String authFails(String authType, String phase) {
         return "Authentication type '" + authType + "' must require SSL in " + phase + " phase";
+    }
+
+    private static boolean isZstdSupported() {
+        try {
+            Class.forName("com.github.luben.zstd.Zstd", false,
+                LoginExchangeable.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }
 

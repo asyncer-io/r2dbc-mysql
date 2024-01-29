@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
@@ -136,7 +136,7 @@ final class LargeFieldReader extends AbstractReferenceCounted implements FieldRe
     private List<ByteBuf> readSlice(ByteBuf current, long length) {
         ByteBuf buf = current;
         List<ByteBuf> results = new ArrayList<>(Math.max(
-            (int) Math.min(Long.divideUnsigned(length, Envelopes.MAX_ENVELOPE_SIZE) + 2, Byte.MAX_VALUE),
+            (int) Math.min(Long.divideUnsigned(length, Packets.MAX_PAYLOAD_SIZE) + 2, Byte.MAX_VALUE),
             10
         ));
         long totalSize = 0;

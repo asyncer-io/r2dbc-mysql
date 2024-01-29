@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBufUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -42,8 +42,6 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
 
     private final HandshakeHeader header;
 
-    private final int envelopeId;
-
     private final byte[] salt;
 
     private final Capability serverCapability;
@@ -52,10 +50,9 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
 
     private final String authType;
 
-    private HandshakeV10Request(HandshakeHeader header, int envelopeId, byte[] salt,
+    private HandshakeV10Request(HandshakeHeader header, byte[] salt,
         Capability serverCapability, short serverStatuses, String authType) {
         this.header = requireNonNull(header, "header must not be null");
-        this.envelopeId = envelopeId;
         this.salt = requireNonNull(salt, "salt must not be null");
         this.serverCapability = requireNonNull(serverCapability, "serverCapability must not be null");
         this.serverStatuses = serverStatuses;
@@ -65,11 +62,6 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
     @Override
     public HandshakeHeader getHeader() {
         return header;
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     @Override
@@ -97,35 +89,35 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HandshakeV10Request)) {
             return false;
         }
 
         HandshakeV10Request that = (HandshakeV10Request) o;
 
-        return envelopeId == that.envelopeId && serverStatuses == that.serverStatuses &&
-            header.equals(that.header) && Arrays.equals(salt, that.salt) &&
-            serverCapability.equals(that.serverCapability) && authType.equals(that.authType);
+        return serverStatuses == that.serverStatuses && header.equals(that.header) &&
+            Arrays.equals(salt, that.salt) && serverCapability.equals(that.serverCapability) &&
+            authType.equals(that.authType);
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 * header.hashCode() + envelopeId;
-        hash = 31 * hash + Arrays.hashCode(salt);
-        hash = 31 * hash + serverCapability.hashCode();
-        hash = 31 * hash + serverStatuses;
-        return 31 * hash + authType.hashCode();
+        int result = header.hashCode();
+        result = 31 * result + Arrays.hashCode(salt);
+        result = 31 * result + serverCapability.hashCode();
+        result = 31 * result + (int) serverStatuses;
+        return 31 * result + authType.hashCode();
     }
 
     @Override
     public String toString() {
-        return "HandshakeV10Request{header=" + header + ", envelopeId=" + envelopeId +
+        return "HandshakeV10Request{header=" + header +
             ", salt=REDACTED, serverCapability=" + serverCapability +
             ", serverStatuses=" + serverStatuses + ", authType='" + authType + "'}";
     }
 
-    static HandshakeV10Request decode(int envelopeId, ByteBuf buf, HandshakeHeader header) {
-        Builder builder = new Builder(envelopeId, header);
+    static HandshakeV10Request decode(ByteBuf buf, HandshakeHeader header) {
+        Builder builder = new Builder(header);
         ByteBuf salt = buf.alloc().buffer();
 
         try {
@@ -194,8 +186,6 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
 
     private static final class Builder {
 
-        private final int envelopeId;
-
         private final HandshakeHeader header;
 
         private String authType;
@@ -206,14 +196,12 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
 
         private short serverStatuses;
 
-        private Builder(int envelopeId, HandshakeHeader header) {
-            this.envelopeId = envelopeId;
+        private Builder(HandshakeHeader header) {
             this.header = header;
         }
 
         HandshakeV10Request build() {
-            return new HandshakeV10Request(header, envelopeId, salt, serverCapability, serverStatuses,
-                authType);
+            return new HandshakeV10Request(header, salt, serverCapability, serverStatuses, authType);
         }
 
         void authType(String authType) {

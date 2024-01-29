@@ -22,7 +22,8 @@ package io.asyncer.r2dbc.mysql;
 class JacksonPrepareIntegrationTest extends JacksonIntegrationTestSupport {
 
     JacksonPrepareIntegrationTest() {
-        super(configuration("r2dbc", false, true, null, sql -> false));
+        super(configuration(builder -> builder.autodetectExtensions(true)
+            .useServerPrepareStatement()));
     }
 }
 

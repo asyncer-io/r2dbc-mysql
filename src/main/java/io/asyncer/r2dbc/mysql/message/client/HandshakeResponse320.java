@@ -23,7 +23,7 @@ import io.netty.buffer.ByteBuf;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -41,17 +41,12 @@ final class HandshakeResponse320 extends ScalarClientMessage implements Handshak
 
     private final String database;
 
-    HandshakeResponse320(int envelopeId, Capability capability, String user, byte[] authentication,
+    HandshakeResponse320(Capability capability, String user, byte[] authentication,
         String database) {
-        this.header = new SslRequest320(envelopeId, capability);
+        this.header = new SslRequest320(capability);
         this.user = requireNonNull(user, "user must not be null");
         this.authentication = requireNonNull(authentication, "authentication must not be null");
         this.database = requireNonNull(database, "database must not be null");
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return header.getEnvelopeId();
     }
 
     @Override
@@ -79,8 +74,7 @@ final class HandshakeResponse320 extends ScalarClientMessage implements Handshak
 
     @Override
     public String toString() {
-        return "HandshakeResponse320{envelopeId=" + header.getEnvelopeId() +
-            ", capability=" + header.getCapability() + ", user='" + user +
+        return "HandshakeResponse320{capability=" + header.getCapability() + ", user='" + user +
             "', authentication=REDACTED, database='" + database + "'}";
     }
 

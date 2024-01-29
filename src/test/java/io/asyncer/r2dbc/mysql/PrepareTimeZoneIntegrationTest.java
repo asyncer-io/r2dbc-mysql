@@ -22,6 +22,6 @@ package io.asyncer.r2dbc.mysql;
 class PrepareTimeZoneIntegrationTest extends TimeZoneIntegrationTestSupport {
 
     PrepareTimeZoneIntegrationTest() {
-        super(sql -> true);
+        super(builder -> builder.useServerPrepareStatement(sql -> true));
     }
 }

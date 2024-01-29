@@ -17,11 +17,10 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.Readable;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,8 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
 
-    MariaDbIntegrationTestSupport(@Nullable Predicate<String> preferPrepared) {
-        super(configuration("r2dbc", false, false, null, preferPrepared));
+    MariaDbIntegrationTestSupport(
+        Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
+    ) {
+        super(configuration(customizer));
     }
 
     @Test

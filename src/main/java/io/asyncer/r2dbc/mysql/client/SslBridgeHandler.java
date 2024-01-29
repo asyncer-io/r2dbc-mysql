@@ -96,7 +96,7 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof SslState) {
             handleSslState(ctx, (SslState) evt);
             // Ignore event trigger for next handler, because it used only by this handler.
@@ -105,7 +105,7 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             handleSslCompleted(ctx, (SslHandshakeCompletionEvent) evt);
         }
 
-        super.userEventTriggered(ctx, evt);
+        ctx.fireUserEventTriggered(evt);
     }
 
     private void handleSslCompleted(ChannelHandlerContext ctx, SslHandshakeCompletionEvent evt) {

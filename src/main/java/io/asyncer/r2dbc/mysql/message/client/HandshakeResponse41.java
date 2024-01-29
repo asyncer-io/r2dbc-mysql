@@ -49,21 +49,17 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
 
     private final Map<String, String> attributes;
 
-    // private final byte zStdCompressionLevel; // When Z-Standard compression supporting
+    private final int zstdCompressionLevel;
 
-    HandshakeResponse41(int envelopeId, Capability capability, int collationId, String user,
-        byte[] authentication, String authType, String database, Map<String, String> attributes) {
-        this.header = new SslRequest41(envelopeId, capability, collationId);
+    HandshakeResponse41(Capability capability, int collationId, String user, byte[] authentication,
+        String authType, String database, Map<String, String> attributes, int zstdCompressionLevel) {
+        this.header = new SslRequest41(capability, collationId);
         this.user = requireNonNull(user, "user must not be null");
         this.authentication = requireNonNull(authentication, "authentication must not be null");
         this.database = requireNonNull(database, "database must not be null");
         this.authType = requireNonNull(authType, "authType must not be null");
         this.attributes = requireNonNull(attributes, "attributes must not be null");
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return header.getEnvelopeId();
+        this.zstdCompressionLevel = zstdCompressionLevel;
     }
 
     @Override
@@ -71,15 +67,16 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HandshakeResponse41)) {
             return false;
         }
 
         HandshakeResponse41 that = (HandshakeResponse41) o;
 
-        return header.equals(that.header) && user.equals(that.user) &&
-            Arrays.equals(authentication, that.authentication) && authType.equals(that.authType) &&
-            database.equals(that.database) && attributes.equals(that.attributes);
+        return zstdCompressionLevel == that.zstdCompressionLevel && header.equals(that.header) &&
+            user.equals(that.user) && Arrays.equals(authentication, that.authentication) &&
+            authType.equals(that.authType) && database.equals(that.database) &&
+            attributes.equals(that.attributes);
     }
 
     @Override
@@ -89,16 +86,18 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
         result = 31 * result + Arrays.hashCode(authentication);
         result = 31 * result + authType.hashCode();
         result = 31 * result + database.hashCode();
-        return 31 * result + attributes.hashCode();
+        result = 31 * result + attributes.hashCode();
+        return 31 * result + zstdCompressionLevel;
     }
 
     @Override
     public String toString() {
-        return "HandshakeResponse41{envelopeId=" + header.getEnvelopeId() +
-            ", capability=" + header.getCapability() +
+        return "HandshakeResponse41{capability=" + header.getCapability() +
             ", collationId=" + header.getCollationId() + ", user='" + user +
             "', authentication=REDACTED, authType='" + authType +
-            "', database='" + database + "', attributes=" + attributes + '}';
+            "', database='" + database + "', attributes=" + attributes +
+            ", zstdCompressionLevel=" + zstdCompressionLevel
+            + '}';
     }
 
     @Override
@@ -130,6 +129,10 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
 
         if (capability.isConnectionAttributesAllowed()) {
             writeAttrs(buf, charset);
+        }
+
+        if (capability.isZstdCompression()) {
+             buf.writeByte(zstdCompressionLevel);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 asyncer.io projects
+ * Copyright 2024 asyncer.io projects
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,14 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
+
 /**
- * Integration tests for {@link MySqlTestKitSupport} with binary protocol.
+ * Integration tests for zstd compression.
  */
-class MySqlPrepareTestKit extends MySqlTestKitSupport {
+class ZlibCompressionIntegrationTest extends CompressionIntegrationTestSupport {
 
-    MySqlPrepareTestKit() {
-        super(IntegrationTestSupport.configuration(builder ->
-            builder.useServerPrepareStatement(sql -> true)));
-    }
-
-    @Override
-    public void compoundStatement() {
-        // MySQL does not support multiple preparing results.
+    ZlibCompressionIntegrationTest() {
+        super(CompressionAlgorithm.ZLIB);
     }
 }

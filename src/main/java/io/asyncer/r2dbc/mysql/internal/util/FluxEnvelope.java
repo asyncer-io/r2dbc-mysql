@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
-import io.asyncer.r2dbc.mysql.constant.Envelopes;
+import io.asyncer.r2dbc.mysql.constant.Packets;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +28,8 @@ import reactor.core.publisher.FluxOperator;
 import reactor.core.publisher.Operators;
 import reactor.util.context.Context;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * An implementation of {@link Flux}{@code <}{@link ByteBuf}{@code >} that considers cumulate buffers as
  * envelopes of the MySQL socket protocol.
@@ -38,26 +40,26 @@ final class FluxEnvelope extends FluxOperator<ByteBuf, ByteBuf> {
 
     private final int size;
 
-    private final int start;
+    private final AtomicInteger sequenceId;
 
     private final boolean cumulate;
 
-    FluxEnvelope(Flux<? extends ByteBuf> source, ByteBufAllocator alloc, int size, int start,
+    FluxEnvelope(Flux<? extends ByteBuf> source, ByteBufAllocator alloc, int size, AtomicInteger sequenceId,
         boolean cumulate) {
         super(source);
 
         this.alloc = alloc;
         this.size = size;
-        this.start = start;
+        this.sequenceId = sequenceId;
         this.cumulate = cumulate;
     }
 
     @Override
     public void subscribe(CoreSubscriber<? super ByteBuf> actual) {
         if (cumulate) {
-            this.source.subscribe(new CumulateEnvelopeSubscriber(actual, alloc, size, start));
+            this.source.subscribe(new CumulateEnvelopeSubscriber(actual, alloc, size, sequenceId));
         } else {
-            this.source.subscribe(new DirectEnvelopeSubscriber(actual, alloc, start));
+            this.source.subscribe(new DirectEnvelopeSubscriber(actual, alloc, sequenceId));
         }
     }
 }
@@ -68,16 +70,17 @@ final class DirectEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scannab
 
     private final ByteBufAllocator alloc;
 
+    private final AtomicInteger sequenceId;
+
     private boolean done;
 
     private Subscription s;
 
-    private int envelopeId;
-
-    DirectEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc, int start) {
+    DirectEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc,
+        AtomicInteger sequenceId) {
         this.actual = actual;
         this.alloc = alloc;
-        this.envelopeId = start;
+        this.sequenceId = sequenceId;
     }
 
     @Override
@@ -97,9 +100,9 @@ final class DirectEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scannab
         }
 
         try {
-            ByteBuf header = this.alloc.buffer(Envelopes.PART_HEADER_SIZE)
+            ByteBuf header = this.alloc.ioBuffer(Packets.NORMAL_HEADER_SIZE)
                 .writeMediumLE(buf.readableBytes())
-                .writeByte(this.envelopeId++);
+                .writeByte(this.sequenceId.getAndIncrement());
 
             this.actual.onNext(header);
             this.actual.onNext(buf);
@@ -172,20 +175,20 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
 
     private final int size;
 
+    private final AtomicInteger sequenceId;
+
     private boolean done;
 
     private Subscription s;
 
     private ByteBuf cumulated;
 
-    private int envelopeId;
-
     CumulateEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc, int size,
-        int start) {
+        AtomicInteger sequenceId) {
         this.actual = actual;
         this.alloc = alloc;
         this.size = size;
-        this.envelopeId = start;
+        this.sequenceId = sequenceId;
     }
 
     @Override
@@ -217,9 +220,9 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
             while (cumulated.readableBytes() >= this.size) {
                 // It will make the cumulated be shared (e.g. refCnt() > 1), that means
                 // the reallocation of the cumulated may not be safe, see cumulate(...).
-                this.actual.onNext(this.alloc.buffer(Envelopes.PART_HEADER_SIZE)
+                this.actual.onNext(this.alloc.ioBuffer(Packets.NORMAL_HEADER_SIZE)
                     .writeMediumLE(this.size)
-                    .writeByte(this.envelopeId++));
+                    .writeByte(this.sequenceId.getAndIncrement()));
                 this.actual.onNext(cumulated.readRetainedSlice(this.size));
             }
 
@@ -275,8 +278,8 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
         ByteBuf header = null;
 
         try {
-            header = this.alloc.buffer(Envelopes.PART_HEADER_SIZE);
-            header.writeMediumLE(size).writeByte(this.envelopeId++);
+            header = this.alloc.ioBuffer(Packets.NORMAL_HEADER_SIZE);
+            header.writeMediumLE(size).writeByte(this.sequenceId.getAndIncrement());
         } catch (Throwable e) {
             if (cumulated != null) {
                 cumulated.release();
@@ -356,8 +359,8 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
                 int oldBytes = cumulated.readableBytes();
                 int bufBytes = buf.readableBytes();
                 int newBytes = oldBytes + bufBytes;
-                ByteBuf result = releasing = alloc.buffer(alloc.calculateNewCapacity(newBytes,
-                    Integer.MAX_VALUE));
+                int newCapacity = alloc.calculateNewCapacity(newBytes, Integer.MAX_VALUE);
+                ByteBuf result = releasing = alloc.ioBuffer(newCapacity);
 
                 // Avoid to calling writeBytes(...) with redundancy check and stack depth comparison.
                 result.setBytes(0, cumulated, cumulated.readerIndex(), oldBytes)

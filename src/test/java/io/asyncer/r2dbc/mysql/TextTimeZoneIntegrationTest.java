@@ -22,6 +22,6 @@ package io.asyncer.r2dbc.mysql;
 class TextTimeZoneIntegrationTest extends TimeZoneIntegrationTestSupport {
 
     TextTimeZoneIntegrationTest() {
-        super(null);
+        super(builder -> builder);
     }
 }

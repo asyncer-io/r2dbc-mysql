@@ -27,6 +27,19 @@ import reactor.core.publisher.Flux;
  */
 public interface ClientMessage {
 
+    default boolean isSequenceReset() {
+        return true;
+    }
+
+    /**
+     * Returns whether the encoded buffers can be cumulated to maximize the payload size.
+     *
+     * @return {@code true} if can be cumulated.
+     */
+    default boolean isCumulative() {
+        return true;
+    }
+
     /**
      * Encode a message into {@link ByteBuf}s.
      *

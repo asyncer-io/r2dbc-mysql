@@ -22,6 +22,7 @@ import io.asyncer.r2dbc.mysql.cache.QueryCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.codec.CodecsBuilder;
+import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.extension.CodecRegistrar;
 import io.netty.buffer.ByteBufAllocator;
@@ -35,6 +36,7 @@ import reactor.core.publisher.Mono;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
@@ -90,12 +92,14 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             String user = configuration.getUser();
             CharSequence password = configuration.getPassword();
             SslMode sslMode = ssl.getSslMode();
+            int zstdCompressionLevel = configuration.getZstdCompressionLevel();
             ConnectionContext context = new ConnectionContext(
                 configuration.getZeroDateOption(),
                 configuration.getLoadLocalInfilePath(),
                 configuration.getLocalInfileBufferSize(),
                 configuration.getServerZoneId()
             );
+            Set<CompressionAlgorithm> compressionAlgorithms = configuration.getCompressionAlgorithms();
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
@@ -106,8 +110,9 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                     configuration, queryCache,
                     ssl, address,
                     database, createDbIfNotExist,
-                    user, sslMode, context,
-                    extensions, prepare,
+                    user, sslMode,
+                    compressionAlgorithms, zstdCompressionLevel,
+                    context, extensions, prepare,
                     prepareCacheSize, token
                 ));
             }
@@ -116,8 +121,9 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 configuration, queryCache,
                 ssl, address,
                 database, createDbIfNotExist,
-                user, sslMode, context,
-                extensions, prepare,
+                user, sslMode,
+                compressionAlgorithms, zstdCompressionLevel,
+                context, extensions, prepare,
                 prepareCacheSize, password
             );
         }));
@@ -132,6 +138,8 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             final boolean createDbIfNotExist,
             final String user,
             final SslMode sslMode,
+            final Set<CompressionAlgorithm> compressionAlgorithms,
+            final int zstdCompressionLevel,
             final ConnectionContext context,
             final Extensions extensions,
             @Nullable final Predicate<String> prepare,
@@ -142,7 +150,8 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             .flatMap(client -> {
                 // Lazy init database after handshake/login
                 String db = createDbIfNotExist ? "" : database;
-                return QueryFlow.login(client, sslMode, db, user, password, context);
+                return QueryFlow.login(client, sslMode, db, user, password, compressionAlgorithms,
+                    zstdCompressionLevel, context);
             })
             .flatMap(client -> {
                 ByteBufAllocator allocator = client.getByteBufAllocator();

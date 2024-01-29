@@ -23,7 +23,7 @@ import io.netty.buffer.ByteBufUtil;
 
 import java.util.Arrays;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_BYTES;
 
@@ -36,24 +36,16 @@ final class HandshakeV9Request implements HandshakeRequest {
 
     private final HandshakeHeader header;
 
-    private final int envelopeId;
-
     private final byte[] salt;
 
-    private HandshakeV9Request(HandshakeHeader header, int envelopeId, byte[] salt) {
+    private HandshakeV9Request(HandshakeHeader header, byte[] salt) {
         this.header = requireNonNull(header, "header must not be null");
-        this.envelopeId = envelopeId;
         this.salt = requireNonNull(salt, "salt must not be null");
     }
 
     @Override
     public HandshakeHeader getHeader() {
         return header;
-    }
-
-    @Override
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     @Override
@@ -76,31 +68,31 @@ final class HandshakeV9Request implements HandshakeRequest {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof HandshakeV9Request)) {
             return false;
         }
 
         HandshakeV9Request that = (HandshakeV9Request) o;
 
-        return envelopeId == that.envelopeId && header.equals(that.header) && Arrays.equals(salt, that.salt);
+        return header.equals(that.header) && Arrays.equals(salt, that.salt);
     }
 
     @Override
     public int hashCode() {
-        int hash = 31 * header.hashCode() + envelopeId;
-        return 31 * hash + Arrays.hashCode(salt);
+        int result = header.hashCode();
+        return 31 * result + Arrays.hashCode(salt);
     }
 
     @Override
     public String toString() {
-        return "HandshakeV9Request{header=" + header + ", envelopeId=" + envelopeId + ", salt=REDACTED}";
+        return "HandshakeV9Request{header=" + header + ", salt=REDACTED}";
     }
 
-    static HandshakeV9Request decode(int envelopeId, ByteBuf buf, HandshakeHeader header) {
+    static HandshakeV9Request decode(ByteBuf buf, HandshakeHeader header) {
         int bytes = buf.readableBytes();
 
         if (bytes <= 0) {
-            return new HandshakeV9Request(header, envelopeId, EMPTY_BYTES);
+            return new HandshakeV9Request(header, EMPTY_BYTES);
         }
 
         byte[] salt;
@@ -111,6 +103,6 @@ final class HandshakeV9Request implements HandshakeRequest {
             salt = ByteBufUtil.getBytes(buf);
         }
 
-        return new HandshakeV9Request(header, envelopeId, salt);
+        return new HandshakeV9Request(header, salt);
     }
 }

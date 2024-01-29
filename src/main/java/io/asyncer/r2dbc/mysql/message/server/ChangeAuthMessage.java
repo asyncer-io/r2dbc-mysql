@@ -21,7 +21,7 @@ import io.netty.buffer.ByteBufUtil;
 
 import java.util.Arrays;
 
-import static io.asyncer.r2dbc.mysql.constant.Envelopes.TERMINAL;
+import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
@@ -29,20 +29,13 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class ChangeAuthMessage implements ServerMessage {
 
-    private final int envelopeId;
-
     private final String authType;
 
     private final byte[] salt;
 
-    private ChangeAuthMessage(int envelopeId, String authType, byte[] salt) {
-        this.envelopeId = envelopeId;
+    private ChangeAuthMessage(String authType, byte[] salt) {
         this.authType = requireNonNull(authType, "authType must not be null");
         this.salt = requireNonNull(salt, "salt must not be null");
-    }
-
-    public int getEnvelopeId() {
-        return envelopeId;
     }
 
     public String getAuthType() {
@@ -58,29 +51,26 @@ public final class ChangeAuthMessage implements ServerMessage {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof ChangeAuthMessage)) {
             return false;
         }
 
         ChangeAuthMessage that = (ChangeAuthMessage) o;
 
-        return envelopeId == that.envelopeId && authType.equals(that.authType) &&
-            Arrays.equals(salt, that.salt);
+        return authType.equals(that.authType) && Arrays.equals(salt, that.salt);
     }
 
     @Override
     public int hashCode() {
-        int result = envelopeId;
-        result = 31 * result + authType.hashCode();
-        return 31 * result + Arrays.hashCode(salt);
+        return 31 * authType.hashCode() + Arrays.hashCode(salt);
     }
 
     @Override
     public String toString() {
-        return "ChangeAuthMessage{envelopeId=" + envelopeId + ", authType='" + authType + "', salt=REDACTED}";
+        return "ChangeAuthMessage{authType='" + authType + "', salt=REDACTED}";
     }
 
-    static ChangeAuthMessage decode(int envelopeId, ByteBuf buf) {
+    static ChangeAuthMessage decode(ByteBuf buf) {
         buf.skipBytes(1); // skip generic header 0xFE of change authentication messages
 
         String authType = HandshakeHeader.readCStringAscii(buf);
@@ -90,6 +80,6 @@ public final class ChangeAuthMessage implements ServerMessage {
             ByteBufUtil.getBytes(buf);
 
         // The terminal character has been removed from salt.
-        return new ChangeAuthMessage(envelopeId, authType, salt);
+        return new ChangeAuthMessage(authType, salt);
     }
 }
