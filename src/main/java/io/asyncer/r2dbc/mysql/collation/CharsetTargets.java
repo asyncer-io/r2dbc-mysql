@@ -78,8 +78,8 @@ final class CharsetTargets {
      * Looks like JVM not support "Cp895" (also KAMENICKY, KEYBCS2), but it has some close to "Cp852".
      * <p>
      * See also:
-     * <ul><li>https://en.wikipedia.org/wiki/Kamenick%C3%BD_encoding</li><li>
-     * https://en.wikipedia.org/wiki/Code_page_852</li></ul>
+     * <ul><li><a href="https://en.wikipedia.org/wiki/Kamenick%C3%BD_encoding">Kamenick Encoding</a></li><li>
+     * <a href="https://en.wikipedia.org/wiki/Code_page_852">Cp 852</a></li></ul>
      */
     static final CharsetTarget KEYBCS2 = CP852;
 

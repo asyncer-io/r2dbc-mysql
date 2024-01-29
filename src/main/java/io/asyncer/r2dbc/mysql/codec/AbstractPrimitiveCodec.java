@@ -17,7 +17,6 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.netty.buffer.ByteBufAllocator;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 

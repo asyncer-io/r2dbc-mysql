@@ -298,7 +298,6 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * @param builder the builder of {@link MySqlConnectionConfiguration}.
      * @param mapper  the {@link OptionMapper} of {@code options}.
      */
-    @SuppressWarnings("unchecked")
     private static void setupHost(MySqlConnectionConfiguration.Builder builder, OptionMapper mapper) {
         mapper.requires(HOST).asString()
             .to(builder::host);

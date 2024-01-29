@@ -69,7 +69,7 @@ final class ReactorNettyClient implements Client {
     private static final int ST_CLOSED = 2;
 
     private static final AtomicIntegerFieldUpdater<ReactorNettyClient> STATE_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(ReactorNettyClient.class, "state");
+        AtomicIntegerFieldUpdater.newUpdater(ReactorNettyClient.class, "state");
 
     private volatile int state = ST_CONNECTED;
 
@@ -80,7 +80,7 @@ final class ReactorNettyClient implements Client {
     private final Sinks.Many<ClientMessage> requests = Sinks.many().unicast().onBackpressureBuffer();
 
     private final Sinks.Many<ServerMessage> responseProcessor =
-            Sinks.many().multicast().onBackpressureBuffer(512, false);
+        Sinks.many().multicast().onBackpressureBuffer(512, false);
 
     private final RequestQueue requestQueue = new RequestQueue();
 
@@ -89,7 +89,7 @@ final class ReactorNettyClient implements Client {
         requireNonNull(context, "context must not be null");
         requireNonNull(ssl, "ssl must not be null");
         require(responseProcessor.asFlux() instanceof Subscriber,
-                "responseProcessor(" + responseProcessor + ") must be a Subscriber");
+            "responseProcessor(" + responseProcessor + ") must be a Subscriber");
 
         this.connection = connection;
         this.context = context;
@@ -155,11 +155,11 @@ final class ReactorNettyClient implements Client {
             }
 
             Flux<T> responses = OperatorUtils.discardOnCancel(
-                                                     responseProcessor.asFlux()
-                                                                      .doOnSubscribe(ignored -> emitNextRequest(request))
-                                                                      .handle(handler)
-                                                                      .doOnTerminate(requestQueue))
-                                             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+                responseProcessor.asFlux()
+                    .doOnSubscribe(ignored -> emitNextRequest(request))
+                    .handle(handler)
+                    .doOnTerminate(requestQueue)
+            ).doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
 
             requestQueue.submit(RequestTask.wrap(request, sink, responses));
         }).flatMapMany(Function.identity());
@@ -181,17 +181,16 @@ final class ReactorNettyClient implements Client {
             }
 
             Flux<T> responses = responseProcessor
-                    .asFlux()
-                    .doOnSubscribe(ignored -> exchangeable.subscribe(
-                            this::emitNextRequest,
-                            e ->
-                                requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
-                    )
-                    .handle(exchangeable)
-                    .doOnTerminate(() -> {
-                        exchangeable.dispose();
-                        requestQueue.run();
-                    });
+                .asFlux()
+                .doOnSubscribe(ignored -> exchangeable.subscribe(
+                    this::emitNextRequest,
+                    e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST)
+                ))
+                .handle(exchangeable)
+                .doOnTerminate(() -> {
+                    exchangeable.dispose();
+                    requestQueue.run();
+                });
 
             requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
                 .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
@@ -201,36 +200,32 @@ final class ReactorNettyClient implements Client {
 
     @Override
     public Mono<Void> close() {
-        return Mono
-                .<Mono<Void>>create(sink -> {
-                    if (state == ST_CLOSED) {
-                        logger.debug("Close request ignored (connection already closed)");
-                        sink.success();
-                        return;
+        return Mono.<Mono<Void>>create(sink -> {
+            if (state == ST_CLOSED) {
+                logger.debug("Close request ignored (connection already closed)");
+                sink.success();
+                return;
+            }
+
+            logger.debug("Close request accepted");
+
+            requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
+                Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
+
+                if (result != Sinks.EmitResult.OK) {
+                    logger.error("Exit message sending failed due to {}, force closing", result);
+                } else {
+                    if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
+                        logger.debug("Exit message sent");
+                    } else {
+                        logger.debug("Exit message sent (duplicated / connection already closed)");
                     }
-
-                    logger.debug("Close request accepted");
-
-                    requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
-                        Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
-
-                        if (result != Sinks.EmitResult.OK) {
-                            logger.error("Exit message sending failed due to {}, force closing", result);
-                        } else {
-                            if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
-                                logger.debug("Exit message sent");
-                            } else {
-                                logger.debug("Exit message sent (duplicated / connection already closed)");
-                            }
-                        }
-                    })));
-                })
-                .flatMap(Function.identity())
-                .onErrorResume(e -> {
-                    logger.error("Exit message sending failed, force closing", e);
-                    return Mono.empty();
-                })
-                .then(forceClose());
+                }
+            })));
+        }).flatMap(Function.identity()).onErrorResume(e -> {
+            logger.error("Exit message sending failed, force closing", e);
+            return Mono.empty();
+        }).then(forceClose());
     }
 
     @Override

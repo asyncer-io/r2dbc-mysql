@@ -41,6 +41,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * An abstraction that wraps the networking part of exchanging methods.
  */
 public interface Client {
+
     InternalLogger logger = InternalLoggerFactory.getInstance(Client.class);
 
     /**

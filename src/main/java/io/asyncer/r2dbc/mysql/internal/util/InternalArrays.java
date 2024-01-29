@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /**
- * An utility with constants of arrays for reduce temporary objects and ensure immutability, do NOT use it
+ * A utility with constants of arrays for reduce temporary objects and ensure immutability, do NOT use it
  * outer than {@literal r2dbc-mysql}.
  */
 public final class InternalArrays {

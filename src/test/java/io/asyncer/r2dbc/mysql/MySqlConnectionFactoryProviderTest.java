@@ -445,6 +445,6 @@ final class AllTruePredicate implements Predicate<String> {
 final class NotPredicate {
 
     public boolean test(String s) {
-        return s.length() > 0;
+        return !s.isEmpty();
     }
 }

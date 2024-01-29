@@ -28,7 +28,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * Operator utility.
  * <p>
  * This is a slightly altered version of R2DBC SQL Server's implementation:
- * https://github.com/r2dbc/r2dbc-mssql
+ * <a href="https://github.com/r2dbc/r2dbc-mssql">r2dbc-mssql</a>
  */
 public final class OperatorUtils {
 

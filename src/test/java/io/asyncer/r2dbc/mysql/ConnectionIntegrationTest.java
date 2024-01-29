@@ -457,6 +457,7 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
 
     @ParameterizedTest
     @ValueSource(strings = { "stations", "users" })
+    @SuppressWarnings("SqlSourceToSinkFlow")
     void loadDataLocalInfile(String name) throws URISyntaxException, IOException {
         URL tdlUrl = Objects.requireNonNull(getClass().getResource(String.format("/local/%s.sql", name)));
         URL csvUrl = Objects.requireNonNull(getClass().getResource(String.format("/local/%s.csv", name)));

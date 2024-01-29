@@ -19,6 +19,7 @@ package io.asyncer.r2dbc.mysql;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.Result;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
@@ -84,7 +85,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         super(configuration);
     }
 
-    @SuppressWarnings({ "varargs", "unchecked" })
+    @SuppressWarnings({ "varargs", "unchecked", "SqlSourceToSinkFlow" })
     <T> void testType(Type type, boolean valueSelect, String defined, T... values) {
         String tdl = String.format("CREATE TEMPORARY TABLE test(id INT PRIMARY KEY AUTO_INCREMENT,value %s)",
             defined);
@@ -107,6 +108,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         "/* PING */ SELECT 1", "SELECT 1 /* ping*/", " /* ping */ SELECT 1",
         "/*ping*/ SELECT 1", "/*to ping or not to ping*/ SELECT 1"
     })
+    @SuppressWarnings("SqlSourceToSinkFlow")
     void badLightweightPing(String value) {
         complete(connection -> Flux.from(connection.createStatement(value).execute())
             .flatMap(result -> result.map(r -> r.get(0, Integer.class)))
@@ -220,7 +222,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * See https://github.com/mirromutth/r2dbc-mysql/issues/62 .
+     * See <a href="https://github.com/mirromutth/r2dbc-mysql/issues/62">Issue 62</a> .
      */
     @Test
     void varbinary() {
@@ -329,39 +331,20 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
 
     @Test
     void timeDuration() {
-        Duration negativeOne = Duration.ofSeconds(-1);
-        Duration negativeOneDay = Duration.ofSeconds(-TimeUnit.DAYS.toSeconds(1) - 1);
-        Duration oneDayOneSecond = Duration.ofSeconds(TimeUnit.DAYS.toSeconds(1) + 1);
-        LocalTime lastSecond = LocalTime.of(23, 59, 59);
-        LocalTime firstSecond = LocalTime.of(0, 0, 1);
-
-        List<Tuple2<Duration, LocalTime>> dataCases = Arrays.asList(Tuples.of(negativeOne, lastSecond),
-            Tuples.of(negativeOneDay, lastSecond), Tuples.of(oneDayOneSecond, firstSecond));
         String tdl = "CREATE TEMPORARY TABLE test(id INT PRIMARY KEY AUTO_INCREMENT,value TIME)";
         complete(connection -> Mono.from(connection.createStatement(tdl).execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-            .thenMany(Flux.fromIterable(dataCases)
+            .thenMany(timeDurationCases()
                 .concatMap(pair -> testTimeDuration(connection, pair.getT1(), pair.getT2()))));
     }
 
     @DisabledIf("envIsLessThanMySql56")
     @Test
     void timeDuration6() {
-        long seconds = TimeUnit.HOURS.toSeconds(8) + TimeUnit.MINUTES.toSeconds(5) + 45;
-        Duration one = Duration.ofSeconds(0, -1000);
-        Duration aDuration = Duration.ofSeconds(seconds, 45_610_000);
-        Duration oneDay = Duration.ofSeconds(-TimeUnit.DAYS.toSeconds(1), -1000);
-        Duration oneDayOne = Duration.ofSeconds(TimeUnit.DAYS.toSeconds(1), 1000);
-        LocalTime aTime = LocalTime.of(8, 5, 45, 45_610_000);
-        LocalTime lastMicro = LocalTime.of(23, 59, 59, 999_999_000);
-        LocalTime firstMicro = LocalTime.of(0, 0, 0, 1000);
-
-        List<Tuple2<Duration, LocalTime>> dataCases = Arrays.asList(Tuples.of(one, lastMicro),
-            Tuples.of(oneDay, lastMicro), Tuples.of(oneDayOne, firstMicro), Tuples.of(aDuration, aTime));
         String tdl = "CREATE TEMPORARY TABLE test(id INT PRIMARY KEY AUTO_INCREMENT,value TIME(6))";
         complete(connection -> Mono.from(connection.createStatement(tdl).execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
-            .thenMany(Flux.fromIterable(dataCases)
+            .thenMany(timeDuration6Cases()
                 .concatMap(pair -> testTimeDuration(connection, pair.getT1(), pair.getT2()))));
     }
 
@@ -422,7 +405,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * See https://github.com/mirromutth/r2dbc-mysql/issues/45 .
+     * See <a href="https://github.com/mirromutth/r2dbc-mysql/issues/45">Issue 45</a> .
      */
     @Test
     void selectFromOtherDatabase() {
@@ -432,7 +415,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * See https://github.com/mirromutth/r2dbc-mysql/issues/50 .
+     * See <a href="https://github.com/mirromutth/r2dbc-mysql/issues/50">Issue 50</a> .
      */
     @Test
     void multiQueries() {
@@ -458,7 +441,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * See https://github.com/mirromutth/r2dbc-mysql/issues/69 .
+     * See <a href="https://github.com/mirromutth/r2dbc-mysql/issues/69">Issue 69</a> .
      */
     @Test
     void consumePortion() {
@@ -481,7 +464,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * https://github.com/mirromutth/r2dbc-mysql/issues/73 .
+     * <a href="https://github.com/mirromutth/r2dbc-mysql/issues/73">Issue 73</a> .
      */
     @Test
     void ignoreResult() {
@@ -510,7 +493,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     }
 
     /**
-     * See https://github.com/mirromutth/r2dbc-mysql/issues/90 .
+     * See <a href="https://github.com/mirromutth/r2dbc-mysql/issues/90">Issue 90</a> .
      */
     @Test
     void foundRows() {
@@ -532,9 +515,9 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     /**
      * See also:
      *
-     * <ul><li>https://github.com/mirromutth/r2dbc-mysql/issues/156</li>
-     * <li>https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html</li>
-     * <li>https://github.com/mirromutth/r2dbc-mysql/issues/90</li></ul>
+     * <ul><li><a href="https://github.com/mirromutth/r2dbc-mysql/issues/156">Issue 156</a></li><li>
+     * <a href="https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html">INSERT-ON-DUPLICATE</a></li>
+     * <li><a href="https://github.com/mirromutth/r2dbc-mysql/issues/90">Issue 90</a></li></ul>
      * <p>
      * The {@code Capability.FOUND_ROWS} has been enabled by default, the first number of affected rows is
      * 1, thesecond one is 2, and the third is 1 (found/touched 1, changed 0).
@@ -681,6 +664,37 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
                 .execute()))
             .flatMap(QueryIntegrationTestSupport::extractRowsUpdated)
             .then();
+    }
+
+    private static Flux<Tuple2<Duration, LocalTime>> timeDurationCases() {
+        Duration negativeOne = Duration.ofSeconds(-1);
+        Duration negativeOneDay = Duration.ofSeconds(-TimeUnit.DAYS.toSeconds(1) - 1);
+        Duration oneDayOneSecond = Duration.ofSeconds(TimeUnit.DAYS.toSeconds(1) + 1);
+        LocalTime lastSecond = LocalTime.of(23, 59, 59);
+        LocalTime firstSecond = LocalTime.of(0, 0, 1);
+
+        return Flux.just(
+            Tuples.of(negativeOne, lastSecond),
+            Tuples.of(negativeOneDay, lastSecond),
+            Tuples.of(oneDayOneSecond, firstSecond)
+        );
+    }
+
+    private static Flux<Tuple2<Duration, LocalTime>> timeDuration6Cases() {
+        long seconds = TimeUnit.HOURS.toSeconds(8) + TimeUnit.MINUTES.toSeconds(5) + 45;
+        Duration one = Duration.ofSeconds(0, -1000);
+        Duration aDuration = Duration.ofSeconds(seconds, 45_610_000);
+        Duration oneDay = Duration.ofSeconds(-TimeUnit.DAYS.toSeconds(1), -1000);
+        Duration oneDayOne = Duration.ofSeconds(TimeUnit.DAYS.toSeconds(1), 1000);
+        LocalTime aTime = LocalTime.of(8, 5, 45, 45_610_000);
+        LocalTime lastMicro = LocalTime.of(23, 59, 59, 999_999_000);
+        LocalTime firstMicro = LocalTime.of(0, 0, 0, 1000);
+
+        return Flux.just(
+            Tuples.of(one, lastMicro),
+            Tuples.of(oneDay, lastMicro),
+            Tuples.of(oneDayOne, firstMicro), Tuples.of(aDuration, aTime)
+        );
     }
 
     private static <T> List<Optional<T>> convertOptional(T[] values) {
