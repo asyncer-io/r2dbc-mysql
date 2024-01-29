@@ -20,7 +20,7 @@ import io.r2dbc.spi.R2dbcException;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
 
 /**
- * An utility considers generic exceptions of {@link Client}.
+ * A utility considers generic exceptions to {@link Client}.
  */
 final class ClientExceptions {
 

@@ -47,7 +47,8 @@ final class DefaultHostnameVerifier implements HostnameVerifier {
 
     static final DefaultHostnameVerifier INSTANCE = new DefaultHostnameVerifier();
 
-    private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultHostnameVerifier.class);
+    private static final InternalLogger logger =
+        InternalLoggerFactory.getInstance(DefaultHostnameVerifier.class);
 
     private static final boolean LOG_DEBUG = logger.isDebugEnabled();
 

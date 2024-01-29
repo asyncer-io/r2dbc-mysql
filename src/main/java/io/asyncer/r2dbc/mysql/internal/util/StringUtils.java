@@ -62,7 +62,7 @@ public final class StringUtils {
     /**
      * Extends a SQL statement with {@code RETURNING} clause.
      *
-     * @param sql the original SQL statement.
+     * @param sql       the original SQL statement.
      * @param returning quoted column identifiers.
      * @return the SQL statement with {@code RETURNING} clause.
      */

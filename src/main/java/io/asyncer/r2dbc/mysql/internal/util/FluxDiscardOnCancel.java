@@ -28,7 +28,7 @@ import reactor.core.publisher.FluxOperator;
  * client code expects to start a request/response conversation without any previous response state.
  * <p>
  * This is a slightly altered version of R2DBC SQL Server's implementation:
- * https://github.com/r2dbc/r2dbc-mssql
+ * <a href="https://github.com/r2dbc/r2dbc-mssql">r2dbc-mssql</a>
  */
 final class FluxDiscardOnCancel<T> extends FluxOperator<T, T> {
 

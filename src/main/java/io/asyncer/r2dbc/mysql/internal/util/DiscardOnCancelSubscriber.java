@@ -98,7 +98,6 @@ class DiscardOnCancelSubscriber<T, S extends Subscription, A extends CoreSubscri
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public final Object scanUnsafe(Attr key) {
         if (key == Attr.PARENT) {
             return this.s;
@@ -113,7 +112,6 @@ class DiscardOnCancelSubscriber<T, S extends Subscription, A extends CoreSubscri
         }
     }
 
-    @SuppressWarnings("unchecked")
     static <T> CoreSubscriber<T> create(CoreSubscriber<? super T> s, boolean fuseable) {
         if (fuseable) {
             if (s instanceof Fuseable.ConditionalSubscriber) {

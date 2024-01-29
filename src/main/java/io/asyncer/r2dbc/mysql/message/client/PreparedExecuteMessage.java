@@ -147,7 +147,7 @@ public final class PreparedExecuteMessage implements ClientMessage, Disposable {
             MySqlParameter value = values[i];
 
             if (value.isNull()) {
-                nullMap[i >> 3] |= 1 << (i & 7);
+                nullMap[i >> 3] |= (byte) (1 << (i & 7));
             } else {
                 nonNull.add(value);
             }

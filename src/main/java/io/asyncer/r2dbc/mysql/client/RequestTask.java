@@ -79,19 +79,19 @@ final class RequestTask<T> {
             task = new RequestTask<>(null, sink, supplier);
 
         }
-        sink.onCancel(() -> task.cancel0());
+        sink.onCancel(task::cancel0);
         return task;
     }
 
     static <T> RequestTask<T> wrap(Flux<? extends ClientMessage> messages, MonoSink<T> sink, T supplier) {
         final RequestTask<T> task =  new RequestTask<>(new DisposableFlux(messages), sink, supplier);
-        sink.onCancel(() -> task.cancel0());
+        sink.onCancel(task::cancel0);
         return task;
     }
 
     static <T> RequestTask<T> wrap(MonoSink<T> sink, T supplier) {
         final RequestTask<T> task = new RequestTask<>(null, sink, supplier);
-        sink.onCancel(() -> task.cancel0());
+        sink.onCancel(task::cancel0);
         return task;
     }
 

@@ -54,7 +54,7 @@ public final class VarIntUtils {
      * <p>
      * Note: it will change {@code firstPart} and {@code secondPart} readerIndex if necessary.
      *
-     * @param firstPart the first part of a readable buffer include a part of the var integer.
+     * @param firstPart  the first part of a readable buffer include a part of the var integer.
      * @param secondPart the second part of a readable buffer include subsequent part of the var integer.
      * @return A var integer read from buffer.
      */
