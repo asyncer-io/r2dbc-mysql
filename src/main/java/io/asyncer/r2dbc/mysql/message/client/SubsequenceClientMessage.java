@@ -17,7 +17,8 @@
 package io.asyncer.r2dbc.mysql.message.client;
 
 /**
- * An abstraction of {@link ClientMessage} considers as a subsequence of a request message.
+ * An abstraction of {@link ClientMessage} that considers as a subsequence of responses from a request from
+ * the server.
  * <p>
  * All encoded buffers will not be cumulated.
  */

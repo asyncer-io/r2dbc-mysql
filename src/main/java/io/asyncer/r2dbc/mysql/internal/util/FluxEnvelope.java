@@ -57,7 +57,7 @@ final class FluxEnvelope extends FluxOperator<ByteBuf, ByteBuf> {
         if (cumulate) {
             this.source.subscribe(new CumulateEnvelopeSubscriber(actual, alloc, size, start));
         } else {
-            this.source.subscribe(new DirectEnvelopeSubscriber(actual, alloc, size, start));
+            this.source.subscribe(new DirectEnvelopeSubscriber(actual, alloc, start));
         }
     }
 }
@@ -68,19 +68,15 @@ final class DirectEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scannab
 
     private final ByteBufAllocator alloc;
 
-    private final int size;
-
     private boolean done;
 
     private Subscription s;
 
     private int envelopeId;
 
-    DirectEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc, int size,
-        int start) {
+    DirectEnvelopeSubscriber(CoreSubscriber<? super ByteBuf> actual, ByteBufAllocator alloc, int start) {
         this.actual = actual;
         this.alloc = alloc;
-        this.size = size;
         this.envelopeId = start;
     }
 
@@ -155,7 +151,6 @@ final class DirectEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scannab
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public Object scanUnsafe(Attr key) {
         if (key == Attr.PARENT) {
             return this.s;
@@ -322,7 +317,6 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
     public Object scanUnsafe(Attr key) {
         if (key == Attr.PARENT) {
             return this.s;
