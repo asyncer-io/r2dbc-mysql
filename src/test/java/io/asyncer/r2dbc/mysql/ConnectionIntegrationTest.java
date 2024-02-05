@@ -18,7 +18,6 @@ package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -28,7 +27,6 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ArrayNode;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ObjectNode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -60,20 +58,6 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
 
     ConnectionIntegrationTest() {
         super(config);
-    }
-
-    @BeforeAll
-    static void initGlobalVariables() {
-        // TODO: move it to GitHub Actions instead of test code
-        MySqlConnectionFactory.from(config)
-            .create()
-            .flatMap(conn -> conn.createStatement("SET GLOBAL local_infile=ON")
-                .execute()
-                .flatMap(MySqlResult::getRowsUpdated)
-                .then(conn.close())
-                .onErrorResume(e -> conn.close().then(Mono.error(e))))
-            .as(StepVerifier::create)
-            .verifyComplete();
     }
 
     @Test

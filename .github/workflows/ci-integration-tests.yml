@@ -22,10 +22,15 @@ jobs:
       - name: Shutdown the Default MySQL
         run: sudo service mysql stop
       - name: Set up MySQL ${{ matrix.mysql-version }}
-        uses: asyncer-io/mysql-action@trunk
-        with:
-          mysql version: ${{ matrix.mysql-version }}
-          mysql database: r2dbc
-          mysql root password: r2dbc-password!@
+        env:
+          MYSQL_DATABASE: r2dbc
+          MYSQL_ROOT_PASSWORD: r2dbc-password!@
+          MYSQL_VERSION: ${{ matrix.mysql-version }}
+        run: docker-compose -f ${{ github.workspace }}/containers/mysql-compose.yml up -d
       - name: Integration test with MySQL ${{ matrix.mysql-version }}
-        run: ./mvnw -B verify -Dmaven.javadoc.skip=true -Dmaven.surefire.skip=true -Dtest.mysql.password=r2dbc-password!@ -Dtest.mysql.version=${{ matrix.mysql-version }} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
+        run: |
+          ./mvnw -B verify -Dmaven.javadoc.skip=true \
+          -Dmaven.surefire.skip=true \
+          -Dtest.mysql.password=r2dbc-password!@ \
+          -Dtest.mysql.version=${{ matrix.mysql-version }} \
+          -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
