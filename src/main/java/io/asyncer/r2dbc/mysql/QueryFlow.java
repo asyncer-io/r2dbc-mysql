@@ -70,6 +70,8 @@ import reactor.core.publisher.Sinks;
 import reactor.core.publisher.SynchronousSink;
 import reactor.util.concurrent.Queues;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1079,8 +1081,11 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
     private static boolean isZstdSupported() {
         try {
-            Class.forName("com.github.luben.zstd.Zstd", false,
-                LoginExchangeable.class.getClassLoader());
+            ClassLoader loader = AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> {
+                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                return cl == null ? ClassLoader.getSystemClassLoader() : cl;
+            });
+            Class.forName("com.github.luben.zstd.Zstd", false, loader);
             return true;
         } catch (ClassNotFoundException e) {
             return false;
