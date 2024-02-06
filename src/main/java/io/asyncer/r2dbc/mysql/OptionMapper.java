@@ -106,7 +106,8 @@ final class Source<T> {
         throw new IllegalArgumentException(toMessage(value, type.getTypeName()));
     }
 
-    <R> Source<R[]> asArray(Class<R[]> arrayType, Function<String, R> mapper, IntFunction<R[]> generator) {
+    <R> Source<R[]> asArray(Class<R[]> arrayType, Function<String, R> mapper,
+        Function<String, String[]> splitter, IntFunction<R[]> generator) {
         if (value == null) {
             return nilSource();
         }
@@ -116,7 +117,7 @@ final class Source<T> {
         } else if (value instanceof String[]) {
             return new Source<>(mapArray((String[]) value, mapper, generator));
         } else if (value instanceof String) {
-            String[] strings = ((String) value).split(",");
+            String[] strings = splitter.apply((String) value);
 
             if (arrayType.isInstance(strings)) {
                 return new Source<>(arrayType.cast(strings));

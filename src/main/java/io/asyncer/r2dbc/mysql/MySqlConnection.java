@@ -37,7 +37,6 @@ import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SynchronousSink;
@@ -46,6 +45,7 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -447,12 +447,12 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         }
 
         return Mono.error(
-                new R2dbcNonTransientResourceException(
-                        "Statement timeout is not supported by server version " + serverVersion,
-                        "HY000",
-                        -1,
-                        sql
-                )
+            new R2dbcNonTransientResourceException(
+                "Statement timeout is not supported by server version " + serverVersion,
+                "HY000",
+                -1,
+                sql
+            )
         );
     }
 
@@ -467,38 +467,23 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     /**
      * Initialize a {@link MySqlConnection} after login.
      *
-     * @param client       must be logged-in.
-     * @param codecs       the {@link Codecs}.
-     * @param context      must be initialized.
-     * @param database     the database that should be lazy init.
-     * @param queryCache   the cache of {@link Query}.
-     * @param prepareCache the cache of server-preparing result.
-     * @param prepare      judging for prefer use prepare statement to execute simple query.
+     * @param client           must be logged-in.
+     * @param codecs           the {@link Codecs}.
+     * @param context          must be initialized.
+     * @param database         the database that should be lazy init.
+     * @param queryCache       the cache of {@link Query}.
+     * @param prepareCache     the cache of server-preparing result.
+     * @param sessionVariables the session variables to set.
+     * @param prepare          judging for prefer use prepare statement to execute simple query.
      * @return a {@link Mono} will emit an initialized {@link MySqlConnection}.
      */
     static Mono<MySqlConnection> init(
         Client client, Codecs codecs, ConnectionContext context, String database,
         QueryCache queryCache, PrepareCache prepareCache,
-        @Nullable Predicate<String> prepare
+        List<String> sessionVariables, @Nullable Predicate<String> prepare
     ) {
-        StringBuilder query = new StringBuilder(128)
-            .append("SELECT ")
-            .append(transactionIsolationColumn(context))
-            .append(",@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
-
-        Function<MySqlResult, Publisher<InitData>> handler;
-
-        if (context.shouldSetServerZoneId()) {
-            query.append(",@@system_time_zone AS s,@@time_zone AS t");
-            handler = MySqlConnection::fullInit;
-        } else {
-            handler = MySqlConnection::init;
-        }
-
-        Mono<MySqlConnection> connection = new TextSimpleStatement(client, codecs, context, query.toString())
-            .execute()
-            .flatMap(handler)
-            .last()
+        Mono<MySqlConnection> connection = initSessionVariables(client, sessionVariables)
+            .then(loadSessionVariables(client, codecs, context))
             .map(data -> {
                 ZoneId serverZoneId = data.serverZoneId;
                 if (serverZoneId != null) {
@@ -514,29 +499,83 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             return connection;
         }
 
-        requireNonEmpty(database, "database must not be empty");
+        return connection.flatMap(c -> initDatabase(client, database).thenReturn(c));
+    }
 
-        return connection.flatMap(conn -> client.exchange(new InitDbMessage(database), INIT_DB)
+    private static Mono<Void> initSessionVariables(Client client, List<String> sessionVariables) {
+        if (sessionVariables.isEmpty()) {
+            return Mono.empty();
+        }
+
+        StringBuilder query = new StringBuilder(sessionVariables.size() * 32 + 16).append("SET ");
+        boolean comma = false;
+
+        for (String variable : sessionVariables) {
+            if (variable.isEmpty()) {
+                continue;
+            }
+
+            if (comma) {
+                query.append(',');
+            } else {
+                comma = true;
+            }
+
+            if (variable.startsWith("@")) {
+                query.append(variable);
+            } else {
+                query.append("SESSION ").append(variable);
+            }
+        }
+
+        return QueryFlow.executeVoid(client, query.toString());
+    }
+
+    private static Mono<InitData> loadSessionVariables(
+        Client client, Codecs codecs, ConnectionContext context
+    ) {
+        StringBuilder query = new StringBuilder(160)
+            .append("SELECT ")
+            .append(transactionIsolationColumn(context))
+            .append(",@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
+
+        Function<MySqlResult, Flux<InitData>> handler;
+
+        if (context.shouldSetServerZoneId()) {
+            query.append(",@@system_time_zone AS s,@@time_zone AS t");
+            handler = MySqlConnection::fullInit;
+        } else {
+            handler = MySqlConnection::init;
+        }
+
+        return new TextSimpleStatement(client, codecs, context, query.toString())
+            .execute()
+            .flatMap(handler)
+            .last();
+    }
+
+    private static Mono<Void> initDatabase(Client client, String database) {
+        return client.exchange(new InitDbMessage(database), INIT_DB)
             .last()
             .flatMap(success -> {
                 if (success) {
-                    return Mono.just(conn);
+                    return Mono.empty();
                 }
 
                 String sql = "CREATE DATABASE IF NOT EXISTS " + StringUtils.quoteIdentifier(database);
 
                 return QueryFlow.executeVoid(client, sql)
-                    .then(client.exchange(new InitDbMessage(database), INIT_DB_AFTER).then(Mono.just(conn)));
-            }));
+                    .then(client.exchange(new InitDbMessage(database), INIT_DB_AFTER).then());
+            });
     }
 
-    private static Publisher<InitData> init(MySqlResult r) {
+    private static Flux<InitData> init(MySqlResult r) {
         return r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
             convertLockWaitTimeout(row.get(1, Long.class)),
             row.get(2, String.class), null));
     }
 
-    private static Publisher<InitData> fullInit(MySqlResult r) {
+    private static Flux<InitData> fullInit(MySqlResult r) {
         return r.map((row, meta) -> {
             IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
             long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
