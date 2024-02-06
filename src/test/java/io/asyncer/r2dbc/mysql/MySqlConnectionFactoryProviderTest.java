@@ -26,6 +26,8 @@ import io.r2dbc.spi.Option;
 import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -36,10 +38,13 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.PASSWORD_PUBLISHER;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.USE_SERVER_PREPARE_STATEMENT;
@@ -445,6 +450,68 @@ class MySqlConnectionFactoryProviderTest {
         assertThat(ConnectionFactories.get(options)).isExactlyInstanceOf(MySqlConnectionFactory.class);
     }
 
+    @ParameterizedTest
+    @MethodSource
+    void sessionVariables(String input, List<String> expected) {
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+            .option(DRIVER, "mysql")
+            .option(HOST, "127.0.0.1")
+            .option(USER, "root")
+            .option(Option.valueOf("sessionVariables"), input)
+            .build();
+
+        assertThat(MySqlConnectionFactoryProvider.setup(options).getSessionVariables()).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> sessionVariables() {
+        return Stream.of(
+            Arguments.of("", Collections.emptyList()),
+            Arguments.of(" ", Collections.singletonList("")),
+            Arguments.of("a=b", Collections.singletonList("a=b")),
+            Arguments.of(
+                "sql_mode=ANSI_QUOTE,c=d;e=f",
+                Arrays.asList("sql_mode=ANSI_QUOTE", "c=d", "e=f")),
+            Arguments.of(
+                "sql_mode='ANSI_QUOTES,b=c,c=d';c=d,e=f",
+                Arrays.asList("sql_mode='ANSI_QUOTES,b=c,c=d'", "c=d", "e=f")),
+            Arguments.of(
+                "sql_mode=(ANSI_QUOTES,'b=c,c=d,max(');c=(d,e='f)');",
+                Arrays.asList("sql_mode=(ANSI_QUOTES,'b=c,c=d,max(')", "c=(d,e='f)')", "")),
+            Arguments.of(
+                "sql_mode=(ANSI_QUOTES,'b=c,c=d,max(');c=(d,e='f)'); ",
+                Arrays.asList("sql_mode=(ANSI_QUOTES,'b=c,c=d,max(')", "c=(d,e='f)')", "")),
+            Arguments.of(
+                "sql_mode=(ANSI_QUOTES,\"b=c',c=d,max(\");c=(d,'e=\"f)\");',)",
+                Arrays.asList("sql_mode=(ANSI_QUOTES,\"b=c',c=d,max(\")", "c=(d,'e=\"f)\");',)")),
+            Arguments.of(
+                "sql_mode=(((;),);)",
+                Collections.singletonList("sql_mode=(((;),);)")),
+            Arguments.of(
+                "sql_mode=(((';),););',);a=),);d=)",
+                Arrays.asList("sql_mode=(((';),););',);a=),)", "d=)")),
+            Arguments.of(
+                "sql_mode=((\"(';),)\";);',);)a=,)';),b=(();)",
+                Arrays.asList("sql_mode=((\"(';),)\";);',);)a=,)';)", "b=(();)")),
+            Arguments.of(
+                "sql_mode=((\"(';),)\";);',);)a=,)'b=;)\\,c=(();)",
+                Arrays.asList("sql_mode=((\"(';),)\";);',);)a=,)'b=;)\\", "c=(();)")),
+            Arguments.of(
+                "sql_mode='\\','",
+                Collections.singletonList("sql_mode='\\','")),
+            Arguments.of(
+                "sql_mode=\",\\\",'\\\\',',\"",
+                Collections.singletonList("sql_mode=\",\\\",'\\\\',',\"")),
+            Arguments.of(
+                "sql_mode='ANSI_QUOTES,STRICT_TRANS_TABLES'," +
+                    "transaction_isolation=(SELECT UPPER(`it's ``lvl```) FROM `lvl` WHERE `type` = 'r2dbc')" +
+                    ",`foo``bar`='FOO,BAR'",
+                Arrays.asList(
+                    "sql_mode='ANSI_QUOTES,STRICT_TRANS_TABLES'",
+                    "transaction_isolation=(SELECT UPPER(`it's ``lvl```) FROM `lvl` WHERE `type` = 'r2dbc')",
+                    "`foo``bar`='FOO,BAR'"
+                ))
+        );
+    }
 }
 
 final class MockException extends RuntimeException {

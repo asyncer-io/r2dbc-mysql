@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
@@ -100,6 +101,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 configuration.getServerZoneId()
             );
             Set<CompressionAlgorithm> compressionAlgorithms = configuration.getCompressionAlgorithms();
+            List<String> sessionVariables = configuration.getSessionVariables();
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
@@ -112,7 +114,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                     database, createDbIfNotExist,
                     user, sslMode,
                     compressionAlgorithms, zstdCompressionLevel,
-                    context, extensions, prepare,
+                    context, extensions, sessionVariables, prepare,
                     prepareCacheSize, token
                 ));
             }
@@ -123,7 +125,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 database, createDbIfNotExist,
                 user, sslMode,
                 compressionAlgorithms, zstdCompressionLevel,
-                context, extensions, prepare,
+                context, extensions, sessionVariables, prepare,
                 prepareCacheSize, password
             );
         }));
@@ -142,6 +144,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             final int zstdCompressionLevel,
             final ConnectionContext context,
             final Extensions extensions,
+            final List<String> sessionVariables,
             @Nullable final Predicate<String> prepare,
             final int prepareCacheSize,
             @Nullable final CharSequence password) {
@@ -163,7 +166,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                     registrar.register(allocator, builder));
 
                 return MySqlConnection.init(client, builder.build(), context, db, queryCache.get(),
-                    prepareCache, prepare);
+                    prepareCache, sessionVariables, prepare);
             });
     }
 

@@ -20,6 +20,7 @@ import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
 import io.asyncer.r2dbc.mysql.extension.Extension;
+import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
@@ -94,6 +95,8 @@ public final class MySqlConnectionConfiguration {
     @Nullable
     private final Predicate<String> preferPrepareStatement;
 
+    private final List<String> sessionVariables;
+
     @Nullable
     private final Path loadLocalInfilePath;
 
@@ -120,6 +123,7 @@ public final class MySqlConnectionConfiguration {
         ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
+        List<String> sessionVariables,
         @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
         int queryCacheSize, int prepareCacheSize,
         Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
@@ -140,13 +144,14 @@ public final class MySqlConnectionConfiguration {
         this.database = database == null || database.isEmpty() ? "" : database;
         this.createDatabaseIfNotExist = createDatabaseIfNotExist;
         this.preferPrepareStatement = preferPrepareStatement;
+        this.sessionVariables = sessionVariables;
         this.loadLocalInfilePath = loadLocalInfilePath;
         this.localInfileBufferSize = localInfileBufferSize;
         this.queryCacheSize = queryCacheSize;
         this.prepareCacheSize = prepareCacheSize;
         this.compressionAlgorithms = compressionAlgorithms;
         this.zstdCompressionLevel = zstdCompressionLevel;
-        this.loopResources = loopResources == null? TcpResources.get() : loopResources;
+        this.loopResources = loopResources == null ? TcpResources.get() : loopResources;
         this.extensions = extensions;
         this.passwordPublisher = passwordPublisher;
     }
@@ -220,6 +225,10 @@ public final class MySqlConnectionConfiguration {
         return preferPrepareStatement;
     }
 
+    List<String> getSessionVariables() {
+        return sessionVariables;
+    }
+
     @Nullable
     Path getLoadLocalInfilePath() {
         return loadLocalInfilePath;
@@ -281,6 +290,7 @@ public final class MySqlConnectionConfiguration {
             database.equals(that.database) &&
             createDatabaseIfNotExist == that.createDatabaseIfNotExist &&
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
+            sessionVariables.equals(that.sessionVariables) &&
             Objects.equals(loadLocalInfilePath, that.loadLocalInfilePath) &&
             localInfileBufferSize == that.localInfileBufferSize &&
             queryCacheSize == that.queryCacheSize &&
@@ -296,9 +306,9 @@ public final class MySqlConnectionConfiguration {
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
             serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
-            preferPrepareStatement, loadLocalInfilePath, localInfileBufferSize, queryCacheSize,
-            prepareCacheSize, compressionAlgorithms, zstdCompressionLevel, loopResources,
-            extensions, passwordPublisher);
+            preferPrepareStatement, sessionVariables, loadLocalInfilePath,
+            localInfileBufferSize, queryCacheSize, prepareCacheSize, compressionAlgorithms,
+            zstdCompressionLevel, loopResources, extensions, passwordPublisher);
     }
 
     @Override
@@ -310,6 +320,7 @@ public final class MySqlConnectionConfiguration {
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
                 ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
                 ", preferPrepareStatement=" + preferPrepareStatement +
+                ", sessionVariables=" + sessionVariables +
                 ", loadLocalInfilePath=" + loadLocalInfilePath +
                 ", localInfileBufferSize=" + localInfileBufferSize +
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
@@ -324,6 +335,7 @@ public final class MySqlConnectionConfiguration {
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
             ", preferPrepareStatement=" + preferPrepareStatement +
+            ", sessionVariables=" + sessionVariables +
             ", loadLocalInfilePath=" + loadLocalInfilePath +
             ", localInfileBufferSize=" + localInfileBufferSize +
             ", queryCacheSize=" + queryCacheSize +
@@ -393,6 +405,8 @@ public final class MySqlConnectionConfiguration {
         @Nullable
         private Predicate<String> preferPrepareStatement;
 
+        private List<String> sessionVariables = Collections.emptyList();
+
         @Nullable
         private Path loadLocalInfilePath;
 
@@ -440,7 +454,7 @@ public final class MySqlConnectionConfiguration {
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
                 connectTimeout, zeroDateOption, serverZoneId, user, password, database,
-                createDatabaseIfNotExist, preferPrepareStatement, loadLocalInfilePath,
+                createDatabaseIfNotExist, preferPrepareStatement, sessionVariables, loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 compressionAlgorithms, zstdCompressionLevel, loopResources,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
@@ -802,6 +816,23 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
+         * Configure the session variables, used to set session variables immediately after login. Default no
+         * session variables to set.  It should be a list of key-value pairs. e.g.
+         * {@code ["sql_mode='ANSI_QUOTES,STRICT_TRANS_TABLES'", "time_zone=00:00"]}.
+         *
+         * @param sessionVariables the session variables to set.
+         * @return {@link Builder this}
+         * @throws IllegalArgumentException if {@code sessionVariables} is {@code null}.
+         * @since 1.1.2
+         */
+        public Builder sessionVariables(String... sessionVariables) {
+            requireNonNull(sessionVariables, "sessionVariables must not be null");
+
+            this.sessionVariables = InternalArrays.toImmutableList(sessionVariables);
+            return this;
+        }
+
+        /**
          * Configures to allow the {@code LOAD DATA LOCAL INFILE} statement in the given {@code path} or
          * disallow the statement.  Default to {@code null} which means not allow the statement.
          *
@@ -917,9 +948,9 @@ public final class MySqlConnectionConfiguration {
          * @param level the compression level.
          * @return {@link Builder this}.
          * @throws IllegalArgumentException if {@code level} is not between 1 and 22.
-         * @since 1.1.2
          * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/connection-options.html">
          * MySQL Connection Options --zstd-compression-level</a>
+         * @since 1.1.2
          */
         public Builder zstdCompressionLevel(int level) {
             require(level >= 1 && level <= 22, "level must be between 1 and 22");
@@ -929,8 +960,9 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configures the {@link LoopResources} for the driver.
-         * Default to {@link TcpResources#get() global tcp resources}.
+         * Configures the {@link LoopResources} for the driver. Default to
+         * {@link TcpResources#get() global tcp resources}.
+         *
          * @param loopResources the {@link LoopResources}.
          * @return this {@link Builder}.
          * @throws IllegalArgumentException if {@code loopResources} is {@code null}.

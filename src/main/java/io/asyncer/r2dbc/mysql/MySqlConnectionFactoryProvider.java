@@ -30,10 +30,14 @@ import reactor.netty.resources.LoopResources;
 import javax.net.ssl.HostnameVerifier;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
@@ -184,6 +188,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         Option.valueOf("useServerPrepareStatement");
 
     /**
+     * Option to set session variables. It should be a list of key-value pairs. e.g.
+     * {@code ["sql_mode='ANSI_QUOTES,STRICT_TRANS_TABLES'", "time_zone=00:00"]}.
+     *
+     * @since 1.1.2
+     */
+    public static final Option<String[]> SESSION_VARIABLES = Option.valueOf("sessionVariables");
+
+    /**
      * Option to set the allowed local infile path.
      *
      * @since 1.1.0
@@ -219,8 +231,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         Option.valueOf("zstdCompressionLevel");
 
     /**
-     * Option to set the {@link LoopResources} for the connection.
-     * Default to {@link reactor.netty.tcp.TcpResources#get() global tcp Resources}
+     * Option to set the {@link LoopResources} for the connection. Default to
+     * {@link reactor.netty.tcp.TcpResources#get() global tcp Resources}
      *
      * @since 1.1.2
      */
@@ -317,6 +329,7 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         mapper.optional(COMPRESSION_ALGORITHMS).asArray(
             CompressionAlgorithm[].class,
             it -> CompressionAlgorithm.valueOf(it.toUpperCase()),
+            it -> it.split(","),
             CompressionAlgorithm[]::new
         ).to(builder::compressionAlgorithms);
         mapper.optional(ZSTD_COMPRESSION_LEVEL).asInt()
@@ -325,6 +338,12 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::loopResources);
         mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
             .to(builder::passwordPublisher);
+        mapper.optional(SESSION_VARIABLES).asArray(
+            String[].class,
+            Function.identity(),
+            MySqlConnectionFactoryProvider::splitVariables,
+            String[]::new
+        ).to(builder::sessionVariables);
 
         return builder.build();
     }
@@ -345,7 +364,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(isSsl -> builder.sslMode(isSsl ? SslMode.REQUIRED : SslMode.DISABLED));
         mapper.optional(SSL_MODE).as(SslMode.class, id -> SslMode.valueOf(id.toUpperCase()))
             .to(builder::sslMode);
-        mapper.optional(TLS_VERSION).asArray(String[].class, Function.identity(), String[]::new)
+        mapper.optional(TLS_VERSION)
+            .asArray(String[].class, Function.identity(), it -> it.split(","), String[]::new)
             .to(builder::tlsVersion);
         mapper.optional(SSL_HOSTNAME_VERIFIER).as(HostnameVerifier.class)
             .to(builder::sslHostnameVerifier);
@@ -359,5 +379,158 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::sslContextBuilderCustomizer);
         mapper.optional(SSL_CA).asString()
             .to(builder::sslCa);
+    }
+
+    /**
+     * Splits session variables from user input. e.g. {@code sql_mode='ANSI_QUOTE,STRICT',c=d;e=f} will be
+     * split into {@code ["sql_mode='ANSI_QUOTE,STRICT'", "c=d", "e=f"]}.
+     * <p>
+     * It supports escaping characters with backslash, quoted values with single or double quotes, and nested
+     * brackets. Priorities are: backslash in quoted &gt; single quote = double quote &gt; bracket, backslash
+     * will not be a valid escape character if it is not in a quoted value.
+     * <p>
+     * Note that it does not strictly check syntax validity, so it will not throw syntax exceptions.
+     *
+     * @param sessionVariables the session variables from user input.
+     * @return the split list
+     * @throws IllegalArgumentException if {@code sessionVariables} is {@code null}.
+     */
+    private static String[] splitVariables(String sessionVariables) {
+        requireNonNull(sessionVariables, "sessionVariables must not be null");
+
+        if (sessionVariables.isEmpty()) {
+            return EMPTY_STRINGS;
+        }
+
+        // 1: bracket, 2: single quote, 3: double quote, 4: backtick
+        ArrayDeque<Integer> stack = new ArrayDeque<>();
+        int index = 0;
+        int len = sessionVariables.length();
+        List<String> variables = new ArrayList<>();
+
+        for (int i = 0; i < len; ++i) {
+            switch (sessionVariables.charAt(i)) {
+                case '\\':
+                    if (i + 1 < len) {
+                        if (stack.isEmpty()) {
+                            break;
+                        }
+
+                        switch (stack.peekLast()) {
+                            case 2:
+                            case 3:
+                                // All valid escape characters
+                                switch (sessionVariables.charAt(i + 1)) {
+                                    case '\'':
+                                    case '"':
+                                    case '\\':
+                                    case 'n':
+                                    case 'r':
+                                    case 't':
+                                    case 'b':
+                                    case 'f':
+                                        ++i;
+                                        break;
+                                }
+                                break;
+                            default:
+                                // Backtick does not support escape characters
+                                break;
+                        }
+                    }
+                    break;
+                case ';':
+                case ',':
+                    if (stack.isEmpty()) {
+                        variables.add(sessionVariables.substring(index, i).trim());
+                        index = i + 1;
+                    }
+                    break;
+                case '(':
+                    if (stack.isEmpty()) {
+                        stack.addLast(1);
+                        break;
+                    }
+
+                    switch (stack.peekLast()) {
+                        case 2:
+                        case 3:
+                        case 4:
+                            break;
+                        default:
+                            stack.addLast(1);
+                            break;
+                    }
+                    break;
+                case ')':
+                    if (stack.isEmpty()) {
+                        // Invalid bracket, ignore
+                        break;
+                    }
+
+                    if (stack.peekLast() == 1) {
+                        stack.pollLast();
+                    }
+                    break;
+                case '\'':
+                    if (stack.isEmpty()) {
+                        stack.addLast(2);
+                        break;
+                    }
+
+                    switch (stack.peekLast()) {
+                        case 2:
+                            stack.pollLast();
+                            break;
+                        case 3:
+                        case 4:
+                            break;
+                        default:
+                            stack.addLast(2);
+                            break;
+                    }
+                    break;
+                case '"':
+                    if (stack.isEmpty()) {
+                        stack.addLast(3);
+                        break;
+                    }
+
+                    switch (stack.peekLast()) {
+                        case 3:
+                            stack.pollLast();
+                            break;
+                        case 2:
+                        case 4:
+                            break;
+                        default:
+                            stack.addLast(3);
+                            break;
+                    }
+                    break;
+                case '`':
+                    if (stack.isEmpty()) {
+                        stack.addLast(4);
+                        break;
+                    }
+
+                    switch (stack.peekLast()) {
+                        case 4:
+                            stack.pollLast();
+                            break;
+                        case 2:
+                        case 3:
+                            break;
+                        default:
+                            stack.addLast(4);
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        variables.add(sessionVariables.substring(index).trim());
+
+        return variables.toArray(new String[0]);
     }
 }
