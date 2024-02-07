@@ -139,16 +139,6 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         SSL_CONTEXT_BUILDER_CUSTOMIZER = Option.valueOf("sslContextBuilderCustomizer");
 
     /**
-     * TCP socket timeout
-     *
-     * @since 0.8.3
-     * @deprecated  This option has been deprecated as of version 1.0.1, because it has no effect and serves no purpose.
-     * Please remove any references to this option from your code, as it will be removed in a future release.
-     */
-    @Deprecated
-    public static final Option<Duration> SOCKET_TIMEOUT = Option.valueOf("socketTimeout");
-
-    /**
      * Enable/Disable TCP KeepAlive.
      *
      * @since 0.8.2
@@ -279,8 +269,6 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             .to(builder::autodetectExtensions);
         mapper.optional(CONNECT_TIMEOUT).as(Duration.class, Duration::parse)
             .to(builder::connectTimeout);
-        mapper.optional(SOCKET_TIMEOUT).as(Duration.class, Duration::parse)
-            .to(builder::socketTimeout);
         mapper.optional(DATABASE).asString()
             .to(builder::database);
         mapper.optional(CREATE_DATABASE_IF_NOT_EXIST).asBoolean()

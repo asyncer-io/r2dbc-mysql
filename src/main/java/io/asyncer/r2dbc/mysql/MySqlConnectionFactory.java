@@ -138,7 +138,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             final int prepareCacheSize,
             @Nullable final CharSequence password) {
         return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
-                context, configuration.getConnectTimeout(), configuration.getSocketTimeout())
+                context, configuration.getConnectTimeout())
             .flatMap(client -> {
                 // Lazy init database after handshake/login
                 String db = createDbIfNotExist ? "" : database;
