@@ -57,6 +57,7 @@ public final class ConnectionContext implements CodecContext {
      */
     private volatile short serverStatuses = ServerStatuses.AUTO_COMMIT;
 
+    @Nullable
     private volatile Capability capability = null;
 
     ConnectionContext(ZeroDateOption zeroDateOption, @Nullable Path localInfilePath,
