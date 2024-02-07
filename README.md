@@ -129,7 +129,6 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(DATABASE, "r2dbc") // optional, default null, null means not specifying the database
     .option(Option.valueOf("createDatabaseIfNotExist"), true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
-    .option(Option.valueOf("socketTimeout"), Duration.ofSeconds(4)) // deprecated since 1.0.1, because it has no effect and serves no purpose.
     .option(SSL, true) // optional, default sslMode is "preferred", it will be ignore if sslMode is set
     .option(Option.valueOf("sslMode"), "verify_identity") // optional, default "preferred"
     .option(Option.valueOf("sslCa"), "/path/to/mysql/ca.pem") // required when sslMode is verify_ca or verify_identity, default null, null means has no server CA cert
@@ -179,7 +178,6 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .createDatabaseIfNotExist(true) // optional, default false, create database if not exist (since 1.0.6 / 0.9.7)
     .serverZoneId(ZoneId.of("Continent/City")) // optional, default null, null means query server time zone when connection init
     .connectTimeout(Duration.ofSeconds(3)) // optional, default null, null means no timeout
-    .socketTimeout(Duration.ofSeconds(4)) // deprecated since 1.0.1, because it has no effect and serves no purpose.
     .sslMode(SslMode.VERIFY_IDENTITY) // optional, default SslMode.PREFERRED
     .sslCa("/path/to/mysql/ca.pem") // required when sslMode is VERIFY_CA or VERIFY_IDENTITY, default null, null means has no server CA cert
     .sslCert("/path/to/mysql/client-cert.pem") // optional, default has no client SSL certificate
@@ -229,7 +227,6 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | database | A valid MySQL database name | Optional, default does not initialize database | Database used by the MySQL connection |
 | createDatabaseIfNotExist | `true` or `false` | Optional, default `false` | Create database if not exist |
 | connectTimeout | A `Duration` which must be positive duration | Optional, default has no timeout | TCP connect timeout |
-| socketTimeout | A `Duration` which must be positive duration | Deprecated since 1.0.1 | TCP socket timeout |
 | serverZoneId | An id of `ZoneId` | Optional, default query time zone when connection init | Server time zone id |
 | tcpKeepAlive | `true` or `false` | Optional, default disabled | Controls TCP KeepAlive |
 | tcpNoDelay | `true` or `false` | Optional, default disabled | Controls TCP NoDelay |

@@ -234,7 +234,6 @@ class MySqlConnectionConfigurationTest {
             .tcpKeepAlive(true)
             .tcpNoDelay(true)
             .connectTimeout(Duration.ofSeconds(3))
-            .socketTimeout(Duration.ofSeconds(4))
             .sslMode(SslMode.VERIFY_IDENTITY)
             .sslCa(SSL_CA)
             .sslCert("/path/to/mysql/client-cert.pem")

@@ -72,9 +72,6 @@ public final class MySqlConnectionConfiguration {
     private final Duration connectTimeout;
 
     @Nullable
-    private final Duration socketTimeout;
-
-    @Nullable
     private final ZoneId serverZoneId;
 
     private final ZeroDateOption zeroDateOption;
@@ -108,7 +105,7 @@ public final class MySqlConnectionConfiguration {
     private MySqlConnectionConfiguration(
         boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
-        @Nullable Duration socketTimeout, ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
+        ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
         @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
@@ -121,7 +118,6 @@ public final class MySqlConnectionConfiguration {
         this.tcpKeepAlive = tcpKeepAlive;
         this.tcpNoDelay = tcpNoDelay;
         this.connectTimeout = connectTimeout;
-        this.socketTimeout = socketTimeout;
         this.ssl = ssl;
         this.serverZoneId = serverZoneId;
         this.zeroDateOption = requireNonNull(zeroDateOption, "zeroDateOption must not be null");
@@ -162,16 +158,6 @@ public final class MySqlConnectionConfiguration {
     @Nullable
     Duration getConnectTimeout() {
         return connectTimeout;
-    }
-
-    /**
-     * @deprecated  This option has been deprecated as of version 1.0.1, because it has no effect and serves no purpose.
-     * Please remove any references to this option from your code, as it will be removed in a future release.
-     */
-    @Nullable
-    @Deprecated
-    Duration getSocketTimeout() {
-        return socketTimeout;
     }
 
     MySqlSslConfiguration getSsl() {
@@ -259,7 +245,6 @@ public final class MySqlConnectionConfiguration {
             tcpKeepAlive == that.tcpKeepAlive &&
             tcpNoDelay == that.tcpNoDelay &&
             Objects.equals(connectTimeout, that.connectTimeout) &&
-            Objects.equals(socketTimeout, that.socketTimeout) &&
             Objects.equals(serverZoneId, that.serverZoneId) &&
             zeroDateOption == that.zeroDateOption &&
             user.equals(that.user) &&
@@ -278,7 +263,7 @@ public final class MySqlConnectionConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
-            socketTimeout, serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
+            serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
             preferPrepareStatement, loadLocalInfilePath, localInfileBufferSize, queryCacheSize,
             prepareCacheSize, extensions, passwordPublisher);
     }
@@ -287,8 +272,8 @@ public final class MySqlConnectionConfiguration {
     public String toString() {
         if (isHost) {
             return "MySqlConnectionConfiguration{host='" + domain + "', port=" + port + ", ssl=" + ssl +
-                ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive + ", connectTimeout=" +
-                connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+                ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive +
+                ", connectTimeout=" + connectTimeout + ", serverZoneId=" + serverZoneId +
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
                 ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
                 ", preferPrepareStatement=" + preferPrepareStatement +
@@ -298,8 +283,8 @@ public final class MySqlConnectionConfiguration {
                 ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
         }
 
-        return "MySqlConnectionConfiguration{unixSocket='" + domain + "', connectTimeout=" +
-            connectTimeout + ", socketTimeout=" + socketTimeout + ", serverZoneId=" + serverZoneId +
+        return "MySqlConnectionConfiguration{unixSocket='" + domain +
+            "', connectTimeout=" + connectTimeout + ", serverZoneId=" + serverZoneId +
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
             ", preferPrepareStatement=" + preferPrepareStatement +
@@ -331,9 +316,6 @@ public final class MySqlConnectionConfiguration {
 
         @Nullable
         private Duration connectTimeout;
-
-        @Nullable
-        private Duration socketTimeout;
 
         private String user;
 
@@ -410,7 +392,7 @@ public final class MySqlConnectionConfiguration {
             MySqlSslConfiguration ssl = MySqlSslConfiguration.create(sslMode, tlsVersion, sslHostnameVerifier,
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-                connectTimeout, socketTimeout, zeroDateOption, serverZoneId, user, password, database,
+                connectTimeout, zeroDateOption, serverZoneId, user, password, database,
                 createDatabaseIfNotExist, preferPrepareStatement, loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
@@ -507,22 +489,6 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder connectTimeout(@Nullable Duration connectTimeout) {
             this.connectTimeout = connectTimeout;
-            return this;
-        }
-
-        /**
-         * Configure the socket timeout, only for compatibility with {@code socketTimeout} property in the
-         * JDBC driver.  In fact, {@code SO_TIMEOUT} has effect only for OIO socket transport.  Default no
-         * timeout.
-         *
-         * @param socketTimeout the socket timeout, or {@code null} if has no timeout.
-         * @return this {@link Builder}.
-         * @since 0.8.6
-         * @deprecated This option has been deprecated as of version 1.0.1, because it has no effect and
-         * serves no purpose.
-         */
-        public Builder socketTimeout(@Nullable Duration socketTimeout) {
-            this.socketTimeout = socketTimeout;
             return this;
         }
 
