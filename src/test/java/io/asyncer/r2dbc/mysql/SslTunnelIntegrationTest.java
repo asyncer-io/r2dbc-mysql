@@ -34,9 +34,9 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
@@ -53,8 +53,8 @@ public class SslTunnelIntegrationTest {
 
     private SslTunnelServer sslTunnelServer;
 
-    @Before
-    public void setUp() throws CertificateException, SSLException {
+    @BeforeEach
+    void setUp() throws CertificateException, SSLException, InterruptedException {
         server = new SelfSignedCertificate();
         client = new SelfSignedCertificate();
         final SslContext sslContext = SslContextBuilder.forServer(server.key(), server.cert()).build();
@@ -62,15 +62,15 @@ public class SslTunnelIntegrationTest {
         sslTunnelServer.setUp();
     }
 
-    @After
-    public void tearDown() throws InterruptedException {
+    @AfterEach
+    void tearDown() throws InterruptedException {
         server.delete();
         client.delete();
         sslTunnelServer.tearDown();
     }
 
     @Test
-    public void sslTunnelConnectionTest() {
+    void sslTunnelConnectionTest() {
         final String password = System.getProperty("test.mysql.password");
         assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
                             .isNotNull()
@@ -119,23 +119,17 @@ public class SslTunnelIntegrationTest {
             this.sslContext = sslContext;
         }
 
-        void setUp() {
+        void setUp() throws InterruptedException {
             // Configure the server.
-            try {
-                ServerBootstrap b = new ServerBootstrap();
-                b.localAddress(0)
-                 .group(new NioEventLoopGroup())
-                 .channel(NioServerSocketChannel.class)
-                 .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
-                 .childOption(ChannelOption.AUTO_READ, false);
+            ServerBootstrap b = new ServerBootstrap();
+            b.localAddress(0)
+                .group(new NioEventLoopGroup())
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
+                .childOption(ChannelOption.AUTO_READ, false);
 
-
-                // Start the server.
-                channelFuture = b.bind().sync();
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            // Start the server.
+            channelFuture = b.bind().sync();
         }
 
         void tearDown() throws InterruptedException {
@@ -196,16 +190,13 @@ public class SslTunnelIntegrationTest {
              .option(ChannelOption.AUTO_READ, false);
             ChannelFuture f = b.connect(remoteHost, remotePort);
             outboundChannel = f.channel();
-            f.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        // connection complete start to read first data
-                        inboundChannel.read();
-                    } else {
-                        // Close the connection if the connection attempt has failed.
-                        inboundChannel.close();
-                    }
+            f.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    // connection complete start to read first data
+                    inboundChannel.read();
+                } else {
+                    // Close the connection if the connection attempt has failed.
+                    inboundChannel.close();
                 }
             });
         }
@@ -213,15 +204,12 @@ public class SslTunnelIntegrationTest {
         @Override
         public void channelRead(final ChannelHandlerContext ctx, Object msg) {
             if (outboundChannel.isActive()) {
-                outboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) {
-                        if (future.isSuccess()) {
-                            // was able to flush out data, start to read the next chunk
-                            ctx.channel().read();
-                        } else {
-                            future.channel().close();
-                        }
+                outboundChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        // was able to flush out data, start to read the next chunk
+                        ctx.channel().read();
+                    } else {
+                        future.channel().close();
                     }
                 });
             }
@@ -269,14 +257,11 @@ public class SslTunnelIntegrationTest {
 
         @Override
         public void channelRead(final ChannelHandlerContext ctx, Object msg) {
-            inboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        ctx.channel().read();
-                    } else {
-                        future.channel().close();
-                    }
+            inboundChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    ctx.channel().read();
+                } else {
+                    future.channel().close();
                 }
             });
         }
