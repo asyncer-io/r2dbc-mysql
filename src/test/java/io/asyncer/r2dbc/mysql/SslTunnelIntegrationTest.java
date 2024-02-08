@@ -96,7 +96,7 @@ public class SslTunnelIntegrationTest {
         final MySqlConnection connection = connectionFactory.create().block();
         assert null != connection;
         connection.createStatement("SELECT 3").execute()
-                  .flatMap(it -> it.map((row, rowMetadata) -> row.get(0)))
+                  .flatMap(it -> it.map((row, rowMetadata) -> row.get(0, Long.class)))
                   .doOnNext(it -> assertThat(it).isEqualTo(3L))
                   .blockLast();
 
