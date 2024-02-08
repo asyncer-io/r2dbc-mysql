@@ -79,6 +79,7 @@
     <mbr.version>0.3.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
     <java-annotations.version>24.1.0</java-annotations.version>
+    <bouncy-castle.version>1.77</bouncy-castle.version>
   </properties>
 
   <dependencyManagement>
@@ -116,6 +117,12 @@
         <artifactId>annotations</artifactId>
         <version>${java-annotations.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncy-castle.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -238,6 +245,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

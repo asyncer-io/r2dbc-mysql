@@ -220,8 +220,10 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
                 .applicationProtocolConfig(null);
             String[] tlsProtocols = ssl.getTlsVersion();
 
-            if (tlsProtocols.length > 0) {
-                builder.protocols(tlsProtocols);
+            if (tlsProtocols.length > 0 || ssl.getSslMode() == SslMode.TUNNEL) {
+                if (tlsProtocols.length > 0) {
+                    builder.protocols(tlsProtocols);
+                }
             } else if (isTls13Enabled(context)) {
                 builder.protocols(TLS_PROTOCOLS);
             } else {
