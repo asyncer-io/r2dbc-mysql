@@ -94,6 +94,7 @@ public class SslTunnelIntegrationTest {
         final MySqlConnectionFactory connectionFactory = MySqlConnectionFactory.from(configuration);
 
         final MySqlConnection connection = connectionFactory.create().block();
+        assert null != connection;
         connection.createStatement("SELECT 3").execute()
                   .flatMap(it -> it.map((row, rowMetadata) -> row.get(0)))
                   .doOnNext(it -> assertThat(it).isEqualTo(3L))
@@ -123,10 +124,10 @@ public class SslTunnelIntegrationTest {
             // Configure the server.
             ServerBootstrap b = new ServerBootstrap();
             b.localAddress(0)
-                .group(new NioEventLoopGroup())
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
-                .childOption(ChannelOption.AUTO_READ, false);
+             .group(new NioEventLoopGroup())
+             .channel(NioServerSocketChannel.class)
+             .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
+             .childOption(ChannelOption.AUTO_READ, false);
 
             // Start the server.
             channelFuture = b.bind().sync();
@@ -173,7 +174,7 @@ public class SslTunnelIntegrationTest {
         // the outboundChannel will use the same EventLoop (and therefore Thread) as the inboundChannel.
         private Channel outboundChannel;
 
-        public ProxyFrontendHandler(String remoteHost, int remotePort) {
+        private ProxyFrontendHandler(String remoteHost, int remotePort) {
             this.remoteHost = remoteHost;
             this.remotePort = remotePort;
         }
@@ -242,7 +243,7 @@ public class SslTunnelIntegrationTest {
 
         private final Channel inboundChannel;
 
-        public ProxyBackendHandler(Channel inboundChannel) {
+        private ProxyBackendHandler(Channel inboundChannel) {
             this.inboundChannel = inboundChannel;
         }
 
@@ -277,6 +278,5 @@ public class SslTunnelIntegrationTest {
             ProxyFrontendHandler.closeOnFlush(ctx.channel());
         }
     }
-
 
 }
