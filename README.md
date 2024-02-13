@@ -145,6 +145,7 @@ ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
     .option(Option.valueOf("tcpKeepAlive"), true) // optional, default false
     .option(Option.valueOf("tcpNoDelay"), true) // optional, default false
     .option(Option.valueOf("compressionAlgorithms"), "zstd") // optional, default UNCOMPRESSED
+    .option(Option.valueOf("loopResources"), LoopResources.create("r2dbc")) // optional, default null, null means uses global tcp resources as loopResources (since 1.1.2)
     .option(Option.valueOf("autodetectExtensions"), false) // optional, default false
     .option(Option.valueOf("passwordPublisher"), Mono.just("password")) // optional, default null, null means has no passwordPublisher (since 1.0.5 / 0.9.6)
     .build();
@@ -194,6 +195,7 @@ MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builde
     .tcpKeepAlive(true) // optional, controls TCP Keep Alive, default is false
     .tcpNoDelay(true) // optional, controls TCP No Delay, default is false
     .compressionAlgorithms(CompressionAlgorithm.ZSTD, CompressionAlgotihm.ZLIB) // optional, default is UNCOMPRESSED
+    .loopResources(LoopResources.create("r2dbc")) // optional, default null, null means uses global tcp resources as loopResources (since 1.1.2)
     .autodetectExtensions(false) // optional, controls extension auto-detect, default is true
     .extendWith(MyExtension.INSTANCE) // optional, manual extend an extension into extensions, default using auto-detect
     .passwordPublisher(Mono.just("password")) // optional, default null, null means has no password publisher (since 1.0.5 / 0.9.6)
@@ -246,6 +248,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
 | useServerPrepareStatement | `true`, `false` or `Predicate<String>` | Optional, default is `false` | See following notice |
 | allowLoadLocalInfileInPath | A path | Optional, default is `null` | The path that allows `LOAD DATA LOCAL INFILE` to load file data |
 | compressionAlgorithms | A list of `CompressionAlgorithm` | Optional, default is `UNCOMPRESSED` | The compression algorithms for MySQL connection |
+| loopResources | A `LoopResources` | Optional, default is `null` | The loop resources for MySQL connection |
 | passwordPublisher | A `Publisher<String>` | Optional, default is `null` | The password publisher, see following notice |
 
 - `SslMode` Considers security level and verification for SSL, make sure the database server supports SSL before you want change SSL mode to `REQUIRED` or higher. **The Unix Domain Socket only offers "DISABLED" available**
@@ -278,6 +281,7 @@ Mono<Connection> connectionMono = Mono.from(connectionFactory.create());
   - `ZLIB` Use Zlib compression protocol, it is available on almost all MySQL versions (`5.x` and above)
   - `ZSTD` Use Z-standard compression protocol, it is available since MySQL `8.0.18` or above, requires an extern dependency `com.github.luben:zstd-jni`
   - For scenarios where the network environment is poor or the amount of data is always large, using a compression protocol may be useful
+- `loopResources` Considers loop resources for MySQL connection.
 
 Should use `enum` in [Programmatic](#programmatic-configuration) configuration that not like discovery configurations, except `TlsVersions` (All elements of `TlsVersions` will be always `String` which is case-sensitive).
 
