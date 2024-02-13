@@ -27,6 +27,11 @@ import reactor.core.publisher.Flux;
  */
 public interface ClientMessage {
 
+    /**
+     * Returns whether the sequence should be reset before encoding this message.
+     *
+     * @return {@code true} if the sequence should be reset.
+     */
     default boolean isSequenceReset() {
         return true;
     }

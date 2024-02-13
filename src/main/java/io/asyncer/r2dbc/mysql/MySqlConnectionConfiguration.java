@@ -866,7 +866,7 @@ public final class MySqlConnectionConfiguration {
          * @param compressionAlgorithms the list of compression algorithms.
          * @return {@link Builder this}.
          * @throws IllegalArgumentException if {@code compressionAlgorithms} is {@code null} or empty.
-         * @since 1.1.0
+         * @since 1.1.2
          */
         public Builder compressionAlgorithms(CompressionAlgorithm... compressionAlgorithms) {
             requireNonNull(compressionAlgorithms, "compressionAlgorithms must not be null");
@@ -900,7 +900,7 @@ public final class MySqlConnectionConfiguration {
          * @param level the compression level.
          * @return {@link Builder this}.
          * @throws IllegalArgumentException if {@code level} is not between 1 and 22.
-         * @since 1.1.0
+         * @since 1.1.2
          * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/connection-options.html">
          * MySQL Connection Options --zstd-compression-level</a>
          */
