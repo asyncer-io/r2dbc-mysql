@@ -144,7 +144,11 @@ public final class Capability {
     private static final long VAR_INT_SIZED_AUTH = 1L << 21;
 
 //    private static final long HANDLE_EXPIRED_PASSWORD = 1L << 22; // Client can handle expired passwords.
-//    private static final long SESSION_TRACK = 1L << 23;
+
+    /**
+     * Server can send session state information in the OK packet.
+     */
+    private static final long SESSION_TRACK = 1L << 23;
 
     /**
      * The MySQL server marks the EOF message as deprecated and use OK message instead.
@@ -171,7 +175,7 @@ public final class Capability {
     private static final long ALL_SUPPORTED = CLIENT_MYSQL | FOUND_ROWS | LONG_FLAG | CONNECT_WITH_DB |
         NO_SCHEMA | COMPRESS | LOCAL_FILES | IGNORE_SPACE | PROTOCOL_41 | INTERACTIVE | SSL |
         TRANSACTIONS | SECURE_SALT | MULTI_STATEMENTS | MULTI_RESULTS | PS_MULTI_RESULTS |
-        PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | DEPRECATE_EOF;
+        PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | SESSION_TRACK | DEPRECATE_EOF;
 
     private final long bitmap;
 
@@ -375,6 +379,10 @@ public final class Capability {
 
         void disableSsl() {
             this.bitmap &= ~SSL;
+        }
+
+        void disableSessionTrack() {
+            this.bitmap &= ~SESSION_TRACK;
         }
 
         void disableConnectAttributes() {
