@@ -199,7 +199,7 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * <p>
      * Note: zstd requires a dependency {@code com.github.luben:zstd-jni}.
      *
-     * @since 1.1.0
+     * @since 1.1.2
      */
     public static final Option<CompressionAlgorithm[]> COMPRESSION_ALGORITHMS =
         Option.valueOf("compressionAlgorithms");
@@ -212,7 +212,7 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      * Note: MySQL protocol does not allow to set the zlib compression level of the server, only zstd is
      * configurable.
      *
-     * @since 1.1.0
+     * @since 1.1.2
      */
     public static final Option<Integer> ZSTD_COMPRESSION_LEVEL =
         Option.valueOf("zstdCompressionLevel");
