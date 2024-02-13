@@ -25,6 +25,7 @@ import io.asyncer.r2dbc.mysql.codec.CodecsBuilder;
 import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.extension.CodecRegistrar;
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.r2dbc.spi.ConnectionFactory;
@@ -35,6 +36,9 @@ import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -94,18 +98,23 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             CharSequence password = configuration.getPassword();
             SslMode sslMode = ssl.getSslMode();
             int zstdCompressionLevel = configuration.getZstdCompressionLevel();
+            ZoneId connectionTimeZone = retrieveZoneId(configuration.getConnectionTimeZone());
             ConnectionContext context = new ConnectionContext(
                 configuration.getZeroDateOption(),
                 configuration.getLoadLocalInfilePath(),
                 configuration.getLocalInfileBufferSize(),
-                configuration.getServerZoneId()
+                configuration.isPreserveInstants(),
+                connectionTimeZone
             );
             Set<CompressionAlgorithm> compressionAlgorithms = configuration.getCompressionAlgorithms();
-            List<String> sessionVariables = configuration.getSessionVariables();
             Extensions extensions = configuration.getExtensions();
             Predicate<String> prepare = configuration.getPreferPrepareStatement();
             int prepareCacheSize = configuration.getPrepareCacheSize();
             Publisher<String> passwordPublisher = configuration.getPasswordPublisher();
+            boolean forceTimeZone = configuration.isForceConnectionTimeZoneToSession();
+            List<String> sessionVariables = forceTimeZone && connectionTimeZone != null ?
+                mergeSessionVariables(configuration.getSessionVariables(), connectionTimeZone) :
+                configuration.getSessionVariables();
 
             if (Objects.nonNull(passwordPublisher)) {
                 return Mono.from(passwordPublisher).flatMap(token -> getMySqlConnection(
@@ -168,6 +177,29 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 return MySqlConnection.init(client, builder.build(), context, db, queryCache.get(),
                     prepareCache, sessionVariables, prepare);
             });
+    }
+
+    @Nullable
+    private static ZoneId retrieveZoneId(String timeZone) {
+        if ("LOCAL".equalsIgnoreCase(timeZone)) {
+            return ZoneId.systemDefault().normalized();
+        } else if ("SERVER".equalsIgnoreCase(timeZone)) {
+            return null;
+        }
+
+        return StringUtils.parseZoneId(timeZone);
+    }
+
+    private static List<String> mergeSessionVariables(List<String> sessionVariables, ZoneId timeZone) {
+        List<String> res = new ArrayList<>(sessionVariables.size() + 1);
+
+        String offerStr = timeZone instanceof ZoneOffset && "Z".equalsIgnoreCase(timeZone.getId()) ?
+            "+00:00" : timeZone.getId();
+
+        res.addAll(sessionVariables);
+        res.add("time_zone='" + offerStr + "'");
+
+        return res;
     }
 
     private static final class LazyQueryCache {

@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.ParameterizedType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 
@@ -78,7 +79,13 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
     @Nullable
     private static ZonedDateTime decode0(ByteBuf value, boolean binary, CodecContext context) {
         LocalDateTime origin = LocalDateTimeCodec.decodeOrigin(value, binary, context);
-        return origin == null ? null : ZonedDateTime.of(origin, context.getServerZoneId());
+
+        if (origin == null) {
+            return null;
+        }
+
+        return ZonedDateTime.of(origin, context.isPreserveInstants() ? context.getTimeZone() :
+            ZoneId.systemDefault());
     }
 
     private static final class ZonedDateTimeMySqlParameter extends AbstractMySqlParameter {
@@ -127,7 +134,10 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
         }
 
         private LocalDateTime serverValue() {
-            return value.withZoneSameInstant(context.getServerZoneId())
+            ZoneId zoneId = context.isPreserveInstants() ? context.getTimeZone() :
+                ZoneId.systemDefault().normalized();
+
+            return value.withZoneSameInstant(zoneId)
                 .toLocalDateTime();
         }
 

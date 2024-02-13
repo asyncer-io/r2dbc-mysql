@@ -243,7 +243,9 @@ class MySqlConnectionConfigurationTest {
             .tlsVersion(TlsVersions.TLS1_1, TlsVersions.TLS1_2, TlsVersions.TLS1_3)
             .compressionAlgorithms(CompressionAlgorithm.ZSTD, CompressionAlgorithm.ZLIB,
                 CompressionAlgorithm.UNCOMPRESSED)
-            .serverZoneId(ZoneId.systemDefault())
+            .preserveInstants(true)
+            .connectionTimeZone("LOCAL")
+            .forceConnectionTimeZoneToSession(true)
             .zeroDateOption(ZeroDateOption.USE_NULL)
             .sslHostnameVerifier((host, s) -> true)
             .queryCacheSize(128)

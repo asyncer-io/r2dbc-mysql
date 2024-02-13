@@ -16,7 +16,10 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import reactor.core.publisher.Flux;
 
 import java.time.Instant;
@@ -35,9 +38,10 @@ import java.util.function.Function;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Base class considers integration tests for time zone conversion.
+ * Base class considers integration tests for date times.
  */
-abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
+@Isolated
+abstract class DateTimeIntegrationTestSupport extends IntegrationTestSupport {
 
     private static final String TIMESTAMP_TABLE = "CREATE TEMPORARY TABLE test " +
         "(id INT PRIMARY KEY AUTO_INCREMENT, value TIMESTAMP)";
@@ -56,7 +60,11 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
 
     private static final ZoneId SERVER_ZONE = ZoneId.of("America/New_York");
 
-    static {
+    private static TimeZone defaultTimeZone;
+
+    @BeforeAll
+    static void setUpTimeZone() {
+        defaultTimeZone = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone("GMT+6"));
 
         // Make sure test cases contains daylight.
@@ -64,10 +72,15 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
             .isEqualTo(DST.atZone(SERVER_ZONE).plusHours(1));
     }
 
-    TimeZoneIntegrationTestSupport(
+    @AfterAll
+    static void tearDownTimeZone() {
+        TimeZone.setDefault(defaultTimeZone);
+    }
+
+    DateTimeIntegrationTestSupport(
         Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
     ) {
-        super(configuration(builder -> customizer.apply(builder.serverZoneId(SERVER_ZONE))));
+        super(configuration(builder -> customizer.apply(builder.connectionTimeZone(SERVER_ZONE.getId()))));
     }
 
     @Test
@@ -128,8 +141,7 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
                 .bind(0, 0)
                 .execute())
             .flatMap(r -> r.map((row, meta) -> row.get(0, OffsetTime.class)))
-            .doOnNext(it -> assertThat(it.getOffset())
-                .isEqualTo(SERVER_ZONE.getRules().getStandardOffset(Instant.EPOCH)))
+            .doOnNext(it -> assertThat(it.getOffset()).isEqualTo(ZoneId.systemDefault().normalized()))
             .map(OffsetTime::toLocalTime)
             .collectList()
             .doOnNext(it -> assertThat(it)
@@ -208,8 +220,7 @@ abstract class TimeZoneIntegrationTestSupport extends IntegrationTestSupport {
                 .bind(0, 0)
                 .execute())
             .flatMap(r -> r.map((row, meta) -> row.get(0, OffsetTime.class)))
-            .doOnNext(it -> assertThat(it.getOffset())
-                .isEqualTo(SERVER_ZONE.getRules().getStandardOffset(Instant.EPOCH)))
+            .doOnNext(it -> assertThat(it.getOffset()).isEqualTo(ZoneId.systemDefault().normalized()))
             .map(it -> it.withOffsetSameInstant(ZoneId.systemDefault().getRules()
                 .getStandardOffset(Instant.EPOCH))
                 .toLocalTime())

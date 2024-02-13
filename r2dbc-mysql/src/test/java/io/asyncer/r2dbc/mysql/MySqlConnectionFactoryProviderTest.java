@@ -142,7 +142,7 @@ class MySqlConnectionFactoryProviderTest {
             .option(SSL, true)
             .option(Option.valueOf(CONNECT_TIMEOUT.name()), Duration.ofSeconds(3).toString())
             .option(DATABASE, "r2dbc")
-            .option(Option.valueOf("serverZoneId"), "Asia/Tokyo")
+            .option(Option.valueOf("connectionTimeZone"), "Asia/Tokyo")
             .option(Option.valueOf("useServerPrepareStatement"), AllTruePredicate.class.getName())
             .option(Option.valueOf("zeroDate"), "use_round")
             .option(Option.valueOf("sslMode"), "verify_identity")
@@ -171,7 +171,7 @@ class MySqlConnectionFactoryProviderTest {
         assertThat(configuration.getZeroDateOption()).isEqualTo(ZeroDateOption.USE_ROUND);
         assertThat(configuration.isTcpKeepAlive()).isTrue();
         assertThat(configuration.isTcpNoDelay()).isTrue();
-        assertThat(configuration.getServerZoneId()).isEqualTo(ZoneId.of("Asia/Tokyo"));
+        assertThat(configuration.getConnectionTimeZone()).isEqualTo("Asia/Tokyo");
         assertThat(configuration.getPreferPrepareStatement()).isExactlyInstanceOf(AllTruePredicate.class);
         assertThat(configuration.getExtensions()).isEqualTo(Extensions.from(Collections.emptyList(), true));
 
@@ -288,7 +288,7 @@ class MySqlConnectionFactoryProviderTest {
             .option(Option.valueOf(CONNECT_TIMEOUT.name()), Duration.ofSeconds(3).toString())
             .option(DATABASE, "r2dbc")
             .option(Option.valueOf("createDatabaseIfNotExist"), true)
-            .option(Option.valueOf("serverZoneId"), "Asia/Tokyo")
+            .option(Option.valueOf("connectionTimeZone"), "Asia/Tokyo")
             .option(Option.valueOf("useServerPrepareStatement"), AllTruePredicate.class.getName())
             .option(Option.valueOf("zeroDate"), "use_round")
             .option(Option.valueOf("sslMode"), "verify_identity")
@@ -314,7 +314,7 @@ class MySqlConnectionFactoryProviderTest {
         assertThat(configuration.getZeroDateOption()).isEqualTo(ZeroDateOption.USE_ROUND);
         assertThat(configuration.isTcpKeepAlive()).isTrue();
         assertThat(configuration.isTcpNoDelay()).isTrue();
-        assertThat(configuration.getServerZoneId()).isEqualTo(ZoneId.of("Asia/Tokyo"));
+        assertThat(configuration.getConnectionTimeZone()).isEqualTo("Asia/Tokyo");
         assertThat(configuration.getPreferPrepareStatement()).isExactlyInstanceOf(AllTruePredicate.class);
         assertThat(configuration.getExtensions()).isEqualTo(Extensions.from(Collections.emptyList(), true));
 

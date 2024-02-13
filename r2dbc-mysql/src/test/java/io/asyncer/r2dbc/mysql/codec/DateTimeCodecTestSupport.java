@@ -21,7 +21,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
@@ -29,14 +29,20 @@ import java.time.temporal.Temporal;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.temporal.ChronoField.*;
+import static java.time.temporal.ChronoField.DAY_OF_MONTH;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MICRO_OF_SECOND;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.time.temporal.ChronoField.YEAR;
 
 /**
  * Base class considers codecs unit tests of date/time.
  */
 abstract class DateTimeCodecTestSupport<T extends Temporal> implements CodecTestSupport<T> {
 
-    protected static final ZoneId ENCODE_SERVER_ZONE = ZoneId.of("+6");
+    protected static final ZoneOffset ENCODE_SERVER_ZONE = ZoneOffset.ofHours(6);
 
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
         .appendLiteral('\'')

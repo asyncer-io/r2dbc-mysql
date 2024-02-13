@@ -44,8 +44,9 @@ final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
     @Override
     public OffsetTime decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
+        // OffsetTime is not an instant value, so preserveInstants is not used here.
         LocalTime origin = LocalTimeCodec.decodeOrigin(binary, value);
-        ZoneId zone = context.getServerZoneId();
+        ZoneId zone = ZoneId.systemDefault().normalized();
 
         return OffsetTime.of(origin, zone instanceof ZoneOffset ? (ZoneOffset) zone : zone.getRules()
             .getStandardOffset(Instant.EPOCH));
@@ -112,9 +113,14 @@ final class OffsetTimeCodec extends AbstractClassedCodec<OffsetTime> {
         }
 
         private LocalTime serverValue() {
-            ZoneId zone = context.getServerZoneId();
-            ZoneOffset offset = zone instanceof ZoneOffset ? (ZoneOffset) zone : zone.getRules()
-                .getStandardOffset(Instant.EPOCH);
+            // OffsetTime is not an instant value, so preserveInstants is not used here.
+            ZoneId zone = ZoneId.systemDefault().normalized();
+
+            if (zone instanceof ZoneOffset) {
+                return value.withOffsetSameInstant((ZoneOffset) zone).toLocalTime();
+            }
+
+            ZoneOffset offset = zone.getRules().getStandardOffset(Instant.EPOCH);
 
             return value.toLocalTime()
                 .plusSeconds(offset.getTotalSeconds() - value.getOffset().getTotalSeconds());

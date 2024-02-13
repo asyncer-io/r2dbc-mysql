@@ -28,28 +28,36 @@ import java.time.ZoneId;
 public interface CodecContext {
 
     /**
-     * Get the {@link ZoneId} of server-side.
+     * Checks if the connection is set to preserve instants, i.e. convert instant values to connection time
+     * zone.
+     *
+     * @return if preserve instants.
+     */
+    boolean isPreserveInstants();
+
+    /**
+     * Gets the {@link ZoneId} of connection.
      *
      * @return the {@link ZoneId}.
      */
-    ZoneId getServerZoneId();
+    ZoneId getTimeZone();
 
     /**
-     * Get the option for zero date handling which is set by connection configuration.
+     * Gets the option for zero date handling which is set by connection configuration.
      *
      * @return the {@link ZeroDateOption}.
      */
     ZeroDateOption getZeroDateOption();
 
     /**
-     * Get the MySQL server version, which is available after database user logon.
+     * Gets the MySQL server version, which is available after database user logon.
      *
      * @return the {@link ServerVersion}.
      */
     ServerVersion getServerVersion();
 
     /**
-     * Get the {@link CharCollation} that the client is using.
+     * Gets the {@link CharCollation} that the client is using.
      *
      * @return the {@link CharCollation}.
      */

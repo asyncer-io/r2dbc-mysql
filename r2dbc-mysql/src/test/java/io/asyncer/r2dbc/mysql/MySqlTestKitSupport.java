@@ -21,9 +21,7 @@ import io.r2dbc.spi.test.TestKit;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.Optional;
-import java.util.TimeZone;
 
 /**
  * Base class considers integration tests of {@link TestKit}.
@@ -88,11 +86,10 @@ abstract class MySqlTestKitSupport implements TestKit<String> {
         source.setConnectionTimeout(Optional.ofNullable(configuration.getConnectTimeout())
             .map(Duration::toMillis).orElse(0L));
 
-        ZoneId zoneId = configuration.getServerZoneId();
-
-        if (zoneId != null) {
-            source.addDataSourceProperty("serverTimezone", TimeZone.getTimeZone(zoneId).getID());
-        }
+        source.addDataSourceProperty("preserveInstants", configuration.isPreserveInstants());
+        source.addDataSourceProperty("connectionTimeZone", configuration.getConnectionTimeZone());
+        source.addDataSourceProperty("forceConnectionTimeZoneToSession",
+            configuration.isForceConnectionTimeZoneToSession());
 
         return new JdbcTemplate(source);
     }

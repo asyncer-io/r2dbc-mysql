@@ -16,6 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 
 /**
@@ -24,6 +27,12 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 public final class StringUtils {
 
     private static final char QUOTE = '`';
+
+    private static final String ZONE_PREFIX_POSIX = "posix/";
+
+    private static final String ZONE_PREFIX_RIGHT = "right/";
+
+    private static final int ZONE_PREFIX_LENGTH = 6;
 
     /**
      * Quotes identifier with backticks, it will escape backticks in the identifier.
@@ -68,6 +77,41 @@ public final class StringUtils {
      */
     public static String extendReturning(String sql, String returning) {
         return returning.isEmpty() ? sql : sql + " RETURNING " + returning;
+    }
+
+    /**
+     * Parses a normalized {@link ZoneId} from a time zone string of MySQL.
+     * <p>
+     * Note: since java 14.0.2, 11.0.8, 8u261 and 7u271, America/Nuuk is already renamed from America/Godthab.
+     * See also <a href="https://mm.icann.org/pipermail/tz-announce/2020-April/000058.html">tzdata2020a</a>
+     *
+     * @param zoneId the time zone string
+     * @return the normalized {@link ZoneId}
+     * @throws IllegalArgumentException if the time zone string is {@code null} or empty
+     * @throws java.time.DateTimeException if the time zone string has an invalid format
+     * @throws java.time.zone.ZoneRulesException if the time zone string cannot be found
+     */
+    public static ZoneId parseZoneId(String zoneId) {
+        requireNonEmpty(zoneId, "zoneId must not be empty");
+
+        String realId;
+
+        if (zoneId.startsWith(ZONE_PREFIX_POSIX) || zoneId.startsWith(ZONE_PREFIX_RIGHT)) {
+            realId = zoneId.substring(ZONE_PREFIX_LENGTH);
+        } else {
+            realId = zoneId;
+        }
+
+        switch (realId) {
+            case "Factory":
+                // It seems like UTC.
+                return ZoneOffset.UTC;
+            case "ROC":
+                // It is equal to +08:00.
+                return ZoneOffset.ofHours(8);
+        }
+
+        return ZoneId.of(realId, ZoneId.SHORT_IDS).normalized();
     }
 
     private StringUtils() {

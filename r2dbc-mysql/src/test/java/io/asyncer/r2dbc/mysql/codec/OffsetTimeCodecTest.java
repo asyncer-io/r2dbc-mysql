@@ -19,8 +19,10 @@ package io.asyncer.r2dbc.mysql.codec;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 
@@ -67,6 +69,9 @@ class OffsetTimeCodecTest extends TimeCodecTestSupport<OffsetTime> {
     }
 
     private LocalTime convert(OffsetTime value) {
-        return value.withOffsetSameInstant((ZoneOffset) ENCODE_SERVER_ZONE).toLocalTime();
+        ZoneId zone = ZoneId.systemDefault().normalized();
+
+        return value.withOffsetSameInstant(zone instanceof ZoneOffset ? (ZoneOffset) zone :
+            zone.getRules().getStandardOffset(Instant.EPOCH)).toLocalTime();
     }
 }

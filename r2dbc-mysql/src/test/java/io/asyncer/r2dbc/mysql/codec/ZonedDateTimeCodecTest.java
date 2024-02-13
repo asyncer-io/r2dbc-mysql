@@ -75,6 +75,10 @@ class ZonedDateTimeCodecTest extends DateTimeCodecTestSupport<ZonedDateTime> {
     }
 
     private LocalDateTime convert(ZonedDateTime value) {
-        return value.withZoneSameInstant(ENCODE_SERVER_ZONE).toLocalDateTime();
+        if (context().isPreserveInstants()) {
+            return value.withZoneSameInstant(ENCODE_SERVER_ZONE).toLocalDateTime();
+        }
+
+        return value.toLocalDateTime();
     }
 }

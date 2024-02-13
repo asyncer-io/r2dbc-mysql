@@ -48,7 +48,7 @@ final class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
             return null;
         }
 
-        ZoneId zone = context.getServerZoneId();
+        ZoneId zone = context.isPreserveInstants() ? context.getTimeZone() : ZoneId.systemDefault();
 
         return OffsetDateTime.of(origin, zone instanceof ZoneOffset ? (ZoneOffset) zone : zone.getRules()
             .getOffset(origin));
@@ -113,7 +113,9 @@ final class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
         }
 
         private LocalDateTime serverValue() {
-            ZoneId zone = context.getServerZoneId();
+            ZoneId zone = context.isPreserveInstants() ? context.getTimeZone() :
+                ZoneId.systemDefault().normalized();
+
             return zone instanceof ZoneOffset ?
                 value.withOffsetSameInstant((ZoneOffset) zone).toLocalDateTime() :
                 value.toZonedDateTime().withZoneSameInstant(zone).toLocalDateTime();
