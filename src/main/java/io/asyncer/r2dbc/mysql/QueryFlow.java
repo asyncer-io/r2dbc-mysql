@@ -945,6 +945,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
     private Capability clientCapability(Capability serverCapability) {
         Capability.Builder builder = serverCapability.mutate();
 
+        builder.disableSessionTrack();
         builder.disableDatabasePinned();
         builder.disableCompression();
         builder.disableIgnoreAmbiguitySpace();
