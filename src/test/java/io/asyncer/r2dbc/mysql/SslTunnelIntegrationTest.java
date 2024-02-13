@@ -16,7 +16,6 @@
 
 package io.asyncer.r2dbc.mysql;
 
-
 import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -34,9 +33,13 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import io.r2dbc.spi.ValidationDepth;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
@@ -52,6 +55,35 @@ public class SslTunnelIntegrationTest {
     private SelfSignedCertificate client;
 
     private SslTunnelServer sslTunnelServer;
+
+    @BeforeAll
+    static void initCachingSha2Password() {
+        // If the server uses caching_sha2_password, the first time a client connects to the server, the
+        // server will require a native SSL connection. So all the SSL tunnel tests should be run after
+        // the caching_sha2_password initialization.
+        String password = System.getProperty("test.mysql.password");
+
+        assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
+            .isNotNull()
+            .isNotEmpty();
+
+        MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
+            .host("localhost")
+            .port(3306)
+            .connectTimeout(Duration.ofSeconds(3))
+            .user("root")
+            .password(password)
+            .database("r2dbc")
+            .createDatabaseIfNotExist(true)
+            .build();
+
+        MySqlConnectionFactory.from(configuration).create()
+            .flatMap(connection -> connection.validate(ValidationDepth.REMOTE)
+                .flatMap(it -> connection.close().then(Mono.just(it))))
+            .as(StepVerifier::create)
+            .expectNext(true)
+            .verifyComplete();
+    }
 
     @BeforeEach
     void setUp() throws CertificateException, SSLException, InterruptedException {
@@ -73,32 +105,30 @@ public class SslTunnelIntegrationTest {
     void sslTunnelConnectionTest() {
         final String password = System.getProperty("test.mysql.password");
         assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
-                            .isNotNull()
-                            .isNotEmpty();
+            .isNotNull()
+            .isNotEmpty();
 
-        final MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration
-                .builder()
-                .host("localhost")
-                .port(sslTunnelServer.getLocalPort())
-                .connectTimeout(Duration.ofSeconds(3))
-                .user("root")
-                .password(password)
-                .database("r2dbc")
-                .createDatabaseIfNotExist(true)
-                .sslMode(SslMode.TUNNEL)
-                .sslKey(client.privateKey().getAbsolutePath())
-                .sslCert(client.certificate().getAbsolutePath())
-                .sslCa(server.certificate().getAbsolutePath())
-                .build();
+        final MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
+            .host("localhost")
+            .port(sslTunnelServer.getLocalPort())
+            .connectTimeout(Duration.ofSeconds(3))
+            .user("root")
+            .password(password)
+            .database("r2dbc")
+            .sslMode(SslMode.TUNNEL)
+            .sslKey(client.privateKey().getAbsolutePath())
+            .sslCert(client.certificate().getAbsolutePath())
+            .sslCa(server.certificate().getAbsolutePath())
+            .build();
 
         final MySqlConnectionFactory connectionFactory = MySqlConnectionFactory.from(configuration);
 
         final MySqlConnection connection = connectionFactory.create().block();
         assert null != connection;
         connection.createStatement("SELECT 3").execute()
-                  .flatMap(it -> it.map((row, rowMetadata) -> row.get(0, Long.class)))
-                  .doOnNext(it -> assertThat(it).isEqualTo(3L))
-                  .blockLast();
+            .flatMap(it -> it.map((row, rowMetadata) -> row.get(0, Long.class)))
+            .doOnNext(it -> assertThat(it).isEqualTo(3L))
+            .blockLast();
 
         connection.close().block();
     }
@@ -113,7 +143,6 @@ public class SslTunnelIntegrationTest {
 
         private volatile ChannelFuture channelFuture;
 
-
         private SslTunnelServer(String remoteHost, int remotePort, SslContext sslContext) {
             this.remoteHost = remoteHost;
             this.remotePort = remotePort;
@@ -124,10 +153,10 @@ public class SslTunnelIntegrationTest {
             // Configure the server.
             ServerBootstrap b = new ServerBootstrap();
             b.localAddress(0)
-             .group(new NioEventLoopGroup())
-             .channel(NioServerSocketChannel.class)
-             .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
-             .childOption(ChannelOption.AUTO_READ, false);
+                .group(new NioEventLoopGroup())
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ProxyInitializer(remoteHost, remotePort, sslContext))
+                .childOption(ChannelOption.AUTO_READ, false);
 
             // Start the server.
             channelFuture = b.bind().sync();
@@ -142,7 +171,6 @@ public class SslTunnelIntegrationTest {
         }
 
     }
-
 
     private static class ProxyInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -168,10 +196,12 @@ public class SslTunnelIntegrationTest {
     private static class ProxyFrontendHandler extends ChannelInboundHandlerAdapter {
 
         private final String remoteHost;
+
         private final int remotePort;
 
-        // As we use inboundChannel.eventLoop() when building the Bootstrap this does not need to be volatile as
-        // the outboundChannel will use the same EventLoop (and therefore Thread) as the inboundChannel.
+        // As we use inboundChannel.eventLoop() when building the Bootstrap this does not need to be
+        // volatile as the outboundChannel will use the same EventLoop (and therefore Thread) as the
+        // inboundChannel.
         private Channel outboundChannel;
 
         private ProxyFrontendHandler(String remoteHost, int remotePort) {
@@ -186,9 +216,9 @@ public class SslTunnelIntegrationTest {
             // Start the connection attempt.
             Bootstrap b = new Bootstrap();
             b.group(inboundChannel.eventLoop())
-             .channel(ctx.channel().getClass())
-             .handler(new ProxyBackendHandler(inboundChannel))
-             .option(ChannelOption.AUTO_READ, false);
+                .channel(ctx.channel().getClass())
+                .handler(new ProxyBackendHandler(inboundChannel))
+                .option(ChannelOption.AUTO_READ, false);
             ChannelFuture f = b.connect(remoteHost, remotePort);
             outboundChannel = f.channel();
             f.addListener((ChannelFutureListener) future -> {
