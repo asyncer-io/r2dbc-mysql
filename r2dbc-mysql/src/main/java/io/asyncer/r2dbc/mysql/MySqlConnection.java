@@ -34,6 +34,7 @@ import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.Lifecycle;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
+import io.r2dbc.spi.Readable;
 import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
@@ -63,12 +64,6 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
     private static final int DEFAULT_LOCK_WAIT_TIMEOUT = 50;
 
     private static final String PING_MARKER = "/* ping */";
-
-    private static final String ZONE_PREFIX_POSIX = "posix/";
-
-    private static final String ZONE_PREFIX_RIGHT = "right/";
-
-    private static final int PREFIX_LENGTH = 6;
 
     private static final ServerVersion MARIA_11_1_1 = ServerVersion.create(11, 1, 1, true);
 
@@ -333,7 +328,8 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         requireNonNull(isolationLevel, "isolationLevel must not be null");
 
         // Set subsequent transaction isolation level.
-        return QueryFlow.executeVoid(client, "SET SESSION TRANSACTION ISOLATION LEVEL " + isolationLevel.asSql())
+        return QueryFlow.executeVoid(client,
+                "SET SESSION TRANSACTION ISOLATION LEVEL " + isolationLevel.asSql())
             .doOnSuccess(ignored -> {
                 this.sessionLevel = isolationLevel;
                 if (!this.isInTransaction()) {
@@ -436,7 +432,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         final ServerVersion serverVersion = context.getServerVersion();
         final long timeoutMs = timeout.toMillis();
         final String sql = isMariaDb ? "SET max_statement_time=" + timeoutMs / 1000.0
-                : "SET SESSION MAX_EXECUTION_TIME=" + timeoutMs;
+            : "SET SESSION MAX_EXECUTION_TIME=" + timeoutMs;
 
         // mariadb: https://mariadb.com/kb/en/aborting-statements/
         // mysql: https://dev.mysql.com/blog-archive/server-side-select-statement-timeouts/
@@ -485,10 +481,10 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         Mono<MySqlConnection> connection = initSessionVariables(client, sessionVariables)
             .then(loadSessionVariables(client, codecs, context))
             .map(data -> {
-                ZoneId serverZoneId = data.serverZoneId;
-                if (serverZoneId != null) {
-                    logger.debug("Set server time zone to {} from init query", serverZoneId);
-                    context.setServerZoneId(serverZoneId);
+                ZoneId timeZone = data.timeZone;
+                if (timeZone != null) {
+                    logger.debug("Got server time zone {} from loading session variables", timeZone);
+                    context.setTimeZone(timeZone);
                 }
 
                 return new MySqlConnection(client, context, codecs, data.level, data.lockWaitTimeout,
@@ -531,7 +527,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         return QueryFlow.executeVoid(client, query.toString());
     }
 
-    private static Mono<InitData> loadSessionVariables(
+    private static Mono<SessionData> loadSessionVariables(
         Client client, Codecs codecs, ConnectionContext context
     ) {
         StringBuilder query = new StringBuilder(160)
@@ -539,13 +535,13 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             .append(transactionIsolationColumn(context))
             .append(",@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
 
-        Function<MySqlResult, Flux<InitData>> handler;
+        Function<MySqlResult, Flux<SessionData>> handler;
 
-        if (context.shouldSetServerZoneId()) {
-            query.append(",@@system_time_zone AS s,@@time_zone AS t");
-            handler = MySqlConnection::fullInit;
+        if (context.isTimeZoneInitialized()) {
+            handler = r -> convertSessionData(r, false);
         } else {
-            handler = MySqlConnection::init;
+            query.append(",@@system_time_zone AS s,@@time_zone AS t");
+            handler = r -> convertSessionData(r, true);
         }
 
         return new TextSimpleStatement(client, codecs, context, query.toString())
@@ -569,70 +565,39 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             });
     }
 
-    private static Flux<InitData> init(MySqlResult r) {
-        return r.map((row, meta) -> new InitData(convertIsolationLevel(row.get(0, String.class)),
-            convertLockWaitTimeout(row.get(1, Long.class)),
-            row.get(2, String.class), null));
-    }
+    private static Flux<SessionData> convertSessionData(MySqlResult r, boolean timeZone) {
+        return r.map(readable -> {
+            IsolationLevel level = convertIsolationLevel(readable.get(0, String.class));
+            long lockWaitTimeout = convertLockWaitTimeout(readable.get(1, Long.class));
+            String product = readable.get(2, String.class);
 
-    private static Flux<InitData> fullInit(MySqlResult r) {
-        return r.map((row, meta) -> {
-            IsolationLevel level = convertIsolationLevel(row.get(0, String.class));
-            long lockWaitTimeout = convertLockWaitTimeout(row.get(1, Long.class));
-            String product = row.get(2, String.class);
-            String systemTimeZone = row.get(3, String.class);
-            String timeZone = row.get(4, String.class);
-            ZoneId zoneId;
-
-            if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
-                if (systemTimeZone == null || systemTimeZone.isEmpty()) {
-                    logger.warn("MySQL does not return any timezone, trying to use system default timezone");
-                    zoneId = ZoneId.systemDefault();
-                } else {
-                    zoneId = convertZoneId(systemTimeZone);
-                }
-            } else {
-                zoneId = convertZoneId(timeZone);
-            }
-
-            return new InitData(level, lockWaitTimeout, product, zoneId);
+            return new SessionData(level, lockWaitTimeout, product, timeZone ? readZoneId(readable) : null);
         });
     }
 
-    /**
-     * Creates a {@link ZoneId} from MySQL timezone result, or fallback to system default timezone if not
-     * found.
-     *
-     * @param id the ID/name of MySQL timezone.
-     * @return the {@link ZoneId}.
-     */
-    private static ZoneId convertZoneId(String id) {
-        String realId;
+    private static ZoneId readZoneId(Readable readable) {
+        String systemTimeZone = readable.get(3, String.class);
+        String timeZone = readable.get(4, String.class);
 
-        if (id.startsWith(ZONE_PREFIX_POSIX) || id.startsWith(ZONE_PREFIX_RIGHT)) {
-            realId = id.substring(PREFIX_LENGTH);
-        } else {
-            realId = id;
-        }
-
-        try {
-            switch (realId) {
-                case "Factory":
-                    // It seems like UTC.
-                    return ZoneOffset.UTC;
-                case "America/Nuuk":
-                    // America/Godthab is the same as America/Nuuk, with DST.
-                    return ZoneId.of("America/Godthab");
-                case "ROC":
-                    // It is equal to +08:00.
-                    return ZoneId.of("+8");
+        if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
+            if (systemTimeZone == null || systemTimeZone.isEmpty()) {
+                logger.warn("MySQL does not return any timezone, trying to use system default timezone");
+                return ZoneId.systemDefault().normalized();
+            } else {
+                return convertZoneId(systemTimeZone);
             }
+        } else {
+            return convertZoneId(timeZone);
+        }
+    }
 
-            return ZoneId.of(realId, ZoneId.SHORT_IDS);
+    private static ZoneId convertZoneId(String id) {
+        try {
+            return StringUtils.parseZoneId(id);
         } catch (DateTimeException e) {
             logger.warn("The server timezone is unknown <{}>, trying to use system default timezone", id, e);
 
-            return ZoneId.systemDefault();
+            return ZoneId.systemDefault().normalized();
         }
     }
 
@@ -691,7 +656,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             "@@transaction_isolation AS i" : "@@tx_isolation AS i";
     }
 
-    private static class InitData {
+    private static class SessionData {
 
         private final IsolationLevel level;
 
@@ -701,14 +666,14 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         private final String product;
 
         @Nullable
-        private final ZoneId serverZoneId;
+        private final ZoneId timeZone;
 
-        private InitData(IsolationLevel level, long lockWaitTimeout, @Nullable String product,
-            @Nullable ZoneId serverZoneId) {
+        private SessionData(IsolationLevel level, long lockWaitTimeout, @Nullable String product,
+            @Nullable ZoneId timeZone) {
             this.level = level;
             this.lockWaitTimeout = lockWaitTimeout;
             this.product = product;
-            this.serverZoneId = serverZoneId;
+            this.timeZone = timeZone;
         }
     }
 }

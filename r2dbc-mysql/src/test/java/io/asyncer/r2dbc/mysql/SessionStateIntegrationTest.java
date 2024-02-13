@@ -16,12 +16,16 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -29,9 +33,62 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Integration tests for session state.
+ * Integration tests for session states.
  */
 class SessionStateIntegrationTest {
+
+    @Test
+    void forcedLocalTimeZone() {
+        ZoneId zoneId = ZoneId.systemDefault().normalized();
+
+        connectionFactory(builder -> builder.connectionTimeZone("local")
+            .forceConnectionTimeZoneToSession(true))
+            .create()
+            .flatMapMany(
+                connection -> connection.createStatement("SELECT @@time_zone").execute()
+                    .flatMap(result -> result.map(r -> r.get(0, String.class)))
+                    .map(StringUtils::parseZoneId)
+                    .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                    .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .expectNext(zoneId)
+            .verifyComplete();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "America/New_York",
+        "Asia/Seoul",
+        "Asia/Shanghai",
+        "Asia/Tokyo",
+        "Europe/London",
+        "Factory",
+        "GMT",
+        "JST",
+        "ROC",
+        "UTC",
+        "+00:00",
+        "+09:00",
+        "-09:00",
+    })
+    void forcedConnectionTimeZone(String timeZone) {
+        ZoneId zoneId = StringUtils.parseZoneId(timeZone);
+
+        connectionFactory(builder -> builder.connectionTimeZone(timeZone)
+            .forceConnectionTimeZoneToSession(true))
+            .create()
+            .flatMapMany(
+                connection -> connection.createStatement("SELECT @@time_zone").execute()
+                    .flatMap(result -> result.map(r -> r.get(0, String.class)))
+                    .map(StringUtils::parseZoneId)
+                    .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                    .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .expectNext(zoneId)
+            .verifyComplete();
+    }
 
     @ParameterizedTest
     @MethodSource
@@ -50,10 +107,10 @@ class SessionStateIntegrationTest {
         connectionFactory(builder -> builder.sessionVariables(pairs))
             .create()
             .flatMapMany(connection -> connection.createStatement(selection).execute()
-                .flatMap(result -> result.map((row, metadata) -> {
+                .flatMap(result -> result.map(r -> {
                     Map<String, String> map = new LinkedHashMap<>();
                     for (String key : keys) {
-                        map.put(key, row.get(key, String.class));
+                        map.put(key, r.get(key, String.class));
                     }
                     return map;
                 }))

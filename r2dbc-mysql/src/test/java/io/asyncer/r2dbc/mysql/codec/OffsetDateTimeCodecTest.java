@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 
@@ -58,6 +59,9 @@ class OffsetDateTimeCodecTest extends DateTimeCodecTestSupport<OffsetDateTime> {
     }
 
     private LocalDateTime convert(OffsetDateTime value) {
-        return value.withOffsetSameInstant((ZoneOffset) ENCODE_SERVER_ZONE).toLocalDateTime();
+        ZoneOffset offset = context().isPreserveInstants() ? ENCODE_SERVER_ZONE :
+            ZoneId.systemDefault().getRules().getOffset(value.toLocalDateTime());
+
+        return value.withOffsetSameInstant(offset).toLocalDateTime();
     }
 }

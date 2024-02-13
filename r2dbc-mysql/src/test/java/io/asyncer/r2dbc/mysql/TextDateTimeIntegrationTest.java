@@ -17,11 +17,11 @@
 package io.asyncer.r2dbc.mysql;
 
 /**
- * Integration tests for time zone conversion in the binary protocol.
+ * Integration tests for time zone conversion in the text protocol.
  */
-class PrepareTimeZoneIntegrationTest extends TimeZoneIntegrationTestSupport {
+class TextDateTimeIntegrationTest extends DateTimeIntegrationTestSupport {
 
-    PrepareTimeZoneIntegrationTest() {
-        super(builder -> builder.useServerPrepareStatement(sql -> true));
+    TextDateTimeIntegrationTest() {
+        super(builder -> builder);
     }
 }

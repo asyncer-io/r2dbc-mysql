@@ -65,11 +65,43 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
     public static final Option<String> UNIX_SOCKET = Option.valueOf("unixSocket");
 
     /**
+     * Option to set the time zone conversion.  Default to {@code true} means enable conversion between JVM
+     * and {@link #CONNECTION_TIME_ZONE}.
+     * <p>
+     * Note: disable it will ignore the time zone of connection, and use the JVM local time zone.
+     *
+     * @since 1.1.2
+     */
+    public static final Option<Boolean> PRESERVE_INSTANTS = Option.valueOf("preserveInstants");
+
+    /**
+     * Option to set the time zone of connection.  Default to {@code LOCAL} means use JVM local time zone.
+     * It should be {@code "LOCAL"}, {@code "SERVER"}, or a valid ID of {@code ZoneId}. {@code "SERVER"} means
+     * querying the server-side timezone during initialization.
+     *
+     * @since 1.1.2
+     */
+    public static final Option<String> CONNECTION_TIME_ZONE = Option.valueOf("connectionTimeZone");
+
+    /**
+     * Option to force the time zone of connection to session time zone.  Default to {@code false}.
+     * <p>
+     * Note: alter the time zone of session will affect the results of MySQL date/time functions, e.g.
+     * {@code NOW([n])}, {@code CURRENT_TIME([n])}, {@code CURRENT_DATE()}, etc. Please use with caution.
+     *
+     * @since 1.1.2
+     */
+    public static final Option<Boolean> FORCE_CONNECTION_TIME_ZONE_TO_SESSION =
+        Option.valueOf("forceConnectionTimeZoneToSession");
+
+    /**
      * Option to set {@link ZoneId} of server. If it is set, driver will ignore the real time zone of
      * server-side.
      *
      * @since 0.8.2
+     * @deprecated since 1.1.2, use {@link #CONNECTION_TIME_ZONE} instead.
      */
+    @Deprecated
     public static final Option<ZoneId> SERVER_ZONE_ID = Option.valueOf("serverZoneId");
 
     /**
@@ -309,8 +341,15 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         mapper.optional(UNIX_SOCKET).asString()
             .to(builder::unixSocket)
             .otherwise(() -> setupHost(builder, mapper));
-        mapper.optional(SERVER_ZONE_ID).as(ZoneId.class, id -> ZoneId.of(id, ZoneId.SHORT_IDS))
-            .to(builder::serverZoneId);
+        mapper.optional(PRESERVE_INSTANTS).asBoolean()
+            .to(builder::preserveInstants);
+        mapper.optional(CONNECTION_TIME_ZONE).asString()
+            .to(builder::connectionTimeZone)
+            .otherwise(() -> mapper.optional(SERVER_ZONE_ID)
+                .as(ZoneId.class, id -> ZoneId.of(id, ZoneId.SHORT_IDS))
+                .to(builder::serverZoneId));
+        mapper.optional(FORCE_CONNECTION_TIME_ZONE_TO_SESSION).asBoolean()
+            .to(builder::forceConnectionTimeZoneToSession);
         mapper.optional(TCP_KEEP_ALIVE).asBoolean()
             .to(builder::tcpKeepAlive);
         mapper.optional(TCP_NO_DELAY).asBoolean()

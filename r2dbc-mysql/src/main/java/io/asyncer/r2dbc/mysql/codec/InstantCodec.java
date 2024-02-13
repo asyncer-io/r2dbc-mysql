@@ -26,6 +26,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 /**
  * Codec for {@link Instant}.
@@ -46,7 +48,10 @@ final class InstantCodec implements Codec<Instant> {
             return null;
         }
 
-        return origin.toInstant(context.getServerZoneId().getRules().getOffset(origin));
+        ZoneId zone = context.isPreserveInstants() ? context.getTimeZone() : ZoneOffset.systemDefault();
+
+        return origin.toInstant(zone instanceof ZoneOffset ? (ZoneOffset) zone : zone.getRules()
+            .getOffset(origin));
     }
 
     @Override
@@ -108,7 +113,8 @@ final class InstantCodec implements Codec<Instant> {
         }
 
         private LocalDateTime serverValue() {
-            return LocalDateTime.ofInstant(value, context.getServerZoneId());
+            return LocalDateTime.ofInstant(value, context.isPreserveInstants() ? context.getTimeZone() :
+                ZoneId.systemDefault());
         }
 
         @Override

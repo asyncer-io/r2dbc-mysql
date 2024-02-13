@@ -44,6 +44,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
+import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
@@ -78,8 +79,11 @@ public final class MySqlConnectionConfiguration {
     @Nullable
     private final Duration connectTimeout;
 
-    @Nullable
-    private final ZoneId serverZoneId;
+    private final boolean preserveInstants;
+
+    private final String connectionTimeZone;
+
+    private final boolean forceConnectionTimeZoneToSession;
 
     private final ZeroDateOption zeroDateOption;
 
@@ -120,7 +124,10 @@ public final class MySqlConnectionConfiguration {
     private MySqlConnectionConfiguration(
         boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
         boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
-        ZeroDateOption zeroDateOption, @Nullable ZoneId serverZoneId,
+        ZeroDateOption zeroDateOption,
+        boolean preserveInstants,
+        String connectionTimeZone,
+        boolean forceConnectionTimeZoneToSession,
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
         List<String> sessionVariables,
@@ -137,7 +144,9 @@ public final class MySqlConnectionConfiguration {
         this.tcpNoDelay = tcpNoDelay;
         this.connectTimeout = connectTimeout;
         this.ssl = ssl;
-        this.serverZoneId = serverZoneId;
+        this.preserveInstants = preserveInstants;
+        this.connectionTimeZone = requireNonNull(connectionTimeZone, "connectionTimeZone must not be null");
+        this.forceConnectionTimeZoneToSession = forceConnectionTimeZoneToSession;
         this.zeroDateOption = requireNonNull(zeroDateOption, "zeroDateOption must not be null");
         this.user = requireNonNull(user, "user must not be null");
         this.password = password;
@@ -198,9 +207,16 @@ public final class MySqlConnectionConfiguration {
         return zeroDateOption;
     }
 
-    @Nullable
-    ZoneId getServerZoneId() {
-        return serverZoneId;
+    boolean isPreserveInstants() {
+        return preserveInstants;
+    }
+
+    String getConnectionTimeZone() {
+        return connectionTimeZone;
+    }
+
+    boolean isForceConnectionTimeZoneToSession() {
+        return forceConnectionTimeZoneToSession;
     }
 
     String getUser() {
@@ -283,7 +299,9 @@ public final class MySqlConnectionConfiguration {
             tcpKeepAlive == that.tcpKeepAlive &&
             tcpNoDelay == that.tcpNoDelay &&
             Objects.equals(connectTimeout, that.connectTimeout) &&
-            Objects.equals(serverZoneId, that.serverZoneId) &&
+            preserveInstants == that.preserveInstants &&
+            Objects.equals(connectionTimeZone, that.connectionTimeZone) &&
+            forceConnectionTimeZoneToSession == that.forceConnectionTimeZoneToSession &&
             zeroDateOption == that.zeroDateOption &&
             user.equals(that.user) &&
             Objects.equals(password, that.password) &&
@@ -305,7 +323,8 @@ public final class MySqlConnectionConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
-            serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
+            preserveInstants, connectionTimeZone, forceConnectionTimeZoneToSession,
+            zeroDateOption, user, password, database, createDatabaseIfNotExist,
             preferPrepareStatement, sessionVariables, loadLocalInfilePath,
             localInfileBufferSize, queryCacheSize, prepareCacheSize, compressionAlgorithms,
             zstdCompressionLevel, loopResources, extensions, passwordPublisher);
@@ -316,7 +335,10 @@ public final class MySqlConnectionConfiguration {
         if (isHost) {
             return "MySqlConnectionConfiguration{host='" + domain + "', port=" + port + ", ssl=" + ssl +
                 ", tcpNoDelay=" + tcpNoDelay + ", tcpKeepAlive=" + tcpKeepAlive +
-                ", connectTimeout=" + connectTimeout + ", serverZoneId=" + serverZoneId +
+                ", connectTimeout=" + connectTimeout +
+                ", preserveInstants=" + preserveInstants +
+                ", connectionTimeZone=" + connectionTimeZone +
+                ", forceConnectionTimeZoneToSession=" + forceConnectionTimeZoneToSession +
                 ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
                 ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
                 ", preferPrepareStatement=" + preferPrepareStatement +
@@ -331,7 +353,10 @@ public final class MySqlConnectionConfiguration {
         }
 
         return "MySqlConnectionConfiguration{unixSocket='" + domain +
-            "', connectTimeout=" + connectTimeout + ", serverZoneId=" + serverZoneId +
+            "', connectTimeout=" + connectTimeout +
+            ", preserveInstants=" + preserveInstants +
+            ", connectionTimeZone=" + connectionTimeZone +
+            ", forceConnectionTimeZoneToSession=" + forceConnectionTimeZoneToSession +
             ", zeroDateOption=" + zeroDateOption + ", user='" + user + "', password=" + password +
             ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
             ", preferPrepareStatement=" + preferPrepareStatement +
@@ -372,8 +397,11 @@ public final class MySqlConnectionConfiguration {
 
         private ZeroDateOption zeroDateOption = ZeroDateOption.USE_NULL;
 
-        @Nullable
-        private ZoneId serverZoneId;
+        private boolean preserveInstants = true;
+
+        private String connectionTimeZone = "LOCAL";
+
+        private boolean forceConnectionTimeZoneToSession;
 
         @Nullable
         private SslMode sslMode;
@@ -453,7 +481,11 @@ public final class MySqlConnectionConfiguration {
             MySqlSslConfiguration ssl = MySqlSslConfiguration.create(sslMode, tlsVersion, sslHostnameVerifier,
                 sslCa, sslKey, sslKeyPassword, sslCert, sslContextBuilderCustomizer);
             return new MySqlConnectionConfiguration(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay,
-                connectTimeout, zeroDateOption, serverZoneId, user, password, database,
+                connectTimeout, zeroDateOption,
+                preserveInstants,
+                connectionTimeZone,
+                forceConnectionTimeZoneToSession,
+                user, password, database,
                 createDatabaseIfNotExist, preferPrepareStatement, sessionVariables, loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 compressionAlgorithms, zstdCompressionLevel, loopResources,
@@ -580,15 +612,63 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configures the time zone of server.  Default to query server time zone in initialization.
+         * Configures the time zone conversion.  Default to {@code true} means enable conversion between JVM
+         * and {@link #connectionTimeZone(String)}.
+         * <p>
+         * Note: disable it will ignore the time zone of connection, and use the JVM local time zone.
          *
-         * @param serverZoneId the {@link ZoneId}, or {@code null} if query in initialization.
-         * @return this {@link Builder}.
-         * @since 0.8.2
+         * @param enabled {@code true} to preserve instants, or {@code false} to disable conversion.
+         * @return {@link Builder this}
+         * @since 1.1.2
          */
-        public Builder serverZoneId(@Nullable ZoneId serverZoneId) {
-            this.serverZoneId = serverZoneId;
+        public Builder preserveInstants(boolean enabled) {
+            this.preserveInstants = enabled;
             return this;
+        }
+
+        /**
+         * Configures the time zone of connection.  Default to {@code LOCAL} means use JVM local time zone.
+         * {@code "SERVER"} means querying the server-side timezone during initialization.
+         *
+         * @param connectionTimeZone {@code "LOCAL"}, {@code "SERVER"}, or a valid ID of {@code ZoneId}.
+         * @return {@link Builder this}
+         * @throws IllegalArgumentException if {@code connectionTimeZone} is {@code null} or empty.
+         * @since 1.1.2
+         */
+        public Builder connectionTimeZone(String connectionTimeZone) {
+            requireNonEmpty(connectionTimeZone, "connectionTimeZone must not be empty");
+
+            this.connectionTimeZone = connectionTimeZone;
+            return this;
+        }
+
+        /**
+         * Configures to force the connection time zone to session time zone.  Default to {@code false}. Used
+         * only if the {@link #connectionTimeZone(String)} is not {@code "SERVER"}.
+         * <p>
+         * Note: alter the time zone of session will affect the results of MySQL date/time functions, e.g.
+         * {@code NOW([n])}, {@code CURRENT_TIME([n])}, {@code CURRENT_DATE()}, etc. Please use with caution.
+         *
+         * @param enabled {@code true} to force the connection time zone to session time zone.
+         * @return {@link Builder this}
+         * @since 1.1.2
+         */
+        public Builder forceConnectionTimeZoneToSession(boolean enabled) {
+            this.forceConnectionTimeZoneToSession = enabled;
+            return this;
+        }
+
+        /**
+         * Configures the time zone of server.  Since 1.1.2, default to use JVM local time zone.
+         *
+         * @param serverZoneId the {@link ZoneId}, or {@code null} if query server during initialization.
+         * @return {@link Builder this}
+         * @since 0.8.2
+         * @deprecated since 1.1.2, use {@link #connectionTimeZone(String)} instead.
+         */
+        @Deprecated
+        public Builder serverZoneId(@Nullable ZoneId serverZoneId) {
+            return connectionTimeZone(serverZoneId == null ? "SERVER" : serverZoneId.getId());
         }
 
         /**

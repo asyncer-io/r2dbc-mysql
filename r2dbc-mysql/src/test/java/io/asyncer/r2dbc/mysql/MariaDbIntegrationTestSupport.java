@@ -18,12 +18,17 @@ package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.Readable;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Base class considers integration tests for MariaDB.
@@ -39,17 +44,17 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
     @Test
     void returningExpression() {
         complete(conn -> conn.createStatement("CREATE TEMPORARY TABLE test (" +
-            "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,value INT NOT NULL)")
+                "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,value INT NOT NULL)")
             .execute()
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(conn.createStatement("INSERT INTO test(value) VALUES (?)")
                 .bind(0, 2)
-                .returnGeneratedValues("CURRENT_TIMESTAMP")
+                .returnGeneratedValues("POW(value, 4)")
                 .execute())
-            .flatMap(result -> result.map(r -> r.get(0, ZonedDateTime.class)))
+            .flatMap(result -> result.map(r -> r.get(0, Integer.class)))
             .collectList()
-            .doOnNext(list -> assertThat(list).hasSize(1)
-                .noneMatch(it -> it.isBefore(ZonedDateTime.now().minusSeconds(10)))));
+            .doOnNext(list -> assertThat(list).hasSize(1))
+            .doOnNext(list -> assertThat(list.get(0)).isEqualTo(16)));
     }
 
     @Test
@@ -70,13 +75,9 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
                 .execute())
             .flatMap(result -> result.map(DataEntity::read))
             .collectList()
-            .doOnNext(list -> assertThat(list).hasSize(5)
-                .map(DataEntity::getValue)
-                .containsExactly(2, 4, 6, 8, 10))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getId).distinct()).hasSize(5))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getCreatedAt))
-                .noneMatch(it -> it.isBefore(ZonedDateTime.now().minusSeconds(10))))
-            .thenMany(conn.createStatement("REPLACE test(id, value) VALUES (1,?),(2,?),(3,?),(4,?),(5,?)")
+            .doOnNext(list -> assertThat(list).hasSize(5))
+            .as(list -> assertWithSelectAll(conn, list))
+            .thenMany(conn.createStatement("REPLACE test(id,value) VALUES (1,?),(2,?),(3,?),(4,?),(5,?)")
                 .bind(0, 3)
                 .bind(1, 5)
                 .bind(2, 7)
@@ -86,11 +87,8 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
                 .execute())
             .flatMap(result -> result.map(DataEntity::read))
             .collectList()
-            .doOnNext(list -> assertThat(list).hasSize(5)
-                .map(DataEntity::getValue)
-                .containsExactly(3, 5, 7, 9, 11))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getCreatedAt))
-                .noneMatch(it -> it.isBefore(ZonedDateTime.now().minusSeconds(10)))));
+            .doOnNext(list -> assertThat(list).hasSize(5))
+            .as(list -> assertWithSelectAll(conn, list)));
     }
 
     @Test
@@ -107,38 +105,30 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
                 .bind(2, 6)
                 .bind(3, 8)
                 .bind(4, 10)
-                .returnGeneratedValues("id", "created_at")
+                .returnGeneratedValues("id", "value")
                 .execute())
-            .flatMap(result -> result.map(DataEntity::withoutValue))
+            .flatMap(result -> result.map(DataEntity::withoutCreatedAt))
             .collectList()
-            .doOnNext(list -> assertThat(list).hasSize(5)
-                .map(DataEntity::getValue)
-                .containsOnly(0))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getId).distinct()).hasSize(5))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getCreatedAt))
-                .noneMatch(it -> it.isBefore(ZonedDateTime.now().minusSeconds(10))))
+            .doOnNext(list -> assertThat(list).hasSize(5))
+            .as(list -> assertWithoutCreatedAt(conn, list))
             .thenMany(conn.createStatement("REPLACE test(id, value) VALUES (1,?),(2,?),(3,?),(4,?),(5,?)")
                 .bind(0, 3)
                 .bind(1, 5)
                 .bind(2, 7)
                 .bind(3, 9)
                 .bind(4, 11)
-                .returnGeneratedValues("id", "created_at")
+                .returnGeneratedValues("id", "value")
                 .execute())
-            .flatMap(result -> result.map(DataEntity::withoutValue))
+            .flatMap(result -> result.map(DataEntity::withoutCreatedAt))
             .collectList()
-            .doOnNext(list -> assertThat(list).hasSize(5)
-                .map(DataEntity::getValue)
-                .containsOnly(0))
-            .doOnNext(list -> assertThat(list.stream().map(DataEntity::getCreatedAt))
-                .noneMatch(it -> it.isBefore(ZonedDateTime.now().minusSeconds(10))))
-        );
+            .doOnNext(list -> assertThat(list).hasSize(5))
+            .as(list -> assertWithoutCreatedAt(conn, list)));
     }
 
     @Test
     void returningGetRowUpdated() {
         complete(conn -> conn.createStatement("CREATE TEMPORARY TABLE test(" +
-            "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,value INT NOT NULL)")
+                "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,value INT NOT NULL)")
             .execute()
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .thenMany(conn.createStatement("INSERT INTO test(value) VALUES (?),(?)")
@@ -148,6 +138,36 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
                 .execute())
             .flatMap(IntegrationTestSupport::extractRowsUpdated)
             .doOnNext(it -> assertThat(it).isEqualTo(2)));
+    }
+
+    private static Mono<Void> assertWithSelectAll(MySqlConnection conn, Mono<List<DataEntity>> returning) {
+        return returning.zipWhen(list -> conn.createStatement("SELECT * FROM test WHERE id IN (?,?,?,?,?)")
+                .bind(0, list.get(0).getId())
+                .bind(1, list.get(1).getId())
+                .bind(2, list.get(2).getId())
+                .bind(3, list.get(3).getId())
+                .bind(4, list.get(4).getId())
+                .execute()
+                .flatMap(result -> result.map(DataEntity::read))
+                .collectList())
+            .doOnNext(list -> assertThat(list.getT1()).isEqualTo(list.getT2()))
+            .then();
+    }
+
+    private static Mono<Void> assertWithoutCreatedAt(MySqlConnection conn, Mono<List<DataEntity>> returning) {
+        String sql = "SELECT id,value FROM test WHERE id IN (?,?,?,?,?)";
+
+        return returning.zipWhen(list -> conn.createStatement(sql)
+                .bind(0, list.get(0).getId())
+                .bind(1, list.get(1).getId())
+                .bind(2, list.get(2).getId())
+                .bind(3, list.get(3).getId())
+                .bind(4, list.get(4).getId())
+                .execute()
+                .flatMap(result -> result.map(DataEntity::withoutCreatedAt))
+                .collectList())
+            .doOnNext(list -> assertThat(list.getT1()).isEqualTo(list.getT2()))
+            .then();
     }
 
     private static final class DataEntity {
@@ -176,6 +196,38 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
             return createdAt;
         }
 
+        DataEntity incremented() {
+            return new DataEntity(id, value + 1, createdAt);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof DataEntity)) {
+                return false;
+            }
+
+            DataEntity that = (DataEntity) o;
+
+            return id == that.id && value == that.value && createdAt.equals(that.createdAt);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 31 * id + value;
+            return 31 * result + createdAt.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "DataEntity{id=" + id +
+                ", value=" + value +
+                ", createdAt=" + createdAt +
+                '}';
+        }
+
         static DataEntity read(Readable readable) {
             Integer id = readable.get("id", Integer.TYPE);
             Integer value = readable.get("value", Integer.class);
@@ -188,14 +240,14 @@ abstract class MariaDbIntegrationTestSupport extends IntegrationTestSupport {
             return new DataEntity(id, value, createdAt);
         }
 
-        static DataEntity withoutValue(Readable readable) {
+        static DataEntity withoutCreatedAt(Readable readable) {
             Integer id = readable.get("id", Integer.TYPE);
-            ZonedDateTime createdAt = readable.get("created_at", ZonedDateTime.class);
+            Integer value = readable.get("value", Integer.TYPE);
 
             requireNonNull(id, "id must not be null");
-            requireNonNull(createdAt, "createdAt must not be null");
+            requireNonNull(value, "value must not be null");
 
-            return new DataEntity(id, 0, createdAt);
+            return new DataEntity(id, value, ZonedDateTime.ofInstant(Instant.EPOCH, ZoneOffset.UTC));
         }
     }
 }

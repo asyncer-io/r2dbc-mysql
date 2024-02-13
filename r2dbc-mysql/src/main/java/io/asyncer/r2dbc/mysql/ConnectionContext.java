@@ -48,8 +48,10 @@ public final class ConnectionContext implements CodecContext {
 
     private final int localInfileBufferSize;
 
+    private final boolean preserveInstants;
+
     @Nullable
-    private ZoneId serverZoneId;
+    private ZoneId timeZone;
 
     /**
      * Assume that the auto commit is always turned on, it will be set after handshake V10 request message, or
@@ -60,12 +62,18 @@ public final class ConnectionContext implements CodecContext {
     @Nullable
     private volatile Capability capability = null;
 
-    ConnectionContext(ZeroDateOption zeroDateOption, @Nullable Path localInfilePath,
-        int localInfileBufferSize, @Nullable ZoneId serverZoneId) {
+    ConnectionContext(
+        ZeroDateOption zeroDateOption,
+        @Nullable Path localInfilePath,
+        int localInfileBufferSize,
+        boolean preserveInstants,
+        @Nullable ZoneId timeZone
+    ) {
         this.zeroDateOption = requireNonNull(zeroDateOption, "zeroDateOption must not be null");
         this.localInfilePath = localInfilePath;
         this.localInfileBufferSize = localInfileBufferSize;
-        this.serverZoneId = serverZoneId;
+        this.preserveInstants = preserveInstants;
+        this.timeZone = timeZone;
     }
 
     /**
@@ -101,27 +109,33 @@ public final class ConnectionContext implements CodecContext {
     }
 
     @Override
-    public ZoneId getServerZoneId() {
-        if (serverZoneId == null) {
+    public boolean isPreserveInstants() {
+        return preserveInstants;
+    }
+
+    @Override
+    public ZoneId getTimeZone() {
+        if (timeZone == null) {
             throw new IllegalStateException("Server timezone have not initialization");
         }
-        return serverZoneId;
+        return timeZone;
+    }
+
+    public boolean isTimeZoneInitialized() {
+        return timeZone != null;
     }
 
     @Override
     public boolean isMariaDb() {
-        return capability.isMariaDb() || serverVersion.isMariaDb();
+        Capability capability = this.capability;
+        return (capability != null && capability.isMariaDb()) || serverVersion.isMariaDb();
     }
 
-    boolean shouldSetServerZoneId() {
-        return serverZoneId == null;
-    }
-
-    void setServerZoneId(ZoneId serverZoneId) {
-        if (this.serverZoneId != null) {
+    void setTimeZone(ZoneId timeZone) {
+        if (isTimeZoneInitialized()) {
             throw new IllegalStateException("Server timezone have been initialized");
         }
-        this.serverZoneId = serverZoneId;
+        this.timeZone = timeZone;
     }
 
     @Override
