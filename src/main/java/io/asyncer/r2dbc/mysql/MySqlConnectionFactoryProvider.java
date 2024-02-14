@@ -25,6 +25,7 @@ import io.r2dbc.spi.ConnectionFactoryOptions;
 import io.r2dbc.spi.ConnectionFactoryProvider;
 import io.r2dbc.spi.Option;
 import org.reactivestreams.Publisher;
+import reactor.netty.resources.LoopResources;
 
 import javax.net.ssl.HostnameVerifier;
 import java.time.Duration;
@@ -218,6 +219,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         Option.valueOf("zstdCompressionLevel");
 
     /**
+     * Option to set the {@link LoopResources} for the connection.
+     * Default to {@link reactor.netty.tcp.TcpResources#get() global tcp Resources}
+     *
+     * @since 1.1.2
+     */
+    public static final Option<LoopResources> LOOP_RESOURCES = Option.valueOf("loopResources");
+
+    /**
      * Option to set the maximum size of the {@link Query} parsing cache.  Default to {@code 256}.
      *
      * @since 0.8.3
@@ -312,6 +321,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         ).to(builder::compressionAlgorithms);
         mapper.optional(ZSTD_COMPRESSION_LEVEL).asInt()
             .to(builder::zstdCompressionLevel);
+        mapper.optional(LOOP_RESOURCES).as(LoopResources.class)
+            .to(builder::loopResources);
         mapper.optional(PASSWORD_PUBLISHER).as(Publisher.class)
             .to(builder::passwordPublisher);
 

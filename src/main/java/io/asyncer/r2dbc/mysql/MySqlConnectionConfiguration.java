@@ -23,6 +23,8 @@ import io.asyncer.r2dbc.mysql.extension.Extension;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.jetbrains.annotations.Nullable;
 import org.reactivestreams.Publisher;
+import reactor.netty.resources.LoopResources;
+import reactor.netty.tcp.TcpResources;
 
 import javax.net.ssl.HostnameVerifier;
 import java.net.Socket;
@@ -105,6 +107,8 @@ public final class MySqlConnectionConfiguration {
 
     private final int zstdCompressionLevel;
 
+    private final LoopResources loopResources;
+
     private final Extensions extensions;
 
     @Nullable
@@ -119,6 +123,7 @@ public final class MySqlConnectionConfiguration {
         @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
         int queryCacheSize, int prepareCacheSize,
         Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
+        @Nullable LoopResources loopResources,
         Extensions extensions, @Nullable Publisher<String> passwordPublisher
     ) {
         this.isHost = isHost;
@@ -141,6 +146,7 @@ public final class MySqlConnectionConfiguration {
         this.prepareCacheSize = prepareCacheSize;
         this.compressionAlgorithms = compressionAlgorithms;
         this.zstdCompressionLevel = zstdCompressionLevel;
+        this.loopResources = loopResources == null? TcpResources.get() : loopResources;
         this.extensions = extensions;
         this.passwordPublisher = passwordPublisher;
     }
@@ -239,6 +245,10 @@ public final class MySqlConnectionConfiguration {
         return zstdCompressionLevel;
     }
 
+    LoopResources getLoopResources() {
+        return loopResources;
+    }
+
     Extensions getExtensions() {
         return extensions;
     }
@@ -277,6 +287,7 @@ public final class MySqlConnectionConfiguration {
             prepareCacheSize == that.prepareCacheSize &&
             compressionAlgorithms.equals(that.compressionAlgorithms) &&
             zstdCompressionLevel == that.zstdCompressionLevel &&
+            Objects.equals(loopResources, that.loopResources) &&
             extensions.equals(that.extensions) &&
             Objects.equals(passwordPublisher, that.passwordPublisher);
     }
@@ -286,7 +297,8 @@ public final class MySqlConnectionConfiguration {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
             serverZoneId, zeroDateOption, user, password, database, createDatabaseIfNotExist,
             preferPrepareStatement, loadLocalInfilePath, localInfileBufferSize, queryCacheSize,
-            prepareCacheSize, compressionAlgorithms, zstdCompressionLevel, extensions, passwordPublisher);
+            prepareCacheSize, compressionAlgorithms, zstdCompressionLevel, loopResources,
+            extensions, passwordPublisher);
     }
 
     @Override
@@ -303,6 +315,7 @@ public final class MySqlConnectionConfiguration {
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
                 ", compressionAlgorithms=" + compressionAlgorithms +
                 ", zstdCompressionLevel=" + zstdCompressionLevel +
+                ", loopResources=" + loopResources +
                 ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
         }
 
@@ -317,6 +330,7 @@ public final class MySqlConnectionConfiguration {
             ", prepareCacheSize=" + prepareCacheSize +
             ", compressionAlgorithms=" + compressionAlgorithms +
             ", zstdCompressionLevel=" + zstdCompressionLevel +
+            ", loopResources=" + loopResources +
             ", extensions=" + extensions + ", passwordPublisher=" + passwordPublisher + '}';
     }
 
@@ -393,6 +407,9 @@ public final class MySqlConnectionConfiguration {
 
         private int zstdCompressionLevel = 3;
 
+        @Nullable
+        private LoopResources loopResources;
+
         private boolean autodetectExtensions = true;
 
         private final List<Extension> extensions = new ArrayList<>();
@@ -425,7 +442,7 @@ public final class MySqlConnectionConfiguration {
                 connectTimeout, zeroDateOption, serverZoneId, user, password, database,
                 createDatabaseIfNotExist, preferPrepareStatement, loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
-                compressionAlgorithms, zstdCompressionLevel,
+                compressionAlgorithms, zstdCompressionLevel, loopResources,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
         }
 
@@ -908,6 +925,19 @@ public final class MySqlConnectionConfiguration {
             require(level >= 1 && level <= 22, "level must be between 1 and 22");
 
             this.zstdCompressionLevel = level;
+            return this;
+        }
+
+        /**
+         * Configures the {@link LoopResources} for the driver.
+         * Default to {@link TcpResources#get() global tcp resources}.
+         * @param loopResources the {@link LoopResources}.
+         * @return this {@link Builder}.
+         * @throws IllegalArgumentException if {@code loopResources} is {@code null}.
+         * @since 1.1.2
+         */
+        public Builder loopResources(LoopResources loopResources) {
+            this.loopResources = requireNonNull(loopResources, "loopResources must not be null");
             return this;
         }
 
