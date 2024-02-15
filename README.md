@@ -36,10 +36,6 @@ This driver provides the following features:
 - [x] Extensible, e.g. extend built-in `Codec`(s).
 - [x] MariaDB `RETURNING` clause.
 
-## Maintainer
-
-This project is currently being maintained by [@jchrys](https://github.com/jchrys)
-
 ## Version compatibility / Integration tests states
 ![MySQL 5.5 status](https://img.shields.io/badge/MySQL%205.5-pass-blue)
 ![MySQL 5.6 status](https://img.shields.io/badge/MySQL%205.6-pass-blue)
@@ -144,6 +140,10 @@ This project is released under version 2.0 of the [Apache License](https://www.a
 # Acknowledgements
 
 ## Contributors
+
+<a href="https://github.com/asyncer-io/r2dbc-mysql/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=asyncer-io/r2dbc-mysql" />
+</a>
 
 Thanks a lot for your support!
 
