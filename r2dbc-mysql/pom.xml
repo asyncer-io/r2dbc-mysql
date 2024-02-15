@@ -28,7 +28,15 @@
       <name>jchrys</name>
       <email>jchrys@me.com</email>
       <roles>
-        <role>Project Lead</role>
+        <role>Maintainer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>mirromutth</id>
+      <name>mirromutth</name>
+      <email>mirromutth@gmail.com</email>
+      <roles>
+        <role>Maintainer</role>
       </roles>
     </developer>
   </developers>
