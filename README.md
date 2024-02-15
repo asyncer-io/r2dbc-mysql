@@ -103,116 +103,14 @@ See [Getting Started](https://github.com/asyncer-io/r2dbc-mysql/wiki/getting-sta
 
 See [r2dbc-pool](https://github.com/r2dbc/r2dbc-pool).
 
-### Simple statement
+### Usage
 
 ```java
 connection.createStatement("INSERT INTO `person` (`first_name`, `last_name`) VALUES ('who', 'how')")
     .execute(); // return a Publisher include one Result
 ```
 
-### Parametrized statement
-
-```java
-connection.createStatement("INSERT INTO `person` (`birth`, `nickname`, `show_name`) VALUES (?, ?name, ?name)")
-    .bind(0, LocalDateTime.of(2019, 6, 25, 12, 12, 12))
-    .bind("name", "Some one") // Not one-to-one binding, call twice of native index-bindings, or call once of name-bindings.
-    .add()
-    .bind(0, LocalDateTime.of(2009, 6, 25, 12, 12, 12))
-    .bind(1, "My Nickname")
-    .bind(2, "Naming show")
-    .returnGeneratedValues("generated_id")
-    .execute(); // return a Publisher include two Results.
-```
-
-- All parameters must be bound before execute, even parameter is `null` (use `bindNull` to bind `null`).
-- It will be using client-preparing by default, see `useServerPrepareStatement` in configuration.
-- In one-to-one binding, because native MySQL prepared statements use index-based parameters, *index-bindings* will have **better** performance than *name-bindings*.
-
-### Batch statement
-
-```java
-connection.createBatch()
-    .add("INSERT INTO `person` (`first_name`, `last_name`) VALUES ('who', 'how')")
-    .add("UPDATE `earth` SET `count` = `count` + 1 WHERE `id` = 'human'")
-    .execute(); // return a Publisher include two Results.
-```
-
-> The last `;` will be removed if and only if last statement contains ';', and statement has only whitespace follow the last `;`.
-
-### Transactions
-
-```java
-connection.beginTransaction()
-    .then(Mono.from(connection.createStatement("INSERT INTO `person` (`first_name`, `last_name`) VALUES ('who', 'how')").execute()))
-    .flatMap(Result::getRowsUpdated)
-    .thenMany(connection.createStatement("INSERT INTO `person` (`birth`, `nickname`, `show_name`) VALUES (?, ?name, ?name)")
-        .bind(0, LocalDateTime.of(2019, 6, 25, 12, 12, 12))
-        .bind("name", "Some one")
-        .add()
-        .bind(0, LocalDateTime.of(2009, 6, 25, 12, 12, 12))
-        .bind(1, "My Nickname")
-        .bind(2, "Naming show")
-        .returnGeneratedValues("generated_id")
-        .execute())
-    .flatMap(Result::getRowsUpdated)
-    .then(connection.commitTransaction());
-```
-
-## Data Type Mapping
-
-The default built-in `Codec`s  reference table shows the type mapping between [MySQL][m] and Java data types:
-
-| MySQL Type | Unsigned | Support Data Type |
-|---|---|---|
-| `INT` | `UNSIGNED` | [**`Long`**][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `INT` | `SIGNED` | [**`Integer`**][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `TINYINT` | `UNSIGNED` | [**`Short`**][java-Short-ref], [`Integer`][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref], [`Boolean`][java-Boolean-ref] (Size is 1) |
-| `TINYINT` | `SIGNED` | [**`Byte`**][java-Byte-ref], [`Short`][java-Short-ref], [`Integer`][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref], [`Boolean`][java-Boolean-ref] (Size is 1) |
-| `SMALLINT` | `UNSIGNED` | [**`Integer`**][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `SMALLINT` | `SIGNED` | [**`Short`**][java-Short-ref], [`Integer`][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `MEDIUMINT` | `SIGNED/UNSIGNED` | [**`Integer`**][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `BIGINT` | `UNSIGNED` | [**`BigInteger`**][java-BigInteger-ref], [`Long`][java-Long-ref] (Not check overflow) |
-| `BIGINT` | `SIGNED` | [**`Long`**][java-Long-ref], [`BigInteger`][java-BigInteger-ref] |
-| `FLOAT` | `SIGNED` / `UNSIGNED` | [**`Float`**][java-Float-ref], [`BigDecimal`][java-BigDecimal-ref] |
-| `DOUBLE` | `SIGNED` / `UNSIGNED` | [**`Double`**][java-Double-ref], [`BigDecimal`][java-BigDecimal-ref]  |
-| `DECIMAL` | `SIGNED` / `UNSIGNED` | [**`BigDecimal`**][java-BigDecimal-ref], [`Float`][java-Float-ref] (Size less than 7), [`Double`][java-Double-ref] (Size less than 16) |
-| `BIT` | - | [**`ByteBuffer`**][java-ByteBuffer-ref], [`BitSet`][java-BitSet-ref], [`Boolean`][java-Boolean-ref] (Size is 1), `byte[]` |
-| `DATETIME` / `TIMESTAMP` | - | [**`LocalDateTime`**][java-LocalDateTime-ref], [`ZonedDateTime`][java-ZonedDateTime-ref], [`OffsetDateTime`][java-OffsetDateTime-ref], [`Instant`][java-Instant-ref] |
-| `DATE` | - | [**`LocalDate`**][java-LocalDate-ref] |
-| `TIME` | - | [**`LocalTime`**][java-LocalTime-ref], [`Duration`][java-Duration-ref], [`OffsetTime`][java-OffsetTime-ref] |
-| `YEAR` | - | [**`Short`**][java-Short-ref], [`Integer`][java-Integer-ref], [`Long`][java-Long-ref], [`BigInteger`][java-BigInteger-ref], [`Year`][java-Year-ref] |
-| `VARCHAR` / `NVARCHAR` | - | [**`String`**][java-String-ref] |
-| `VARBINARY` | - | [**`ByteBuffer`**][java-ByteBuffer-ref], `Blob`, `byte[]` |
-| `CHAR` / `NCHAR` | - | [**`String`**][java-String-ref] |
-| `ENUM` | - | [**`String`**][java-String-ref], [`Enum<?>`][java-Enum-ref] |
-| `SET` | - | **`String[]`**, [`String`][java-String-ref], [`Set<String>`][java-Set-ref] and [`Set<Enum<?>>`][java-Set-ref] ([`Set<T>`][java-Set-ref] need use [`ParameterizedType`][java-ParameterizedType-ref]) |
-| `BLOB`s (`LONGBLOB`, etc.) | - | [**`ByteBuffer`**][java-ByteBuffer-ref], `Blob`, `byte[]` |
-| `TEXT`s (`LONGTEXT`, etc.) | - | [**`String`**][java-String-ref], `Clob` |
-| `JSON` | - | [**`String`**][java-String-ref], `Clob` |
-| `GEOMETRY` | - | **`byte[]`**, `Blob` |
-
-## Statements Logging/Debugging
-
-Use the `io.asyncer.r2dbc.mysql.QUERY` logger and the `DEBUG` log level to log statements and their bound
-parameters (if it is prepared statement).
-
-For example, in `logback.xml`:
-
-```xml
-<configuration>
-    <!-- ... -->
-    <logger name="io.asyncer.r2dbc.mysql" level="INFO"/> <!-- or DEBUG if necessary -->
-    <logger name="io.asyncer.r2dbc.mysql.QUERY" level="DEBUG"/>
-    <!-- ... -->
-</configuration>
-```
-
-Note that it will print the SQL statement and all parameters, so this may be a security risk. Don't use it
-in an environment with sensitive data. It should be used for debugging purposes only.
-
-The log format may be different for server-preparing and client-preparing. This is because the actual
-generated statements and commands are different in these two modes. For example, a server-preparing statement
-has its statement ID that's generated by server, but client-preparing does not.
+See [Usage](https://github.com/asyncer-io/r2dbc-mysql/wiki/usage) wiki for more information.
 
 ## Reporting Issues
 
@@ -255,27 +153,3 @@ Thanks a lot for your support!
   projects.
 
 [m]: https://www.mysql.com
-[java-BigDecimal-ref]: https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html
-[java-BigInteger-ref]: https://docs.oracle.com/javase/8/docs/api/java/math/BigInteger.html
-[java-BitSet-ref]: https://docs.oracle.com/javase/8/docs/api/java/util/BitSet.html
-[java-Boolean-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Boolean.html
-[java-Byte-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Byte.html
-[java-ByteBuffer-ref]: https://docs.oracle.com/javase/8/docs/api/java/nio/ByteBuffer.html
-[java-Double-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Double.html
-[java-Float-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Float.html
-[java-Integer-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Integer.html
-[java-Long-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Long.html
-[java-LocalDateTime-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/LocalDateTime.html
-[java-ZonedDateTime-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/ZonedDateTime.html
-[java-OffsetDateTime-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/OffsetDateTime.html
-[java-Instant-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/Instant.html
-[java-LocalDate-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/LocalDate.html
-[java-Duration-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html
-[java-LocalTime-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/LocalTime.html
-[java-OffsetTime-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/OffsetTime.html
-[java-Year-ref]: https://docs.oracle.com/javase/8/docs/api/java/time/Year.html
-[java-Short-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Short.html
-[java-Enum-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/Enum.html
-[java-String-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/String.html
-[java-Set-ref]: https://docs.oracle.com/javase/8/docs/api/java/util/Set.html
-[java-ParameterizedType-ref]: https://docs.oracle.com/javase/8/docs/api/java/lang/reflect/ParameterizedType.html
