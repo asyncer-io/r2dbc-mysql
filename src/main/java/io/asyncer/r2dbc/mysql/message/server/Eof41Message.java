@@ -20,7 +20,7 @@ import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A EOF message for current context in protocol 4.1.
+ * An EOF message for current context in protocol 4.1.
  */
 final class Eof41Message implements EofMessage, WarningMessage, ServerStatusMessage {
 

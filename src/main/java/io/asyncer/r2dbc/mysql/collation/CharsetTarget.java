@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 
 /**
- * MySQL character collation target of {@link Charset}.
+ * A character collation {@link Charset} target of MySQL.
  */
 interface CharsetTarget {
 

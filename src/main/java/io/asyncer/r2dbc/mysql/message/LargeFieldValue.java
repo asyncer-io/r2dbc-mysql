@@ -28,7 +28,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link FieldValue} considers large field value which bytes width/size is greater than
- * {@link Integer#MAX_VALUE}, it would be exists when MySQL server return LOB types (i.e. BLOB, CLOB),
+ * {@link Integer#MAX_VALUE}, it is used by the MySQL server returns LOB types (i.e. BLOB, CLOB), e.g.
  * LONGTEXT length can be unsigned int32.
  *
  * @see FieldValue

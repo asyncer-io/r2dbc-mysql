@@ -79,7 +79,7 @@ public final class ColumnDefinition {
     /**
      * Checks if value is an unsigned number. e.g. INT UNSIGNED, BIGINT UNSIGNED.
      * <p>
-     * Note: IEEE-754 floating types (e.g. DOUBLE/FLOAT) do not supports it in MySQL 8.0+. When creating a
+     * Note: IEEE-754 floating types (e.g. DOUBLE/FLOAT) do not support it in MySQL 8.0+. When creating a
      * column as an unsigned floating type, the server may report a warning.
      *
      * @return if value is an unsigned number.

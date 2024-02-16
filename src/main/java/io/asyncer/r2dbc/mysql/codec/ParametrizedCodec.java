@@ -32,7 +32,7 @@ import java.lang.reflect.ParameterizedType;
 public interface ParametrizedCodec<T> extends Codec<T> {
 
     /**
-     * Decode a {@link ByteBuf} as specified {@link ParameterizedType}.
+     * Decodes a {@link ByteBuf} as specified {@link ParameterizedType}.
      *
      * @param value    the {@link ByteBuf}.
      * @param metadata the metadata of the column.
@@ -46,11 +46,11 @@ public interface ParametrizedCodec<T> extends Codec<T> {
         CodecContext context);
 
     /**
-     * Check if can decode the field value as specified {@link ParameterizedType}.
+     * Checks if the field value can be decoded as specified {@link ParameterizedType}.
      *
      * @param metadata the metadata of the column.
      * @param target   the specified {@link ParameterizedType}.
-     * @return if can decode.
+     * @return if it can decode.
      */
     boolean canDecode(MySqlColumnMetadata metadata, ParameterizedType target);
 }

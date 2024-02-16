@@ -19,7 +19,6 @@ package io.asyncer.r2dbc.mysql;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.Result;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;

@@ -22,12 +22,12 @@ import io.netty.util.ReferenceCounted;
  * A sealed interface for field, it has 3-implementations: {@link NullFieldValue}, {@link NormalFieldValue}
  * and {@link LargeFieldValue}.
  * <p>
- * WARNING: it is sealed interface, should NEVER extends or implemented by another interface or class.
+ * WARNING: it is sealed interface, should NEVER extend or implemented by another interface or class.
  */
 public interface FieldValue extends ReferenceCounted {
 
     /**
-     * Check if value is {@code null}.
+     * Checks if value is {@code null}.
      *
      * @return if value is {@code null}.
      */
@@ -36,7 +36,7 @@ public interface FieldValue extends ReferenceCounted {
     }
 
     /**
-     * Get an instance for {@code null} value.
+     * Gets an instance for {@code null} value.
      *
      * @return a field contains a {@code null} value.
      */

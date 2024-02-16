@@ -22,7 +22,6 @@ import io.asyncer.r2dbc.mysql.MySqlTypeMetadata;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.r2dbc.spi.Nullability;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CodecsTest {
 
-    private static final Codecs CODECS = Codecs.builder(PooledByteBufAllocator.DEFAULT).build();
+    private static final Codecs CODECS = Codecs.builder().build();
 
     private static final CodecContext CONTEXT = ConnectionContextTest.mock();
 

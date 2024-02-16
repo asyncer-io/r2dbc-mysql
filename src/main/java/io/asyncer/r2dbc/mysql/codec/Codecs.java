@@ -93,10 +93,9 @@ public interface Codecs {
     /**
      * Create a builder from a {@link ByteBufAllocator}.
      *
-     * @param allocator the {@link ByteBufAllocator}.
      * @return a {@link CodecsBuilder}.
      */
-    static CodecsBuilder builder(ByteBufAllocator allocator) {
-        return new DefaultCodecs.Builder(allocator);
+    static CodecsBuilder builder() {
+        return new DefaultCodecs.Builder();
     }
 }

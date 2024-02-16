@@ -19,7 +19,6 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
-import io.netty.buffer.UnpooledByteBufAllocator;
 
 import java.lang.reflect.Field;
 
@@ -32,7 +31,7 @@ class PrepareParametrizedStatementTest implements StatementTestSupport<PreparePa
 
     private final Client client = mock(Client.class);
 
-    private final Codecs codecs = Codecs.builder(UnpooledByteBufAllocator.DEFAULT).build();
+    private final Codecs codecs = Codecs.builder().build();
 
     private final Field fetchSize = PrepareParametrizedStatement.class.getDeclaredField("fetchSize");
 

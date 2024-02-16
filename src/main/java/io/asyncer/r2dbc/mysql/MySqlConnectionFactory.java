@@ -158,7 +158,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             })
             .flatMap(client -> {
                 ByteBufAllocator allocator = client.getByteBufAllocator();
-                CodecsBuilder builder = Codecs.builder(allocator);
+                CodecsBuilder builder = Codecs.builder();
                 PrepareCache prepareCache = Caches.createPrepareCache(prepareCacheSize);
                 String db = createDbIfNotExist ? database : "";
 

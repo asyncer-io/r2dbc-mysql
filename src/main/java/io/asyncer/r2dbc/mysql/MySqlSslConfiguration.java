@@ -29,7 +29,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
 /**
- * MySQL configuration of SSL.
+ * A configuration of MySQL SSL connection.
  */
 public final class MySqlSslConfiguration {
 

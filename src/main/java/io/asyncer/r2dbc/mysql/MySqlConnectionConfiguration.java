@@ -48,7 +48,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
 
 /**
- * MySQL configuration of connection.
+ * A configuration of MySQL connection.
  */
 public final class MySqlConnectionConfiguration {
 
@@ -461,7 +461,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the database.  Default no database.
+         * Configures the database.  Default no database.
          *
          * @param database the database, or {@code null} if no database want to be login.
          * @return this {@link Builder}.
@@ -473,7 +473,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure to create the database given in the configuration if it does not yet exist.  Default to
+         * Configures to create the database given in the configuration if it does not yet exist.  Default to
          * {@code false}.
          *
          * @param enabled to discover and register extensions.
@@ -486,7 +486,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the Unix Domain Socket to connect to.
+         * Configures the Unix Domain Socket to connect to.
          *
          * @param unixSocket the socket file path.
          * @return this {@link Builder}.
@@ -500,7 +500,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the host.
+         * Configures the host.
          *
          * @param host the host.
          * @return this {@link Builder}.
@@ -514,7 +514,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the password, MySQL allows to login without password.
+         * Configures the password.  Default login without password.
          * <p>
          * Note: for memory security, should not use intern {@link String} for password.
          *
@@ -528,7 +528,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the port.  Defaults to {@code 3306}.
+         * Configures the port.  Defaults to {@code 3306}.
          *
          * @param port the port.
          * @return this {@link Builder}.
@@ -543,9 +543,9 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the connection timeout.  Default no timeout.
+         * Configures the connection timeout.  Default no timeout.
          *
-         * @param connectTimeout the connection timeout, or {@code null} if has no timeout.
+         * @param connectTimeout the connection timeout, or {@code null} if no timeout.
          * @return this {@link Builder}.
          * @since 0.8.1
          */
@@ -555,7 +555,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Set the user for login the database.
+         * Configures the user for login the database.
          *
          * @param user the user.
          * @return this {@link Builder}.
@@ -580,8 +580,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Enforce the time zone of server.  Default to query server time zone in initialization (no
-         * enforce).
+         * Configures the time zone of server.  Default to query server time zone in initialization.
          *
          * @param serverZoneId the {@link ZoneId}, or {@code null} if query in initialization.
          * @return this {@link Builder}.
@@ -593,8 +592,8 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the {@link ZeroDateOption}.  It is a behavior option when this driver receives a value of
-         * zero-date.
+         * Configures the {@link ZeroDateOption}.  Default to {@link ZeroDateOption#USE_NULL}.  It is a
+         * behavior option when this driver receives a value of zero-date.
          *
          * @param zeroDate the {@link ZeroDateOption}.
          * @return this {@link Builder}.
@@ -607,7 +606,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure ssl mode.  See also {@link SslMode}.
+         * Configures ssl mode.  See also {@link SslMode}.
          *
          * @param sslMode the SSL mode to use.
          * @return this {@link Builder}.
@@ -620,7 +619,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure TLS versions, see {@link io.asyncer.r2dbc.mysql.constant.TlsVersions}.
+         * Configures TLS versions, see {@link io.asyncer.r2dbc.mysql.constant.TlsVersions TlsVersions}.
          *
          * @param tlsVersion TLS versions.
          * @return this {@link Builder}.
@@ -643,7 +642,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure SSL {@link HostnameVerifier}, it is available only set {@link #sslMode(SslMode)} as
+         * Configures SSL {@link HostnameVerifier}, it is available only set {@link #sslMode(SslMode)} as
          * {@link SslMode#VERIFY_IDENTITY}. It is useful when server was using special Certificates or need
          * special verification.
          * <p>
@@ -661,7 +660,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure SSL root certification for server certificate validation. It is only available if the
+         * Configures SSL root certification for server certificate validation. It is only available if the
          * {@link #sslMode(SslMode)} is configured for verify server certification.
          * <p>
          * Default is {@code null}, which means that the default algorithm is used for the trust manager.
@@ -676,7 +675,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure client SSL certificate for client authentication.
+         * Configures client SSL certificate for client authentication.
          * <p>
          * The {@link #sslCert} and {@link #sslKey} must be both non-{@code null} or both {@code null}.
          *
@@ -690,7 +689,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure client SSL key for client authentication.
+         * Configures client SSL key for client authentication.
          * <p>
          * The {@link #sslCert} and {@link #sslKey} must be both non-{@code null} or both {@code null}.
          *
@@ -704,7 +703,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the password of SSL key file for client certificate authentication.
+         * Configures the password of SSL key file for client certificate authentication.
          * <p>
          * It will be used only if {@link #sslKey} and {@link #sslCert} non-null.
          *
@@ -719,7 +718,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure a {@link SslContextBuilder} customizer. The customizer gets applied on each SSL
+         * Configures a {@link SslContextBuilder} customizer. The customizer gets applied on each SSL
          * connection attempt to allow for just-in-time configuration updates. The {@link Function} gets
          * called with the prepared {@link SslContextBuilder} that has all configuration options applied. The
          * customizer may return the same builder or return a new builder instance to be used to build the SSL
@@ -739,7 +738,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure TCP KeepAlive.
+         * Configures TCP KeepAlive.
          *
          * @param enabled whether to enable TCP KeepAlive
          * @return this {@link Builder}
@@ -752,7 +751,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure TCP NoDelay.
+         * Configures TCP NoDelay.
          *
          * @param enabled whether to enable TCP NoDelay
          * @return this {@link Builder}
@@ -765,7 +764,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the protocol of parametrized statements to the text protocol.
+         * Configures the protocol of parametrized statements to the text protocol.
          * <p>
          * The text protocol is default protocol that's using client-preparing. See also MySQL
          * documentations.
@@ -779,7 +778,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the protocol of parametrized statements to the binary protocol.
+         * Configures the protocol of parametrized statements to the binary protocol.
          * <p>
          * The binary protocol is compact protocol that's using server-preparing. See also MySQL
          * documentations.
@@ -792,7 +791,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the protocol of parametrized statements and prepare-preferred simple statements to the
+         * Configures the protocol of parametrized statements and prepare-preferred simple statements to the
          * binary protocol.
          * <p>
          * The {@code preferPrepareStatement} configures whether to prefer prepare execution on a
@@ -816,7 +815,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configure the session variables, used to set session variables immediately after login. Default no
+         * Configures the session variables, used to set session variables immediately after login. Default no
          * session variables to set.  It should be a list of key-value pairs. e.g.
          * {@code ["sql_mode='ANSI_QUOTES,STRICT_TRANS_TABLES'", "time_zone=00:00"]}.
          *

@@ -27,7 +27,7 @@ import java.time.LocalDate;
 import java.time.temporal.Temporal;
 
 /**
- * An utility considers date/time generic logic for {@link Codec} implementations.
+ * A utility considers date/time generic logic for {@link Codec} implementations.
  */
 final class DateTimes {
 

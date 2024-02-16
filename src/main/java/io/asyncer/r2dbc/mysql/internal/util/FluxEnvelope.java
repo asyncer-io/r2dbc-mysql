@@ -269,7 +269,7 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
         ByteBuf cumulated = this.cumulated;
         this.cumulated = null;
 
-        // The protocol need least one envelope, and the last must small than maximum size of envelopes.
+        // The protocol need least one envelope, and the last must smaller than maximum size of envelopes.
         // - If there has no previous envelope, then the cumulated is null, should produce an empty
         //   envelope header.
         // - If previous envelope is a max-size envelope, then the cumulated is null, should produce an
@@ -367,7 +367,7 @@ final class CumulateEnvelopeSubscriber implements CoreSubscriber<ByteBuf>, Scann
                     .setBytes(oldBytes, buf, buf.readerIndex(), bufBytes)
                     .writerIndex(newBytes);
                 buf.readerIndex(buf.writerIndex());
-                // Release the old cumulated If write succeed (return will be succeed).
+                // Release the old cumulated If write succeed.
                 releasing = cumulated;
 
                 return result;

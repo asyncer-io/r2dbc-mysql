@@ -178,7 +178,7 @@ public final class VarIntUtils {
      * Reserve a seat of an unknown var integer in {@code buf} header.
      * <p>
      * Note: make sure the var integer will be set into the {@code buf} header, can not use it when you want
-     * write a var integer into a {@code buf} which has data before the var integer. i.e. the {@code buf}
+     * to write a var integer into a {@code buf} which has data before the var integer. i.e. the {@code buf}
      * should be a new {@link ByteBuf}.
      *
      * @param buf that want reserve to this {@link ByteBuf}.

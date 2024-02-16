@@ -34,7 +34,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * A default implementation of {@link ParameterWriter}.
  * <p>
- * WARNING: It is not safe for multithreaded access.
+ * WARNING: It is not thread safe
  */
 final class ParamWriter extends ParameterWriter {
 
@@ -324,7 +324,7 @@ final class ParamWriter extends ParameterWriter {
                 break;
             case '\'':
                 // MySQL will auto-combine consecutive strings, like '1''2' -> '12'.
-                // Sure, there can use "\\'", but this will be better. (For some logging systems)
+                // Sure, there can use '1\'2', but this will be better. (For some logging systems)
                 builder.append('\'').append('\'');
                 break;
             // Maybe useful in the future, keep '"' here.

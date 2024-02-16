@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.message.server;
 
 /**
- * A EOF message for current context in protocol 3.20.
+ * An EOF message for current context in protocol 3.20.
  * <p>
  * Note: It is also Old Change Authentication Request.
  */

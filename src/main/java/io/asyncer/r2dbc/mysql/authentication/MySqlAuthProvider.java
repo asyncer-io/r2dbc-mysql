@@ -68,7 +68,7 @@ public interface MySqlAuthProvider {
     /**
      * Get the built-in authentication plugin provider through the specified {@code type}.
      *
-     * @param type the type name of a authentication plugin provider
+     * @param type the type name of an authentication plugin provider
      * @return the authentication plugin provider
      * @throws R2dbcPermissionDeniedException the {@code type} name not found
      */

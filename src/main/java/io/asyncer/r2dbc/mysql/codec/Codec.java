@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public interface Codec<T> {
 
     /**
-     * Decode a {@link ByteBuf} as specified {@link Class}.
+     * Decodes a {@link ByteBuf} as specified {@link Class}.
      *
      * @param value    the {@link ByteBuf}.
      * @param metadata the metadata of the column.
@@ -45,19 +45,19 @@ public interface Codec<T> {
         CodecContext context);
 
     /**
-     * Check if can decode the field value as specified {@link Class}.
+     * Checks if the field value can be decoded as specified {@link Class}.
      *
      * @param metadata the metadata of the column.
      * @param target   the specified {@link Class}.
-     * @return if can decode.
+     * @return if it can decode.
      */
     boolean canDecode(MySqlColumnMetadata metadata, Class<?> target);
 
     /**
-     * Check if can encode the specified value.
+     * Checks if it can encode the specified value.
      *
      * @param value the specified value.
-     * @return if can encode.
+     * @return if it can encode.
      */
     boolean canEncode(Object value);
 
