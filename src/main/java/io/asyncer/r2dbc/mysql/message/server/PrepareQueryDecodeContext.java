@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql.message.server;
 
 /**
- * A implementation of {@link DecodeContext} for waiting {@code PreparedOkMessage}.
+ * An implementation of {@link DecodeContext} for waiting {@code PreparedOkMessage}.
  */
 final class PrepareQueryDecodeContext implements DecodeContext {
 

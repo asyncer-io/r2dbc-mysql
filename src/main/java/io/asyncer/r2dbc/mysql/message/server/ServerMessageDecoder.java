@@ -172,7 +172,7 @@ public final class ServerMessageDecoder {
             } finally {
                 combined.release();
             }
-            // Should not has other messages when metadata reading.
+            // Should not have other messages when metadata reading.
         }
 
         return decodeRow(buffers, firstBuf, header, context, "result");
@@ -211,9 +211,9 @@ public final class ServerMessageDecoder {
 
                 // Maybe OK, maybe column count (unsupported EOF on command phase)
                 if (OkMessage.isValidSize(byteSize)) {
-                    // MySQL has hard limit of 4096 columns per-table,
-                    // so if readable bytes upper than 7, it means if it is column count,
-                    // column count is already upper than (1 << 24) - 1 = 16777215, it is impossible.
+                    // MySQL has hard limited of 4096 columns per-table,
+                    // so if readable bytes is greater than 7, it means if it is column count,
+                    // column count is already greater than (1 << 24) - 1 = 16777215, it is impossible.
                     // So it must be OK message, not be column count.
                     return OkMessage.decode(false, buf, context);
                 } else if (EofMessage.isValidSize(byteSize)) {

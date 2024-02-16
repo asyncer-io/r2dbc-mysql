@@ -25,7 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import static io.asyncer.r2dbc.mysql.constant.Packets.TERMINAL;
 
 /**
- * An utility for general authentication hashing algorithm.
+ * A utility for general authentication hashing algorithm.
  */
 final class AuthUtils {
 

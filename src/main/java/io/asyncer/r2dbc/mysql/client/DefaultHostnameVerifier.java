@@ -124,7 +124,7 @@ final class DefaultHostnameVerifier implements HostnameVerifier {
         String host = normaliseIpv6(ip);
 
         for (San san : sans) {
-            // IP must be case sensitive.
+            // IP must be case-sensitive.
             if (San.IP == san.getType() && host.equals(normaliseIpv6(san.getValue()))) {
                 if (LOG_DEBUG) {
                     logger.debug("Certificate for '{}' matched IPv6 '{}' of the Subject Alternative Names",
@@ -231,7 +231,7 @@ final class DefaultHostnameVerifier implements HostnameVerifier {
         int remainderIndex = host.length() - postfixSize;
 
         if (remainderIndex <= asteriskIndex) {
-            // Asterisk must to match least one character.
+            // The asterisk must match at least one character.
             // In other words: groups.*.example.com can not match groups..example.com
             return false;
         }

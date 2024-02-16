@@ -618,17 +618,13 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         try {
             switch (realId) {
                 case "Factory":
-                    // Looks like the "Factory" time zone is UTC.
+                    // It seems like UTC.
                     return ZoneOffset.UTC;
                 case "America/Nuuk":
-                    // They are same timezone including DST.
+                    // America/Godthab is the same as America/Nuuk, with DST.
                     return ZoneId.of("America/Godthab");
                 case "ROC":
-                    // Republic of China, 1912-1949, very very old time zone.
-                    // Even the ZoneId.SHORT_IDS does not support it.
-                    // Is there anyone using this time zone, really?
-                    // Don't think so, but should support it for compatible.
-                    // Just use GMT+8, id is equal to +08:00.
+                    // It is equal to +08:00.
                     return ZoneId.of("+8");
             }
 

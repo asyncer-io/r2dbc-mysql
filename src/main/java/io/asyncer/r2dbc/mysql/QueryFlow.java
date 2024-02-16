@@ -270,7 +270,7 @@ final class QueryFlow {
      *
      * @param client         the {@link Client} to exchange messages with.
      * @param state          the connection state for checks and resets transaction statuses.
-     * @param commit         if commit, otherwise rollback.
+     * @param commit         if it is commit, otherwise rollback.
      * @param batchSupported if connection supports batch query.
      * @return receives complete signal.
      */

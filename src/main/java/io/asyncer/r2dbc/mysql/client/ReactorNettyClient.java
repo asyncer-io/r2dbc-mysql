@@ -266,7 +266,7 @@ final class ReactorNettyClient implements Client {
     @Override
     public String toString() {
         return String.format("ReactorNettyClient(%s){connectionId=%d}",
-            isConnected() ? "activating" : "clsoing or closed", context.getConnectionId());
+            isConnected() ? "activating" : "closing or closed", context.getConnectionId());
     }
 
     private void emitNextRequest(ClientMessage request) {

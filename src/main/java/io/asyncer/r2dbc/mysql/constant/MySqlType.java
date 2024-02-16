@@ -146,7 +146,7 @@ public enum MySqlType implements Type {
     },
 
     /**
-     * A IEEE-754 single-precision floating point number type. It cannot be unsigned when the server version
+     * An IEEE-754 single-precision floating point number type. It cannot be unsigned when the server version
      * is 8.0 or higher. Otherwise, the server will report a warning when defining the column.
      */
     FLOAT(MySqlType.ID_FLOAT, Float.class) {
@@ -167,7 +167,7 @@ public enum MySqlType implements Type {
     },
 
     /**
-     * A IEEE-754 double-precision floating point number type. It cannot be unsigned when the server version
+     * An IEEE-754 double-precision floating point number type. It cannot be unsigned when the server version
      * is 8.0 or higher. Otherwise, the server will report a warning when defining the column.
      */
     DOUBLE(MySqlType.ID_DOUBLE, Double.class) {
@@ -332,7 +332,7 @@ public enum MySqlType implements Type {
     },
 
     /**
-     * A enumerable string type. It is a virtual type, server will enabled {@code ENUMERABLE} in column
+     * An enumerable string type. It is a virtual type, server will enabled {@code ENUMERABLE} in column
      * definitions and type is as {@link #VARCHAR}.
      */
     ENUM(MySqlType.ID_ENUM, String.class) {
@@ -661,7 +661,7 @@ public enum MySqlType implements Type {
     }
 
     /**
-     * Get the fixed byte size of the data type in the binary protocol, otherwise {@literal 0} means that
+     * Gets the fixed byte size of the data type in the binary protocol, otherwise {@literal 0} means that
      * there is no fixed size.
      *
      * @return the fixed size in binary protocol.
@@ -729,10 +729,9 @@ public enum MySqlType implements Type {
             case ID_BLOB:
                 return definition.isBinary() ? BLOB : TEXT;
             case ID_GEOMETRY:
-                // Most of Geometry libraries were using byte[] to encode/decode which based on WKT
+                // Most Geometry libraries were using byte[] to encode/decode which based on WKT
                 // (includes Extended-WKT) or WKB
                 // MySQL using WKB for encoding/decoding, so use byte[] instead of ByteBuffer by default type.
-                // It maybe change after R2DBC SPI specify default type for GEOMETRY.
                 return GEOMETRY;
             default:
                 return UNKNOWN;

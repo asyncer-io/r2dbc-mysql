@@ -38,7 +38,7 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@code int} to current parameter. If current mode is string mode, it will write as a
-     * string like {@code write(String.valueOf(value))}. If it write as a numeric, nothing else can be written
+     * string like {@code write(String.valueOf(value))}. If write as a numeric, nothing else can be written
      * before or after this.
      *
      * @param value the value of {@code int}.
@@ -68,7 +68,7 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@link BigInteger} to current parameter. If current mode is string mode, it will
-     * write as a string like {@code write(value.toString())}. If it write as a numeric, nothing else can be
+     * write as a string like {@code write(value.toString())}. If write as a numeric, nothing else can be
      * written before or after this.
      *
      * @param value the value of {@link BigInteger}.
@@ -79,7 +79,7 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@code float} to current parameter. If current mode is string mode, it will write as
-     * a string like {@code write(String.valueOf(value))}. If it write as a numeric, nothing else can be
+     * a string like {@code write(String.valueOf(value))}. If write as a numeric, nothing else can be
      * written before or after this.
      *
      * @param value the value of {@code float}.
@@ -89,7 +89,7 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@code double} to current parameter. If current mode is string mode, it will write as
-     * a string like {@code write(String.valueOf(value))}. If it write as a numeric, nothing else can be
+     * a string like {@code write(String.valueOf(value))}. If write as a numeric, nothing else can be
      * written before or after this.
      *
      * @param value the value of {@code double}.
@@ -99,7 +99,7 @@ public abstract class ParameterWriter extends Writer {
 
     /**
      * Writes a value of {@link BigDecimal} to current parameter. If current mode is string mode, it will
-     * write as a string like {@code write(value.toString())}. If it write as a numeric, nothing else can be
+     * write as a string like {@code write(value.toString())}. If write as a numeric, nothing else can be
      * written before or after this.
      *
      * @param value the value of {@link BigDecimal}.

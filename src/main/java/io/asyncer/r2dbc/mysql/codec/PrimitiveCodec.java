@@ -30,7 +30,7 @@ import io.netty.buffer.ByteBuf;
 interface PrimitiveCodec<T> extends Codec<T> {
 
     /**
-     * Decode a {@link ByteBuf} as specified {@link Class}.
+     * Decodes a {@link ByteBuf} as specified {@link Class}.
      *
      * @param value    the {@link ByteBuf}.
      * @param metadata the metadata of the column.
@@ -44,15 +44,15 @@ interface PrimitiveCodec<T> extends Codec<T> {
         CodecContext context);
 
     /**
-     * Check if can decode the field value as a primitive data.
+     * Checks if the field value can be decoded as a primitive data.
      *
      * @param metadata the metadata of the column.
-     * @return if can decode.
+     * @return if it can decode.
      */
     boolean canPrimitiveDecode(MySqlColumnMetadata metadata);
 
     /**
-     * Get the primitive {@link Class}, such as {@link Integer#TYPE}, etc.
+     * Gets the primitive {@link Class}, such as {@link Integer#TYPE}, etc.
      *
      * @return the primitive {@link Class}.
      */

@@ -36,7 +36,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
  * An implementation of {@link FieldReader} for large result which bytes more than {@link Integer#MAX_VALUE},
- * it would be exists when MySQL server return LOB types (i.e. BLOB, CLOB), LONGTEXT length can be unsigned
+ * it is used by the MySQL server returns LOB types (i.e. BLOB, CLOB), e.g. LONGTEXT length can be unsigned
  * int32.
  */
 final class LargeFieldReader extends AbstractReferenceCounted implements FieldReader {

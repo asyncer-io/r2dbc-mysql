@@ -216,9 +216,9 @@ public final class Capability {
     }
 
     /**
-     * Checks if can use var-integer sized bytes to encode client authentication.
+     * Checks if allow to use var-integer sized bytes to encode client authentication.
      *
-     * @return if can use var-integer sized authentication.
+     * @return if allow to use var-integer sized authentication.
      */
     public boolean isVarIntSizedAuthAllowed() {
         return (bitmap & VAR_INT_SIZED_AUTH) != 0;
@@ -236,7 +236,7 @@ public final class Capability {
     /**
      * Checks if the connection contains connection attributes.
      *
-     * @return if has connection attributes.
+     * @return if connection attributes exists.
      */
     public boolean isConnectionAttributesAllowed() {
         return (bitmap & CONNECT_ATTRS) != 0;

@@ -275,7 +275,7 @@ final class DefaultCodecs implements Codecs {
         return type.isAssignableFrom(javaType) ? javaType : type;
     }
 
-    private static Codec<?>[] defaultCodecs(ByteBufAllocator allocator) {
+    private static Codec<?>[] defaultCodecs() {
         return new Codec<?>[] {
             ByteCodec.INSTANCE,
             ShortCodec.INSTANCE,
@@ -318,23 +318,17 @@ final class DefaultCodecs implements Codecs {
 
     static final class Builder implements CodecsBuilder {
 
-        private final ByteBufAllocator allocator;
-
         @GuardedBy("lock")
         private final ArrayList<Codec<?>> codecs = new ArrayList<>();
 
         private final ReentrantLock lock = new ReentrantLock();
-
-        Builder(ByteBufAllocator allocator) {
-            this.allocator = allocator;
-        }
 
         @Override
         public CodecsBuilder addFirst(Codec<?> codec) {
             lock.lock();
             try {
                 if (codecs.isEmpty()) {
-                    Codec<?>[] defaultCodecs = defaultCodecs(allocator);
+                    Codec<?>[] defaultCodecs = defaultCodecs();
 
                     codecs.ensureCapacity(defaultCodecs.length + 1);
                     // Add first.
@@ -354,7 +348,7 @@ final class DefaultCodecs implements Codecs {
             lock.lock();
             try {
                 if (codecs.isEmpty()) {
-                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs(allocator)));
+                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs()));
                 }
                 codecs.add(codec);
             } finally {
@@ -369,7 +363,7 @@ final class DefaultCodecs implements Codecs {
             try {
                 try {
                     if (codecs.isEmpty()) {
-                        return new DefaultCodecs(defaultCodecs(allocator));
+                        return new DefaultCodecs(defaultCodecs());
                     }
                     return new DefaultCodecs(codecs.toArray(new Codec<?>[0]));
                 } finally {

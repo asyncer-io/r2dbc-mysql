@@ -43,7 +43,7 @@ public interface MySqlParameter extends Disposable {
      * Binary protocol encoding. See MySQL protocol documentations, if don't want to support the binary
      * protocol, please receive an exception.
      * <p>
-     * Note: not like the text protocol, it make a sense for state-less.
+     * Note: not like the text protocol, it makes a sense for state-less.
      * <p>
      * Binary protocol maybe need to add a var-integer length before encoded content. So if makes it like
      * {@code Mono<Void> publishBinary (Xxx binaryWriter)}, and if supports multiple times writing like a
@@ -75,9 +75,9 @@ public interface MySqlParameter extends Disposable {
     Mono<Void> publishText(ParameterWriter writer);
 
     /**
-     * Get the {@link MySqlType} of this parameter data.
+     * Gets the {@link MySqlType} of this parameter data.
      * <p>
-     * If don't want to support the binary protocol, just throw an exception please.
+     * If it does not want to support the binary protocol, just throw an exception please.
      *
      * @return the MySQL type.
      */

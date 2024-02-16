@@ -123,7 +123,7 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
         }
 
         if (capability.isPluginAuthAllowed()) {
-            // This must be an UTF-8 string.
+            // This must be a UTF-8 string.
             HandshakeResponse.writeCString(buf, authType, StandardCharsets.UTF_8);
         }
 

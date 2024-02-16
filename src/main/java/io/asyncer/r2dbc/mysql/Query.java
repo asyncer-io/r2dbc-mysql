@@ -167,7 +167,7 @@ public final class Query {
         }
 
         Map<String, ParameterIndex> nameKeyedParams = new HashMap<>();
-        // Used by singleton map, if SQL does not contains named-parameter, it will always be empty.
+        // Used by singleton map, if SQL does not contain named-parameter, it will always be empty.
         String anyName = "";
         // The last parameter end index (whatever named or not) of sql.
         int lastParamEnd = 0;

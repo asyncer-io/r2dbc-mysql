@@ -30,8 +30,8 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * The MySQL connection context considers the behavior of server or client.
  * <p>
- * WARNING: Do NOT change any data outside of this project, try configure {@code ConnectionFactoryOptions} or
- * {@code MySqlConnectionConfiguration} to control connection context and client behavior.
+ * WARNING: Do NOT change any data outside of this project, try to configure {@code ConnectionFactoryOptions}
+ * or {@code MySqlConnectionConfiguration} to control connection context and client behavior.
  */
 public final class ConnectionContext implements CodecContext {
 

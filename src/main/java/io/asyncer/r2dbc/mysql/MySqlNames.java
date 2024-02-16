@@ -67,7 +67,7 @@ final class MySqlNames {
                 left = middle + 1;
 
                 if (compared == -2) {
-                    // Match succeed if case insensitive, always use last
+                    // Match succeed if case-insensitive, always use last
                     // matched result that will be closer to `name`.
                     ciResult = middle;
                 }
@@ -75,12 +75,12 @@ final class MySqlNames {
                 right = middle - 1;
 
                 if (compared == 2) {
-                    // Match succeed if case insensitive, always use last
+                    // Match succeed if case-insensitive, always use last
                     // matched result that will be closer to `name`.
                     ciResult = middle;
                 }
             } else {
-                // Match succeed when case sensitive, just return.
+                // Match succeed when case-sensitive.
                 return middle;
             }
         }
@@ -90,9 +90,9 @@ final class MySqlNames {
 
     /**
      * Compares double strings and return an integer of both difference. If the integer is {@code 0} means
-     * both strings equals even case sensitive, absolute value is {@code 2} means it is equals by case
-     * insensitive but not equals when case sensitive, absolute value is {@code 4} means it is not equals even
-     * case insensitive.
+     * both strings equals even case-sensitive, absolute value is {@code 2} means it is equals by
+     * case-insensitive but not equals when case-sensitive, absolute value is {@code 4} means it is not equals
+     * even case-insensitive.
      * <p>
      * Note: visible for unit tests.
      *
@@ -117,7 +117,7 @@ final class MySqlNames {
 
             if (leftCh != rightCh) {
                 if (csCompared == 0) {
-                    // Compare end if is case sensitive comparator.
+                    // Compare end if is case-sensitive comparator.
                     csCompared = leftCh - rightCh;
                 }
 
@@ -126,18 +126,18 @@ final class MySqlNames {
                 rightCh = Character.toLowerCase(rightCh);
 
                 if (leftCh != rightCh) {
-                    // Not equals even case insensitive.
+                    // Not equals even case-insensitive.
                     return leftCh < rightCh ? -4 : 4;
                 }
             }
         }
 
-        // Length not equals means both strings not equals even case insensitive.
+        // Length not equals means both strings not equals even case-insensitive.
         if (leftSize != rightSize) {
             return leftSize < rightSize ? -4 : 4;
         }
 
-        // Equals when case insensitive, use case sensitive.
+        // Equals when case-insensitive, use case-sensitive.
         return csCompared < 0 ? -2 : (csCompared > 0 ? 2 : 0);
     }
 
