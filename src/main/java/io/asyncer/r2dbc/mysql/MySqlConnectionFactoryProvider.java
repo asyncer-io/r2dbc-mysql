@@ -204,6 +204,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         Option.valueOf("allowLoadLocalInfileInPath");
 
     /**
+     * Option to set the buffer size for local infile. Default to {@code 8192}.
+     *
+     * @since 1.1.2
+     */
+    public static final Option<Integer> LOCAL_INFILE_BUFFER_SIZE =
+        Option.valueOf("localInfileBufferSize");
+
+    /**
      * Option to set compression algorithms.  Default to [{@link CompressionAlgorithm#UNCOMPRESSED}].
      * <p>
      * It will auto choose an algorithm that's contained in the list and supported by the server, preferring
@@ -314,6 +322,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             builder::useServerPrepareStatement, builder::useServerPrepareStatement);
         mapper.optional(ALLOW_LOAD_LOCAL_INFILE_IN_PATH).asString()
             .to(builder::allowLoadLocalInfileInPath);
+        mapper.optional(LOCAL_INFILE_BUFFER_SIZE).asInt()
+            .to(builder::localInfileBufferSize);
         mapper.optional(QUERY_CACHE_SIZE).asInt()
             .to(builder::queryCacheSize);
         mapper.optional(PREPARE_CACHE_SIZE).asInt()
