@@ -35,6 +35,8 @@ import reactor.core.publisher.Mono;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -44,6 +46,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.PASSWORD_PUBLISHER;
@@ -448,6 +451,43 @@ class MySqlConnectionFactoryProviderTest {
             .build();
 
         assertThat(ConnectionFactories.get(options)).isExactlyInstanceOf(MySqlConnectionFactory.class);
+    }
+
+    @Test
+    void allConfigurationOptions() {
+        List<String> exceptConfigs =  Arrays.asList(
+            "extendWith",
+            "username",
+            "zeroDateOption");
+        List<String> exceptOptions = Arrays.asList(
+            "driver",
+            "ssl",
+            "protocol",
+            "zeroDate",
+            "lockWaitTimeout",
+            "statementTimeout");
+        Set<String> allOptions = Stream.concat(
+                Arrays.stream(ConnectionFactoryOptions.class.getFields()),
+                Arrays.stream(MySqlConnectionFactoryProvider.class.getFields())
+            )
+            .filter(field -> Modifier.isStatic(field.getModifiers()) && field.getType() == Option.class)
+            .map(field -> {
+                try {
+                    return ((Option<?>) field.get(null)).name();
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .filter(name -> !exceptOptions.contains(name))
+            .collect(Collectors.toSet());
+        Set<String> allBuilderOptions = Arrays.stream(MySqlConnectionConfiguration.Builder.class.getMethods())
+            .filter(method -> method.getParameterCount() >= 1 &&
+                method.getReturnType() == MySqlConnectionConfiguration.Builder.class &&
+                !exceptConfigs.contains(method.getName()))
+            .map(Method::getName)
+            .collect(Collectors.toSet());
+
+        assertThat(allBuilderOptions).containsExactlyInAnyOrderElementsOf(allOptions);
     }
 
     @ParameterizedTest
