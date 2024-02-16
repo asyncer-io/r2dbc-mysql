@@ -121,11 +121,11 @@ jobs:
         working-directory: ./prepare-workspace/
         run: |
             cat <(echo -e "${{ secrets.GPG_PRIVATE_KEY }}") | gpg --batch --import
-            ./mvnw -B -ntp -am clean javadoc:jar package gpg:sign org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" -Dgpg.keyname="${{ secrets.GPG_KEY_NAME }}"
+            ./mvnw -B -ntp -am -pl r2dbc-mysql clean javadoc:jar package gpg:sign org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" -Dgpg.keyname="${{ secrets.GPG_KEY_NAME }}"
 
       - name: Deploy Local Staged Artifacts
         working-directory: ./prepare-workspace/
-        run: ./mvnw -B -ntp --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/home/runner/local-staging -DskipStagingRepositoryClose=true
+        run: ./mvnw -B -ntp -pl r2dbc-mysql --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DnexusUrl=https://s01.oss.sonatype.org -DserverId=ossrh-staging -DaltStagingDirectory=/home/runner/local-staging -DskipStagingRepositoryClose=true
 
 
       - name: Rollback Release

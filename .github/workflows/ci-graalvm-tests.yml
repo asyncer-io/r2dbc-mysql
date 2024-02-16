@@ -1,0 +1,53 @@
+# Copyright 2024 asyncer.io proejcts
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Native Image Build Test
+
+on:
+  pull_request:
+    branches: [ "trunk", "0.9.x" ]
+
+jobs:
+  graalvm-build-pr:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MySQL
+        env:
+         MYSQL_DATABASE: r2dbc
+         MYSQL_ROOT_PASSWORD: r2dbc-password!@
+         MYSQL_VERSION: 8.1
+        run: docker-compose -f ${{ github.workspace }}/containers/mysql-compose.yml up -d
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: 21
+          distribution: 'graalvm'
+          native-image-job-reports: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache & Load Local Maven Repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-prepare-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-prepare-
+
+      - name: Build and run native image
+        run: |
+            echo "JAVA_HOME=$JAVA_HOME"
+            echo "./mvnw -Pgraalvm package"
+            ./mvnw -Pgraalvm package
+            ./test-native-image/target/test-native-image -Dtest.mysql.password=r2dbc-password!@

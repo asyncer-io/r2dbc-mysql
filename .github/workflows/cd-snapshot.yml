@@ -52,7 +52,7 @@ jobs:
             }]
 
       - name: Deploy Local Staging
-        run: ./mvnw -B -ntp clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
+        run: ./mvnw -B -ntp -pl r2dbc-mysql clean package org.sonatype.plugins:nexus-staging-maven-plugin:deploy -DaltStagingDirectory=/home/runner/local-staging -DskipRemoteStaging=true -DskipTests=true
 
       - name: Deploy Local Staged Artifacts
-        run: ./mvnw -B --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DaltStagingDirectory=/home/runner/local-staging
+        run: ./mvnw -B -pl r2dbc-mysql --file pom.xml org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DaltStagingDirectory=/home/runner/local-staging
