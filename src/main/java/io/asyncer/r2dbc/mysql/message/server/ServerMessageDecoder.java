@@ -219,10 +219,13 @@ public final class ServerMessageDecoder {
                 } else if (EofMessage.isValidSize(byteSize)) {
                     return EofMessage.decode(buf);
                 }
+
+                break;
             case LOCAL_INFILE:
                 if (buf.readableBytes() > 1) {
                     return LocalInfileRequest.decode(buf, context);
                 }
+
                 break;
         }
 
