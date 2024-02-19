@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.asyncer</groupId>
+    <artifactId>r2dbc-mysql-parent</artifactId>
+    <version>1.1.2-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>test-native-image</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>r2dbc-mysql</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.graalvm.nativeimage</groupId>
+        <artifactId>native-image-maven-plugin</artifactId>
+        <version>${graalvm.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>native-image</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <skip>${skipNativeImage}</skip>
+          <imageName>${project.artifactId}</imageName>
+          <mainClass>io.asyncer.Main</mainClass>
+          <buildArgs>--report-unsupported-elements-at-runtime --allow-incomplete-classpath --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils</buildArgs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
