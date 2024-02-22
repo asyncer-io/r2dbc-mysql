@@ -26,6 +26,7 @@
     <logger name="org.testcontainers"   level="INFO"/>
     <logger name="reactor.netty"        level="INFO"/>
     <logger name="com.zaxxer.hikari"    level="WARN"/>
+    <logger name="io.netty"             level="WARN"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>

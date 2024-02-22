@@ -20,4 +20,10 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
       - name: Unit test with Maven
-        run: ./mvnw -B test -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN
+        run: | 
+          ./mvnw -B test -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN \
+          -Dio.netty.leakDetectionLevel=paranoid \
+          -Dio.netty.leakDetection.targetRecords=32 \
+          | tee test.log
+      - name: ensure no leaks
+        run: ./.github/scripts/ensure_no_leak.sh test.log
