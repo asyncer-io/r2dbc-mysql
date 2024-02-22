@@ -41,7 +41,7 @@ public final class ServerVersion implements Comparable<ServerVersion> {
      * Unresolved/origin version pattern, do NOT use it on {@link #hashCode()}, {@link #equals(Object)} or
      * {@link #compareTo(ServerVersion)}.
      */
-    private transient final String origin;
+    private final transient String origin;
 
     private final int major;
 

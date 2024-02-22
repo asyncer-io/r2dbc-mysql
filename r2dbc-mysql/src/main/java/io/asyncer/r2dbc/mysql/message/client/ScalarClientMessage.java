@@ -28,7 +28,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 abstract class ScalarClientMessage implements ClientMessage {
 
-    abstract protected void writeTo(ByteBuf buf, ConnectionContext context);
+    protected abstract void writeTo(ByteBuf buf, ConnectionContext context);
 
     @Override
     public Mono<ByteBuf> encode(ByteBufAllocator allocator, ConnectionContext context) {

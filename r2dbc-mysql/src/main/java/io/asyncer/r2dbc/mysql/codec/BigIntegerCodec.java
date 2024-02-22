@@ -140,7 +140,7 @@ final class BigIntegerCodec extends AbstractClassedCodec<BigInteger> {
         return new BigDecimal(buf.toString(StandardCharsets.US_ASCII)).toBigInteger();
     }
 
-    private static class BigIntegerMySqlParameter extends AbstractMySqlParameter {
+    private static final class BigIntegerMySqlParameter extends AbstractMySqlParameter {
 
         private final BigInteger value;
 

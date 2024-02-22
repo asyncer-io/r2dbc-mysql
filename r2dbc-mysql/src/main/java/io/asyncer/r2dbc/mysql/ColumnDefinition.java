@@ -140,7 +140,7 @@ public final class ColumnDefinition {
 
     @Override
     public String toString() {
-        return "ColumnDefinition<0x" + Integer.toHexString(bitmap) + ", 0x" + Integer.toHexString(collationId)+ '>';
+        return "ColumnDefinition<0x" + Integer.toHexString(bitmap) + ", 0x" + Integer.toHexString(collationId) + '>';
     }
 
     /**

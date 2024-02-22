@@ -349,9 +349,9 @@ abstract class BaseFluxExchangeable extends FluxExchangeable<ServerMessage> {
         }
     }
 
-    abstract protected void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink);
+    protected abstract void tryNextOrComplete(@Nullable SynchronousSink<ServerMessage> sink);
 
-    abstract protected String offendingSql();
+    protected abstract String offendingSql();
 }
 
 final class SimpleQueryExchangeable extends BaseFluxExchangeable {

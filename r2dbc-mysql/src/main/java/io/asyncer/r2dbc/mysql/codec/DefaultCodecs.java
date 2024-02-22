@@ -22,7 +22,6 @@ import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
-import io.netty.buffer.ByteBufAllocator;
 import io.r2dbc.spi.Parameter;
 import org.jetbrains.annotations.Nullable;
 

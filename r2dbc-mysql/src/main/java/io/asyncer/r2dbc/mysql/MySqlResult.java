@@ -226,11 +226,14 @@ public final class MySqlResult implements Result {
         }
     }
 
+    @SuppressWarnings("checkstyle:FinalClass")
     private static class MySqlUpdateCount implements UpdateCount {
 
-        protected final long rows;
+        private final long rows;
 
-        private MySqlUpdateCount(long rows) { this.rows = rows; }
+        private MySqlUpdateCount(long rows) {
+            this.rows = rows;
+        }
 
         @Override
         public long value() {

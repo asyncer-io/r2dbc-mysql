@@ -81,7 +81,7 @@ abstract class MetadataDecodeContext implements DecodeContext {
     }
 
     @Nullable
-    abstract protected SyntheticMetadataMessage checkComplete(int index, @Nullable EofMessage eof);
+    protected abstract SyntheticMetadataMessage checkComplete(int index, @Nullable EofMessage eof);
 
     /**
      * Put a column metadata message into this context.
@@ -89,19 +89,19 @@ abstract class MetadataDecodeContext implements DecodeContext {
      * @param metadata the column metadata message.
      * @return current index after putting the metadata.
      */
-    abstract protected int putMetadata(DefinitionMetadataMessage metadata);
+    protected abstract int putMetadata(DefinitionMetadataMessage metadata);
 
     /**
      * Get the current index, for {@link #checkComplete(int, EofMessage)} when receive a EOF message.
      *
      * @return the current index.
      */
-    abstract protected int currentIndex();
+    protected abstract int currentIndex();
 
     /**
      * Get checkpoints for logging.
      *
      * @return serializable object, like {@link String} or {@link Integer}.
      */
-    abstract protected Object loggingPoints();
+    protected abstract Object loggingPoints();
 }

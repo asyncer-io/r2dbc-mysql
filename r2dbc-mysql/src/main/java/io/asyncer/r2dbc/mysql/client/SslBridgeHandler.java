@@ -196,7 +196,9 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
 
         private final SslContextBuilder builder;
 
-        private MySqlSslContextSpec(SslContextBuilder builder) { this.builder = builder; }
+        private MySqlSslContextSpec(SslContextBuilder builder) {
+            this.builder = builder;
+        }
 
         @Override
         public MySqlSslContextSpec configure(Consumer<SslContextBuilder> customizer) {

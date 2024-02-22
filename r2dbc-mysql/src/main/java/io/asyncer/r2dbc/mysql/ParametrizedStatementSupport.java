@@ -121,7 +121,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
         });
     }
 
-    abstract protected Flux<MySqlResult> execute(List<Binding> bindings);
+    protected abstract Flux<MySqlResult> execute(List<Binding> bindings);
 
     /**
      * Get parameter index(es) by parameter name.

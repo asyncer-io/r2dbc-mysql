@@ -29,9 +29,9 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 abstract class SizedClientMessage implements ClientMessage {
 
-    abstract protected int size();
+    protected abstract int size();
 
-    abstract protected void writeTo(ByteBuf buf);
+    protected abstract void writeTo(ByteBuf buf);
 
     @Override
     public Mono<ByteBuf> encode(ByteBufAllocator allocator, ConnectionContext context) {

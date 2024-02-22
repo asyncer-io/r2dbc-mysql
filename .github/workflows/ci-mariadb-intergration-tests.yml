@@ -29,6 +29,7 @@ jobs:
         run: docker-compose -f ${{ github.workspace }}/containers/mariadb-compose.yml up -d
       - name: Integration test with MySQL ${{ matrix.mysql-version }}
         run: |
+          set -o pipefail
           ./mvnw -B verify -Dmaven.javadoc.skip=true \
           -Dmaven.surefire.skip=true \
           -Dtest.mysql.password=r2dbc-password!@ \
@@ -39,5 +40,6 @@ jobs:
           -Dio.netty.leakDetectionLevel=paranoid \
           -Dio.netty.leakDetection.targetRecords=32 \
           | tee test.log
+          set +o pipefail
       - name: ensure no leaks
         run: ./.github/scripts/ensure_no_leak.sh test.log
