@@ -3,13 +3,22 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>io.asyncer</groupId>
-    <artifactId>r2dbc-mysql-parent</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
-  </parent>
-
+  <groupId>io.asyncer</groupId>
   <artifactId>test-native-image</artifactId>
+  <version>1.1.2-SNAPSHOT</version>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <java.version>1.8</java.version>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
+    <skipNativeImage>true</skipNativeImage>
+
+    <reactor.version>2022.0.9</reactor.version>
+    <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
+    <graalvm.version>21.2.0</graalvm.version>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -17,7 +26,28 @@
       <artifactId>r2dbc-mysql</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.r2dbc</groupId>
+      <artifactId>r2dbc-spi</artifactId>
+      <version>${r2dbc-spi.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+    </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-bom</artifactId>
+        <version>${reactor.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>
@@ -43,4 +73,17 @@
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>graalvm</id>
+      <activation>
+        <file>
+          <exists>${java.home}/bin/gu</exists>
+        </file>
+      </activation>
+      <properties>
+        <skipNativeImage>false</skipNativeImage>
+      </properties>
+    </profile>
+  </profiles>
 </project>
