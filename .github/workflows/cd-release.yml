@@ -49,7 +49,7 @@ jobs:
 
       - name: Run release prepare command
         run: |
-          ./mvnw -B -ntp --file pom.xml release:prepare -DpreparationGoals=clean -DskipTests=true
+          ./mvnw -B -ntp -pl r2dbc-mysql release:prepare -DpreparationGoals=clean -DskipTests=true
           ./mvnw -B -ntp clean
 
       - name: Ensure Prepared
