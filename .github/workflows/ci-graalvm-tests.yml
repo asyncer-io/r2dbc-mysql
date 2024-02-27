@@ -48,6 +48,6 @@ jobs:
       - name: Build and run native image
         run: |
             echo "JAVA_HOME=$JAVA_HOME"
-            echo "./mvnw -Pgraalvm package"
-            ./mvnw -Pgraalvm package
+            echo "./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true"
+            ./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true
             ./test-native-image/target/test-native-image -Dtest.mysql.password=r2dbc-password!@
