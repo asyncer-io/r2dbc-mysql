@@ -47,9 +47,16 @@ jobs:
           key: ${{ runner.os }}-prepare-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-prepare-
 
+      - name: DryRun Release Prepare
+        run: |
+          ./mvnw -B -ntp -pl r2dbc-mysql release:prepare -DpreparationGoals=clean -DdryRun=true -DskipTests=true
+
+      - name: Upgrade Native Image Version
+        run: ./.github/scripts/upgrade_native_image_version.sh
+
       - name: Run release prepare command
         run: |
-          ./mvnw -B -ntp -pl r2dbc-mysql release:prepare -DpreparationGoals=clean -DskipTests=true
+          ./mvnw -B -ntp -pl r2dbc-mysql release:prepare -DpreparationGoals=clean -Dresume=false -DskipTests=true
           ./mvnw -B -ntp clean
 
       - name: Ensure Prepared
