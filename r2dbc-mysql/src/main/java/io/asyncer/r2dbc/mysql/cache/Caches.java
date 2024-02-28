@@ -21,6 +21,9 @@ package io.asyncer.r2dbc.mysql.cache;
  */
 public final class Caches {
 
+    private Caches() {
+    }
+
     /**
      * Create a new {@link QueryCache} by cache configuration.
      *

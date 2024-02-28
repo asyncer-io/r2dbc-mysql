@@ -45,7 +45,6 @@ import reactor.core.publisher.SynchronousSink;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -656,7 +655,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
             "@@transaction_isolation AS i" : "@@tx_isolation AS i";
     }
 
-    private static class SessionData {
+    private static final class SessionData {
 
         private final IsolationLevel level;
 

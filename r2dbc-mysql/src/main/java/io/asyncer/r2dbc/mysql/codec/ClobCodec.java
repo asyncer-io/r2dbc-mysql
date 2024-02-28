@@ -81,7 +81,7 @@ final class ClobCodec implements MassiveCodec<Clob> {
         return new ClobMySqlParameter((Clob) value, context);
     }
 
-    private static class ClobMySqlParameter extends AbstractLobMySqlParameter {
+    private static final class ClobMySqlParameter extends AbstractLobMySqlParameter {
 
         private final AtomicReference<Clob> clob;
 

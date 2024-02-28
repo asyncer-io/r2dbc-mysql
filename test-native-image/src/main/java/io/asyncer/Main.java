@@ -22,7 +22,12 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryOptions;
 import reactor.core.publisher.Mono;
 
-public class Main {
+public final class Main {
+
+    private Main() {
+        // Native Image Entry Point
+    }
+
     public static void main(String[] args) {
         ConnectionFactory connectionFactory = ConnectionFactories.get(ConnectionFactoryOptions.builder()
                 .option(ConnectionFactoryOptions.DRIVER, "mysql")

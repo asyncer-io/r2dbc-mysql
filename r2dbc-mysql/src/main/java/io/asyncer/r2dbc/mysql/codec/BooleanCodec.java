@@ -48,7 +48,7 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
     @Override
     public MySqlParameter encode(Object value, CodecContext context) {
-        return (Boolean) value? BooleanMySqlParameter.TRUE : BooleanMySqlParameter.FALSE;
+        return (Boolean) value ? BooleanMySqlParameter.TRUE : BooleanMySqlParameter.FALSE;
     }
 
     @Override

@@ -84,7 +84,7 @@ final class StringCodec extends AbstractClassedCodec<String> {
         }
     }
 
-    private static class StringMySqlParameter extends AbstractMySqlParameter {
+    private static final class StringMySqlParameter extends AbstractMySqlParameter {
 
         private final CharSequence value;
 

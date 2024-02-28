@@ -56,7 +56,9 @@ final class Source<T> {
     @Nullable
     private final T value;
 
-    private Source(@Nullable T value) { this.value = value; }
+    private Source(@Nullable T value) {
+        this.value = value;
+    }
 
     Otherwise to(Consumer<? super T> consumer) {
         if (value == null) {

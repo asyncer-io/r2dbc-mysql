@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 asyncer.io projects
+ * Copyright 2024 asyncer.io projects
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql;
-
-import io.r2dbc.spi.Batch;
-import reactor.core.publisher.Flux;
-
 /**
- * Base class considers methods definition for implementations of {@link Batch}.
+ * Native image build test classes.
  */
-public abstract class MySqlBatch implements Batch {
+@NotNullByDefault
+package io.asyncer;
 
-    @Override
-    public abstract MySqlBatch add(String sql);
-
-    @Override
-    public abstract Flux<MySqlResult> execute();
-}
+import io.asyncer.r2dbc.mysql.internal.NotNullByDefault;

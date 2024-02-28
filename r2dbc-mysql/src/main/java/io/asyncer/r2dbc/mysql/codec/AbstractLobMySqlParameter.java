@@ -52,5 +52,5 @@ abstract class AbstractLobMySqlParameter extends AbstractMySqlParameter {
     }
 
     @Nullable
-    abstract protected Publisher<Void> getDiscard();
+    protected abstract Publisher<Void> getDiscard();
 }
