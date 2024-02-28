@@ -39,7 +39,18 @@ class MySqlRowMetadataTest {
                 Arguments.of("alpha", 0, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
                 Arguments.of("`alpha`", 0, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
                 Arguments.of("Alpha", 0, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
-                Arguments.of("`Alpha`", 2, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" })
+                Arguments.of("`Alpha`", 2, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+
+                Arguments.of("beta", 1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`beta`", 1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("Beta", 1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`Beta`", -1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+
+                Arguments.of("delta", 3, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`delta`", 6, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("Delta", 3, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`Delta`", -1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" })
+
 
         );
     }
