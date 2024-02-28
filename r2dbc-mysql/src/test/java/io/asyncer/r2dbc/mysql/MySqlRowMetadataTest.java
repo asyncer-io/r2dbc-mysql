@@ -49,9 +49,12 @@ class MySqlRowMetadataTest {
                 Arguments.of("delta", 3, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
                 Arguments.of("`delta`", 6, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
                 Arguments.of("Delta", 3, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
-                Arguments.of("`Delta`", -1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" })
+                Arguments.of("`Delta`", -1, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
 
-
+                Arguments.of("gamma", 4, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`gamma`", 4, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("Gamma", 5, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" }),
+                Arguments.of("`Gamma`", 5, new String[] { "alpha", "beta", "Alpha", "DELTA", "gamma", "Gamma", "delta" })
         );
     }
 
