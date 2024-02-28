@@ -20,6 +20,7 @@ import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
 import io.r2dbc.spi.RowMetadata;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,8 +33,6 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link RowMetadata} for MySQL database text/binary results.
- *
- * @see MySqlNames column name searching rules.
  */
 final class MySqlRowMetadata implements RowMetadata {
 
@@ -41,7 +40,8 @@ final class MySqlRowMetadata implements RowMetadata {
 
     private Map<String, Integer> nameIndexMap;
 
-    private MySqlRowMetadata(MySqlColumnDescriptor[] metadata) {
+    @VisibleForTesting
+    MySqlRowMetadata(MySqlColumnDescriptor[] metadata) {
         this.originMetadata = metadata;
     }
 
