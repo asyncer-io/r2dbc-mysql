@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
+import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.Nullability;
 import io.r2dbc.spi.Row;
@@ -45,15 +46,11 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
 
     private final long lastInsertId;
 
-    private final ColumnNameSet nameSet;
-
     InsertSyntheticRow(Codecs codecs, String keyName, long lastInsertId) {
         this.codecs = requireNonNull(codecs, "codecs must not be null");
         this.keyName = requireNonNull(keyName, "keyName must not be null");
         // lastInsertId may be negative if key is BIGINT UNSIGNED and value overflow than signed int64.
         this.lastInsertId = lastInsertId;
-        // Singleton name must be sorted.
-        this.nameSet = ColumnNameSet.of(keyName);
     }
 
     @Override
@@ -142,12 +139,16 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
 
     private void assertValidName(String name) {
         if (!contains0(name)) {
-            throw new NoSuchElementException("Column name '" + name + "' does not exist in " + this.nameSet);
+            throw new NoSuchElementException("Column name '" + name + "' does not exist in " + "{ " + keyName + '}');
         }
     }
 
     private boolean contains0(String name) {
-        return nameSet.contains(name);
+        final boolean caseSensitive = StringUtils.isQuoted(name);
+        if (caseSensitive) {
+            return StringUtils.unwrapQuotes(name).equals(keyName);
+        }
+        return name.equalsIgnoreCase(keyName);
     }
 
     private <T> T get0(Class<?> type) {

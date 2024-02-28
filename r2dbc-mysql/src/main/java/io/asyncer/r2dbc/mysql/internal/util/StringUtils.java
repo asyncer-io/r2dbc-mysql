@@ -114,6 +114,27 @@ public final class StringUtils {
         return ZoneId.of(realId, ZoneId.SHORT_IDS).normalized();
     }
 
+    /**
+     * Checks if the identifier is quoted.
+     * @param name the identifier
+     * @return {@code true} if the identifier is quoted
+     */
+    public static boolean isQuoted(final String name) {
+        return name.length() > 1 && name.charAt(0) == QUOTE && name.charAt(name.length() - 1) == QUOTE;
+    }
+
+    /**
+     * Unwraps the quoted identifier.
+     * @param name the quoted identifier
+     * @return the unwrapped identifier
+     */
+    public static String unwrapQuotes(final String name) {
+        if (!isQuoted(name)) {
+            return name;
+        }
+        return name.substring(1, name.length() - 1);
+    }
+
     private StringUtils() {
     }
 }
