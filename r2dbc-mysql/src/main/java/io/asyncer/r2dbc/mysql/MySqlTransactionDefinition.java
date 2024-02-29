@@ -37,35 +37,34 @@ import java.util.Map;
 public final class MySqlTransactionDefinition implements TransactionDefinition {
 
     /**
-     * Use {@code WITH CONSISTENT SNAPSHOT} syntax, all MySQL-compatible servers should support this syntax.
+     * Use {@code WITH CONSISTENT SNAPSHOT} property.
+     * <p>
      * The option starts a consistent read for storage engines such as InnoDB and XtraDB that can do so, the
      * same as if a {@code START TRANSACTION} followed by a {@code SELECT ...} from any InnoDB table was
      * issued.
-     * <p>
-     * NOTICE: This option and {@link #READ_ONLY} cannot be enabled at the same definition.
      */
     public static final Option<Boolean> WITH_CONSISTENT_SNAPSHOT = Option.valueOf("withConsistentSnapshot");
 
     /**
-     * Use {@code START TRANSACTION WITH CONSISTENT [engine] SNAPSHOT} for Facebook/MySQL or similar syntax.
-     * Only available when {@link #WITH_CONSISTENT_SNAPSHOT} is set to {@code true}.
+     * Use {@code WITH CONSISTENT [engine] SNAPSHOT} for Facebook/MySQL or similar property. Only available
+     * when {@link #WITH_CONSISTENT_SNAPSHOT} is set to {@code true}.
      * <p>
-     * NOTICE: This is an extended syntax for special servers. Before using it, check whether the server
-     * supports the syntax.
+     * Note: This is an extended syntax based on specific distributions. Please check whether the server
+     * supports this property before using it.
      */
     public static final Option<ConsistentSnapshotEngine> CONSISTENT_SNAPSHOT_ENGINE =
         Option.valueOf("consistentSnapshotEngine");
 
     /**
-     * Use {@code START TRANSACTION WITH CONSISTENT SNAPSHOT FROM SESSION [session_id]} for Percona/MySQL or
-     * similar syntax. Only available when {@link #WITH_CONSISTENT_SNAPSHOT} is set to {@code true}.
+     * Use {@code WITH CONSISTENT SNAPSHOT FROM SESSION [session_id]} for Percona/MySQL or similar property.
+     * Only available when {@link #WITH_CONSISTENT_SNAPSHOT} is set to {@code true}.
      * <p>
-     * The {@code session_id} is the session identifier reported in the {@code Id} column of the process list.
-     * Reported by {@code SHOW COLUMNS FROM performance_schema.processlist}, it should be an unsigned 64-bit
-     * integer. Use {@code SHOW PROCESSLIST} to find session identifier of the process list.
+     * The {@code session_id} is received by {@code SHOW COLUMNS FROM performance_schema.processlist}, it
+     * should be an unsigned 64-bit integer. Use {@code SHOW PROCESSLIST} to find session identifier of the
+     * process list.
      * <p>
-     * NOTICE: This is an extended syntax for special servers. Before using it, check whether the server
-     * supports the syntax.
+     * Note: This is an extended syntax based on specific distributions. Please check whether the server
+     * supports this property before using it.
      */
     public static final Option<Long> CONSISTENT_SNAPSHOT_FROM_SESSION =
         Option.valueOf("consistentSnapshotFromSession");
