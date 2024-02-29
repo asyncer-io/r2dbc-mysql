@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
 import io.r2dbc.spi.R2dbcBadGrammarException;
 import io.r2dbc.spi.R2dbcTimeoutException;
 import io.r2dbc.spi.Result;
@@ -61,7 +62,7 @@ abstract class IntegrationTestSupport {
         process(runner).expectError(IllegalArgumentException.class).verify(Duration.ofSeconds(3));
     }
 
-    Mono<MySqlConnection> create() {
+    Mono<? extends MySqlConnection> create() {
         return connectionFactory.create();
     }
 

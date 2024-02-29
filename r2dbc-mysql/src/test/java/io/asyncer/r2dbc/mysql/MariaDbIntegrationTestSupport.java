@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
 import io.r2dbc.spi.Readable;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;

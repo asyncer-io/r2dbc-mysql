@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
@@ -35,6 +36,6 @@ final class TextSimpleStatement extends SimpleStatementSupport {
         return Flux.defer(() -> QueryFlow.execute(
             client,
             StringUtils.extendReturning(sql, returningIdentifiers())
-        ).map(messages -> MySqlResult.toResult(false, codecs, context, syntheticKeyName(), messages)));
+        ).map(messages -> MySqlSegmentResult.toResult(false, codecs, context, syntheticKeyName(), messages)));
     }
 }

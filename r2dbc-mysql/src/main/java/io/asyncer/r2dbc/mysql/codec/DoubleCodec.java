@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -38,7 +38,7 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
     }
 
     @Override
-    public Double decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Double decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         MySqlType type = metadata.getType();
 
@@ -68,7 +68,7 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlColumnMetadata metadata) {
+    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 

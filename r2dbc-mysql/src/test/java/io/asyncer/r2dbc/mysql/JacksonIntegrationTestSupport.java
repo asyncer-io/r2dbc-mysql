@@ -18,12 +18,15 @@ package io.asyncer.r2dbc.mysql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import io.asyncer.r2dbc.mysql.json.JacksonCodecRegistrar;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -81,7 +84,7 @@ abstract class JacksonIntegrationTestSupport extends IntegrationTestSupport {
             .verifyComplete();
     }
 
-    private static Publisher<MySqlResult> insert(MySqlConnection connection) {
+    private static Flux<? extends MySqlResult> insert(MySqlConnection connection) {
         MySqlStatement statement = connection.createStatement("INSERT INTO test VALUES (DEFAULT, ?)");
 
         for (int i = 0; i < BARS.length; ++i) {

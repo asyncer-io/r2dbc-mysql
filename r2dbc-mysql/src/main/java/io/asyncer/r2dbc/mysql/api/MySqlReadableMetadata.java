@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 asyncer.io projects
+ * Copyright 2024 asyncer.io projects
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,45 +14,55 @@
  * limitations under the License.
  */
 
-package io.asyncer.r2dbc.mysql;
+package io.asyncer.r2dbc.mysql.api;
 
 import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
-import io.r2dbc.spi.ColumnMetadata;
+import io.r2dbc.spi.ReadableMetadata;
 
 /**
- * An abstraction of {@link ColumnMetadata} considers MySQL
+ * {@link ReadableMetadata} for metadata of a column or an {@code OUT} parameter returned from a MySQL
+ * database.
+ *
+ * @since 1.1.3
  */
-public interface MySqlColumnMetadata extends ColumnMetadata {
+public interface MySqlReadableMetadata extends ReadableMetadata {
 
     /**
      * {@inheritDoc}
+     *
+     * @return the {@link MySqlType} descriptor.
      */
     @Override
     MySqlType getType();
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    MySqlTypeMetadata getNativeTypeMetadata();
-
-    /**
-     * Gets the {@link CharCollation} used for stringification type.  It will not be a binary collation.
+     * Gets the {@link CharCollation} used for stringification type.  If server-side collation is binary, it
+     * will return the default client collation of {@code context}.
      *
-     * @param context the codec context for load the default character collation on the server-side.
+     * @param context the codec context for load the default character collation.
      * @return the {@link CharCollation}.
      */
     CharCollation getCharCollation(CodecContext context);
 
     /**
-     * Gets the field max size that's defined by the table, the original type is an unsigned int32.
+     * {@inheritDoc}
      *
-     * @return the field max size.
+     * @return the {@link MySqlNativeTypeMetadata}.
      */
-    long getNativePrecision();
+    @Override
+    default MySqlNativeTypeMetadata getNativeTypeMetadata() {
+        return null;
+    }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return the primary Java {@link Class type}.
+     * @see MySqlRow#get
+     * @see MySqlOutParameters#get
+     */
     @Override
     default Class<?> getJavaType() {
         return getType().getJavaType();

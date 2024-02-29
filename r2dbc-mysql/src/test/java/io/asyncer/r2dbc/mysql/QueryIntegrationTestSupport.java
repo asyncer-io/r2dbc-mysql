@@ -17,8 +17,10 @@
 package io.asyncer.r2dbc.mysql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.r2dbc.spi.Connection;
-import io.r2dbc.spi.Result;
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlRow;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
@@ -634,12 +636,12 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
         }
     }
 
-    private static Flux<Integer> extractFirstInteger(Result result) {
+    private static Flux<Integer> extractFirstInteger(MySqlResult result) {
         return Flux.from(result.map((row, metadata) -> row.get(0, Integer.class)));
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Flux<Optional<T>> extractOptionalField(Result result, Type type) {
+    private static <T> Flux<Optional<T>> extractOptionalField(MySqlResult result, Type type) {
         if (type instanceof Class<?>) {
             return Flux.from(result.map((row, metadata) -> Optional.ofNullable(row.get(0, (Class<T>) type))));
         }
@@ -647,7 +649,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             Optional.ofNullable(((MySqlRow) row).get(0, (ParameterizedType) type))));
     }
 
-    private static Mono<Void> testTimeDuration(Connection connection, Duration origin, LocalTime time) {
+    private static Mono<Void> testTimeDuration(MySqlConnection connection, Duration origin, LocalTime time) {
         return Mono.from(connection.createStatement("INSERT INTO test VALUES(DEFAULT,?)")
                 .bind(0, origin)
                 .returnGeneratedValues("id")

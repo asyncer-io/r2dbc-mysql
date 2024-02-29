@@ -17,8 +17,7 @@
 package io.asyncer.r2dbc.mysql.codec;
 
 import io.asyncer.r2dbc.mysql.ConnectionContextTest;
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.asyncer.r2dbc.mysql.MySqlTypeMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
@@ -74,18 +73,8 @@ class CodecsTest {
         }
 
         @Override
-        public MySqlTypeMetadata getNativeTypeMetadata() {
-            return null;
-        }
-
-        @Override
         public CharCollation getCharCollation(CodecContext context) {
             return CharCollation.fromId(CharCollation.BINARY_ID, context);
-        }
-
-        @Override
-        public long getNativePrecision() {
-            return 0;
         }
 
         @Override

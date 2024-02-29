@@ -16,6 +16,12 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlBatch;
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
+import io.asyncer.r2dbc.mysql.api.MySqlConnectionMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.cache.QueryCache;
 import io.asyncer.r2dbc.mysql.client.Client;
@@ -30,9 +36,7 @@ import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.IsolationLevel;
-import io.r2dbc.spi.Lifecycle;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.Readable;
 import io.r2dbc.spi.TransactionDefinition;
@@ -54,11 +58,11 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
- * An implementation of {@link Connection} for connecting to the MySQL database.
+ * An implementation of {@link MySqlConnection} for connecting to the MySQL database.
  */
-public final class MySqlConnection implements Connection, Lifecycle, ConnectionState {
+final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
-    private static final InternalLogger logger = InternalLoggerFactory.getInstance(MySqlConnection.class);
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(MySqlSimpleConnection.class);
 
     private static final int DEFAULT_LOCK_WAIT_TIMEOUT = 50;
 
@@ -170,7 +174,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
      */
     private volatile long currentLockWaitTimeout;
 
-    MySqlConnection(Client client, ConnectionContext context, Codecs codecs, IsolationLevel level,
+    MySqlSimpleConnection(Client client, ConnectionContext context, Codecs codecs, IsolationLevel level,
         long lockWaitTimeout, QueryCache queryCache, PrepareCache prepareCache, @Nullable String product,
         @Nullable Predicate<String> prepare) {
         this.client = client;
@@ -182,7 +186,8 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         this.currentLockWaitTimeout = lockWaitTimeout;
         this.queryCache = queryCache;
         this.prepareCache = prepareCache;
-        this.metadata = new MySqlConnectionMetadata(context.getServerVersion().toString(), product);
+        this.metadata = new MySqlSimpleConnectionMetadata(context.getServerVersion().toString(), product,
+            context.isMariaDb());
         this.batchSupported = context.getCapability().isMultiStatementsAllowed();
         this.prepare = prepare;
 
@@ -239,7 +244,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         requireNonNull(sql, "sql must not be null");
 
         if (sql.startsWith(PING_MARKER)) {
-            return new PingStatement(this, codecs, context);
+            return new PingStatement(codecs, context, Flux.defer(this::doPingInternal));
         }
 
         Query query = queryCache.get(sql);
@@ -451,11 +456,11 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
         );
     }
 
-    Flux<ServerMessage> doPingInternal() {
+    private Flux<ServerMessage> doPingInternal() {
         return client.exchange(PingMessage.INSTANCE, PING);
     }
 
-    boolean isSessionAutoCommit() {
+    private boolean isSessionAutoCommit() {
         return (context.getServerStatuses() & ServerStatuses.AUTO_COMMIT) != 0;
     }
 
@@ -486,7 +491,7 @@ public final class MySqlConnection implements Connection, Lifecycle, ConnectionS
                     context.setTimeZone(timeZone);
                 }
 
-                return new MySqlConnection(client, context, codecs, data.level, data.lockWaitTimeout,
+                return new MySqlSimpleConnection(client, context, codecs, data.level, data.lockWaitTimeout,
                     queryCache, prepareCache, data.product, prepare);
             });
 

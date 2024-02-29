@@ -16,8 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
-import io.asyncer.r2dbc.mysql.MySqlTypeMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
@@ -72,11 +71,6 @@ final class Decoding extends DefaultByteBufHolder {
         }
 
         @Override
-        public MySqlTypeMetadata getNativeTypeMetadata() {
-            return null;
-        }
-
-        @Override
         public Nullability getNullability() {
             return Nullability.NON_NULL;
         }
@@ -86,9 +80,5 @@ final class Decoding extends DefaultByteBufHolder {
             return context.getClientCollation();
         }
 
-        @Override
-        public long getNativePrecision() {
-            return 0;
-        }
     }
 }

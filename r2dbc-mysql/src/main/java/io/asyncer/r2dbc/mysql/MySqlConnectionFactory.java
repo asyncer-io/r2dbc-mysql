@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlConnection;
 import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.cache.QueryCache;
@@ -52,14 +53,14 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 public final class MySqlConnectionFactory implements ConnectionFactory {
 
-    private final Mono<MySqlConnection> client;
+    private final Mono<? extends MySqlConnection> client;
 
-    private MySqlConnectionFactory(Mono<MySqlConnection> client) {
+    private MySqlConnectionFactory(Mono<? extends MySqlConnection> client) {
         this.client = client;
     }
 
     @Override
-    public Mono<MySqlConnection> create() {
+    public Mono<? extends MySqlConnection> create() {
         return client;
     }
 
@@ -174,7 +175,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 extensions.forEach(CodecRegistrar.class, registrar ->
                     registrar.register(allocator, builder));
 
-                return MySqlConnection.init(client, builder.build(), context, db, queryCache.get(),
+                return MySqlSimpleConnection.init(client, builder.build(), context, db, queryCache.get(),
                     prepareCache, sessionVariables, prepare);
             });
     }

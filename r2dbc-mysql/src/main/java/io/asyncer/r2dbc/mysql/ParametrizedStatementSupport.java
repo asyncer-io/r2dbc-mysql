@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import reactor.core.publisher.Flux;
@@ -106,7 +108,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
     }
 
     @Override
-    public final Flux<MySqlResult> execute() {
+    public final Flux<? extends MySqlResult> execute() {
         if (bindings.bindings.isEmpty()) {
             throw new IllegalStateException("No parameters bound for current statement");
         }
@@ -121,7 +123,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
         });
     }
 
-    protected abstract Flux<MySqlResult> execute(List<Binding> bindings);
+    protected abstract Flux<? extends MySqlResult> execute(List<Binding> bindings);
 
     /**
      * Get parameter index(es) by parameter name.

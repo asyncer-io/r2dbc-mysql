@@ -1,6 +1,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import org.assertj.core.data.TemporalUnitOffset;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;

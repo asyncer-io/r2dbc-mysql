@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
@@ -40,7 +40,7 @@ abstract class AbstractPrimitiveCodec<T> implements PrimitiveCodec<T> {
     }
 
     @Override
-    public final boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public final boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return target.isAssignableFrom(boxedClass) && canPrimitiveDecode(metadata);
     }
 

@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlBatch;
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.asyncer.r2dbc.mysql.authentication.MySqlAuthProvider;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
@@ -1299,8 +1301,9 @@ final class StartTransactionState extends AbstractTransactionState {
         boolean first = true;
 
         if (Boolean.TRUE.equals(snapshot)) {
-            ConsistentSnapshotEngine engine =
-                definition.getAttribute(MySqlTransactionDefinition.CONSISTENT_SNAPSHOT_ENGINE);
+            // Compatible for enum ConsistentSnapshotEngine.
+            Object eng = definition.getAttribute(MySqlTransactionDefinition.CONSISTENT_SNAPSHOT_ENGINE);
+            String engine = eng == null ? null : eng.toString();
 
             first = false;
             builder.append(" WITH CONSISTENT ");
@@ -1308,7 +1311,7 @@ final class StartTransactionState extends AbstractTransactionState {
             if (engine == null) {
                 builder.append("SNAPSHOT");
             } else {
-                builder.append(engine.asSql()).append(" SNAPSHOT");
+                builder.append(engine).append(" SNAPSHOT");
             }
 
             Long sessionId =

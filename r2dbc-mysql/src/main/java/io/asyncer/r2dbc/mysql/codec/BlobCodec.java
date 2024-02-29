@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.codec.lob.LobUtils;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
@@ -50,19 +50,19 @@ final class BlobCodec implements MassiveCodec<Blob> {
     }
 
     @Override
-    public Blob decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Blob decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return LobUtils.createBlob(value);
     }
 
     @Override
-    public Blob decodeMassive(List<ByteBuf> value, MySqlColumnMetadata metadata, Class<?> target,
+    public Blob decodeMassive(List<ByteBuf> value, MySqlReadableMetadata metadata, Class<?> target,
         boolean binary, CodecContext context) {
         return LobUtils.createBlob(value);
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         MySqlType type = metadata.getType();
 
         return (type.isLob() || type == MySqlType.GEOMETRY) && target.isAssignableFrom(Blob.class);

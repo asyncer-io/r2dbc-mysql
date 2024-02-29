@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.codec.ByteCodec.ByteMySqlParameter;
 import io.asyncer.r2dbc.mysql.codec.IntegerCodec.IntMySqlParameter;
 import io.asyncer.r2dbc.mysql.codec.ShortCodec.ShortMySqlParameter;
@@ -42,7 +42,7 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
     }
 
     @Override
-    public Long decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Long decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         MySqlType type = metadata.getType();
 
@@ -73,7 +73,7 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlColumnMetadata metadata) {
+    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 

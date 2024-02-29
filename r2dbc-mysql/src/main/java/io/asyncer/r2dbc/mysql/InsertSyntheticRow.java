@@ -16,13 +16,20 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlRow;
+import io.asyncer.r2dbc.mysql.api.MySqlRowMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
+import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.Nullability;
 import io.r2dbc.spi.Row;
 import io.r2dbc.spi.RowMetadata;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,7 +44,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  *
  * @see MySqlStatement#returnGeneratedValues(String...) reading last inserted ID.
  */
-final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
+final class InsertSyntheticRow implements MySqlRow, MySqlRowMetadata, MySqlColumnMetadata {
 
     private final Codecs codecs;
 
@@ -96,19 +103,19 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
     }
 
     @Override
-    public RowMetadata getMetadata() {
+    public MySqlRowMetadata getMetadata() {
         return this;
     }
 
     @Override
-    public ColumnMetadata getColumnMetadata(int index) {
+    public MySqlColumnMetadata getColumnMetadata(int index) {
         assertValidIndex(index);
 
         return this;
     }
 
     @Override
-    public ColumnMetadata getColumnMetadata(String name) {
+    public MySqlColumnMetadata getColumnMetadata(String name) {
         requireNonNull(name, "name must not be null");
         assertValidName(name);
 
@@ -116,13 +123,18 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
     }
 
     @Override
-    public List<ColumnMetadata> getColumnMetadatas() {
+    public List<MySqlColumnMetadata> getColumnMetadatas() {
         return Collections.singletonList(this);
     }
 
     @Override
     public MySqlType getType() {
         return lastInsertId < 0 ? MySqlType.BIGINT_UNSIGNED : MySqlType.BIGINT;
+    }
+
+    @Override
+    public CharCollation getCharCollation(CodecContext context) {
+        return context.getClientCollation();
     }
 
     @Override
@@ -138,6 +150,18 @@ final class InsertSyntheticRow implements Row, RowMetadata, ColumnMetadata {
     @Override
     public Nullability getNullability() {
         return Nullability.NON_NULL;
+    }
+
+    @Override
+    public <T> T get(int index, ParameterizedType type) {
+        throw new IllegalArgumentException(String.format("Cannot decode %s with last inserted ID %s", type,
+            lastInsertId < 0 ? Long.toUnsignedString(lastInsertId) : lastInsertId));
+    }
+
+    @Override
+    public <T> T get(String name, ParameterizedType type) {
+        throw new IllegalArgumentException(String.format("Cannot decode %s with last inserted ID %s", type,
+            lastInsertId < 0 ? Long.toUnsignedString(lastInsertId) : lastInsertId));
     }
 
     private void assertValidName(String name) {

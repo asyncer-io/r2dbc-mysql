@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -38,7 +38,7 @@ final class EnumCodec implements Codec<Enum<?>> {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public Enum<?> decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Enum<?> decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         Charset charset = metadata.getCharCollation(context).getCharset();
 
@@ -46,7 +46,7 @@ final class EnumCodec implements Codec<Enum<?>> {
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return metadata.getType() == MySqlType.ENUM && target.isEnum();
     }
 

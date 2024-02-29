@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -48,7 +48,7 @@ final class DurationCodec extends AbstractClassedCodec<Duration> {
     }
 
     @Override
-    public Duration decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Duration decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return binary ? decodeBinary(value) : decodeText(value);
     }
@@ -64,7 +64,7 @@ final class DurationCodec extends AbstractClassedCodec<Duration> {
     }
 
     @Override
-    protected boolean doCanDecode(MySqlColumnMetadata metadata) {
+    protected boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType() == MySqlType.TIME;
     }
 

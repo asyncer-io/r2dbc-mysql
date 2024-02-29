@@ -16,11 +16,11 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlRow;
+import io.asyncer.r2dbc.mysql.api.MySqlRowMetadata;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.r2dbc.spi.Row;
-import io.r2dbc.spi.RowMetadata;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.ParameterizedType;
 
@@ -29,11 +29,11 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * An implementation of {@link Row} for MySQL database.
  */
-public final class MySqlRow implements Row {
+final class MySqlDataRow implements MySqlRow {
 
     private final FieldValue[] fields;
 
-    private final MySqlRowMetadata rowMetadata;
+    private final MySqlRowDescriptor rowMetadata;
 
     private final Codecs codecs;
 
@@ -44,7 +44,7 @@ public final class MySqlRow implements Row {
 
     private final ConnectionContext context;
 
-    MySqlRow(FieldValue[] fields, MySqlRowMetadata rowMetadata, Codecs codecs, boolean binary,
+    MySqlDataRow(FieldValue[] fields, MySqlRowDescriptor rowMetadata, Codecs codecs, boolean binary,
         ConnectionContext context) {
         this.fields = requireNonNull(fields, "fields must not be null");
         this.rowMetadata = requireNonNull(rowMetadata, "rowMetadata must not be null");
@@ -69,16 +69,7 @@ public final class MySqlRow implements Row {
         return codecs.decode(fields[info.getIndex()], info, type, binary, context);
     }
 
-    /**
-     * Returns the value for a column in this row. The value can be a parameterized type.
-     *
-     * @param index the index of the column starting at {@code 0}.
-     * @param type  the parameterized type of item to return.
-     * @param <T>   the type of the item being returned.
-     * @return the value for a column in this row. Value can be {@code null}.
-     * @throws IllegalArgumentException if {@code name} or {@code type} is {@code null}.
-     */
-    @Nullable
+    @Override
     public <T> T get(int index, ParameterizedType type) {
         requireNonNull(type, "type must not be null");
 
@@ -86,16 +77,7 @@ public final class MySqlRow implements Row {
         return codecs.decode(fields[index], info, type, binary, context);
     }
 
-    /**
-     * Returns the value for a column in this row. The value can be a parameterized type.
-     *
-     * @param name the name of the column.
-     * @param type the parameterized type of item to return.
-     * @param <T>  the type of the item being returned.
-     * @return the value for a column in this row. Value can be {@code null}.
-     * @throws IllegalArgumentException if {@code name} or {@code type} is {@code null}.
-     */
-    @Nullable
+    @Override
     public <T> T get(String name, ParameterizedType type) {
         requireNonNull(type, "type must not be null");
 
@@ -107,7 +89,7 @@ public final class MySqlRow implements Row {
      * {@inheritDoc}
      */
     @Override
-    public RowMetadata getMetadata() {
+    public MySqlRowMetadata getMetadata() {
         return rowMetadata;
     }
 }

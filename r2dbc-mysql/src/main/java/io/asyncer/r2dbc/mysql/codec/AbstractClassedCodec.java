@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 
 /**
  * Codec for classed type when field bytes less or equals than {@link Integer#MAX_VALUE}.
@@ -32,9 +32,9 @@ abstract class AbstractClassedCodec<T> implements Codec<T> {
     }
 
     @Override
-    public final boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public final boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return target.isAssignableFrom(this.type) && doCanDecode(metadata);
     }
 
-    protected abstract boolean doCanDecode(MySqlColumnMetadata metadata);
+    protected abstract boolean doCanDecode(MySqlReadableMetadata metadata);
 }

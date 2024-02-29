@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.netty.buffer.ByteBufAllocator;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +33,7 @@ public interface Codecs {
      * Decode a {@link FieldValue} as specified {@link Class type}.
      *
      * @param value    the {@link FieldValue}.
-     * @param metadata the metadata of the column.
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
      * @param type     the specified {@link Class}.
      * @param binary   if the value should be decoded by binary protocol.
      * @param context  the codec context.
@@ -42,14 +42,14 @@ public interface Codecs {
      * @throws IllegalArgumentException if any parameter is {@code null}, or {@code value} cannot be decoded.
      */
     @Nullable
-    <T> T decode(FieldValue value, MySqlColumnMetadata metadata, Class<?> type, boolean binary,
+    <T> T decode(FieldValue value, MySqlReadableMetadata metadata, Class<?> type, boolean binary,
         CodecContext context);
 
     /**
      * Decode a {@link FieldValue} as a specified {@link ParameterizedType type}.
      *
      * @param value    the {@link FieldValue}.
-     * @param metadata the metadata of the column.
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
      * @param type     the specified {@link ParameterizedType}.
      * @param binary   if the value should be decoded by binary protocol.
      * @param context  the codec context.
@@ -58,7 +58,7 @@ public interface Codecs {
      * @throws IllegalArgumentException if any parameter is {@code null}, or {@code value} cannot be decoded.
      */
     @Nullable
-    <T> T decode(FieldValue value, MySqlColumnMetadata metadata, ParameterizedType type, boolean binary,
+    <T> T decode(FieldValue value, MySqlReadableMetadata metadata, ParameterizedType type, boolean binary,
         CodecContext context);
 
     /**

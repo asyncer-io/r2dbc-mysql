@@ -35,9 +35,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link MySqlConnection}.
+ * Unit tests for {@link MySqlSimpleConnection}.
  */
-class MySqlConnectionTest {
+class MySqlSimpleConnectionTest {
 
     private final Client client = mock(Client.class);
 
@@ -47,20 +47,20 @@ class MySqlConnectionTest {
 
     private final String product = "MockConnection";
 
-    private final MySqlConnection noPrepare = new MySqlConnection(client, ConnectionContextTest.mock(),
+    private final MySqlSimpleConnection noPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
         codecs, level, 50, Caches.createQueryCache(0),
         Caches.createPrepareCache(0), product, null);
 
     @Test
     void createStatement() {
         String condition = "SELECT * FROM test";
-        MySqlConnection allPrepare = new MySqlConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection allPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> true);
-        MySqlConnection halfPrepare = new MySqlConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection halfPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> false);
-        MySqlConnection conditionPrepare = new MySqlConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection conditionPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> sql.equals(condition));
 
