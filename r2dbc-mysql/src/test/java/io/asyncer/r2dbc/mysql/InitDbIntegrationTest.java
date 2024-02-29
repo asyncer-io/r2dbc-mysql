@@ -1,5 +1,6 @@
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;

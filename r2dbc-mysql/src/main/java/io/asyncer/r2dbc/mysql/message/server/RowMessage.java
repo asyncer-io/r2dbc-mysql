@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.message.server;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.netty.util.ReferenceCounted;
@@ -45,7 +45,7 @@ public final class RowMessage implements ReferenceCounted, ServerMessage {
      * @param context  information context array.
      * @return the {@link FieldValue} array.
      */
-    public FieldValue[] decode(boolean isBinary, MySqlColumnMetadata[] context) {
+    public FieldValue[] decode(boolean isBinary, MySqlReadableMetadata[] context) {
         return isBinary ? binary(context) : text(context.length);
     }
 
@@ -69,7 +69,7 @@ public final class RowMessage implements ReferenceCounted, ServerMessage {
         }
     }
 
-    private FieldValue[] binary(MySqlColumnMetadata[] context) {
+    private FieldValue[] binary(MySqlReadableMetadata[] context) {
         reader.skipOneByte(); // constant 0x00
 
         int size = context.length;

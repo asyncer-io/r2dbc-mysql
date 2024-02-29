@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,22 +35,22 @@ public interface ParametrizedCodec<T> extends Codec<T> {
      * Decodes a {@link ByteBuf} as specified {@link ParameterizedType}.
      *
      * @param value    the {@link ByteBuf}.
-     * @param metadata the metadata of the column.
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
      * @param target   the specified {@link ParameterizedType}.
      * @param binary   if the value should be decoded by binary protocol.
      * @param context  the codec context.
      * @return the decoded result.
      */
     @Nullable
-    Object decode(ByteBuf value, MySqlColumnMetadata metadata, ParameterizedType target, boolean binary,
+    Object decode(ByteBuf value, MySqlReadableMetadata metadata, ParameterizedType target, boolean binary,
         CodecContext context);
 
     /**
      * Checks if the field value can be decoded as specified {@link ParameterizedType}.
      *
-     * @param metadata the metadata of the column.
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
      * @param target   the specified {@link ParameterizedType}.
      * @return if it can decode.
      */
-    boolean canDecode(MySqlColumnMetadata metadata, ParameterizedType target);
+    boolean canDecode(MySqlReadableMetadata metadata, ParameterizedType target);
 }

@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,14 +34,13 @@ public interface MassiveParametrizedCodec<T> extends ParametrizedCodec<T>, Massi
      * Decode a massive value as specified {@link ParameterizedType}.
      *
      * @param value    {@link ByteBuf}s list.
-     * @param metadata the metadata of the column.
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
      * @param target   the specified {@link ParameterizedType}.
      * @param binary   if the value should be decoded by binary protocol.
      * @param context  the codec context.
      * @return the decoded result.
      */
     @Nullable
-    Object decodeMassive(List<ByteBuf> value, MySqlColumnMetadata metadata, ParameterizedType target,
-        boolean binary,
-        CodecContext context);
+    Object decodeMassive(List<ByteBuf> value, MySqlReadableMetadata metadata, ParameterizedType target,
+        boolean binary, CodecContext context);
 }

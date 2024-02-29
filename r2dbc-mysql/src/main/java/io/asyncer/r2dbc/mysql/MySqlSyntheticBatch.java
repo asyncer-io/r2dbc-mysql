@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlBatch;
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import reactor.core.publisher.Flux;
@@ -29,7 +31,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  * An implementation of {@link MySqlBatch} for executing a collection of statements in one-by-one against the
  * MySQL database.
  */
-final class MySqlSyntheticBatch extends MySqlBatch {
+final class MySqlSyntheticBatch implements MySqlBatch {
 
     private final Client client;
 
@@ -54,7 +56,7 @@ final class MySqlSyntheticBatch extends MySqlBatch {
     @Override
     public Flux<MySqlResult> execute() {
         return QueryFlow.execute(client, statements)
-            .map(messages -> MySqlResult.toResult(false, codecs, context, null, messages));
+            .map(messages -> MySqlSegmentResult.toResult(false, codecs, context, null, messages));
     }
 
     @Override

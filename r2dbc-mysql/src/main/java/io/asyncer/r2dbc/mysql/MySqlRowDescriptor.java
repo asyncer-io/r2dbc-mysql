@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlRowMetadata;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
-import io.r2dbc.spi.RowMetadata;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,11 +27,11 @@ import java.util.NoSuchElementException;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
- * An implementation of {@link RowMetadata} for MySQL database text/binary results.
+ * An implementation of {@link MySqlRowMetadata} for MySQL database text/binary results.
  *
  * @see MySqlNames column name searching rules.
  */
-final class MySqlRowMetadata implements RowMetadata {
+final class MySqlRowDescriptor implements MySqlRowMetadata {
 
     private final MySqlColumnDescriptor[] originMetadata;
 
@@ -39,7 +39,7 @@ final class MySqlRowMetadata implements RowMetadata {
 
     private final ColumnNameSet nameSet;
 
-    private MySqlRowMetadata(MySqlColumnDescriptor[] metadata) {
+    private MySqlRowDescriptor(MySqlColumnDescriptor[] metadata) {
         int size = metadata.length;
 
         switch (size) {
@@ -105,7 +105,7 @@ final class MySqlRowMetadata implements RowMetadata {
 
     @Override
     public String toString() {
-        return "MySqlRowMetadata{metadata=" + Arrays.toString(originMetadata) + ", sortedNames=" +
+        return "MySqlRowDescriptor{metadata=" + Arrays.toString(originMetadata) + ", sortedNames=" +
             Arrays.toString(nameSet.getSortedNames()) + '}';
     }
 
@@ -113,7 +113,7 @@ final class MySqlRowMetadata implements RowMetadata {
         return originMetadata;
     }
 
-    static MySqlRowMetadata create(DefinitionMetadataMessage[] columns) {
+    static MySqlRowDescriptor create(DefinitionMetadataMessage[] columns) {
         int size = columns.length;
         MySqlColumnDescriptor[] metadata = new MySqlColumnDescriptor[size];
 
@@ -121,7 +121,7 @@ final class MySqlRowMetadata implements RowMetadata {
             metadata[i] = MySqlColumnDescriptor.create(i, columns[i]);
         }
 
-        return new MySqlRowMetadata(metadata);
+        return new MySqlRowDescriptor(metadata);
     }
 
     private static String[] getNames(MySqlColumnDescriptor[] metadata) {

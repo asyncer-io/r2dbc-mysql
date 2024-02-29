@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 asyncer.io projects
+ * Copyright 2024 asyncer.io projects
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,12 @@ package io.asyncer.r2dbc.mysql;
 /**
  * The engine of {@code START TRANSACTION WITH CONSISTENT [engine] SNAPSHOT} for Facebook/MySQL or similar
  * syntax.
+ *
+ * @deprecated since 1.1.3, use directly {@link String} instead, e.g. {@code "ROCKSDB"}
+ * @see io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition#consistent(String)
+ * @see io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition#consistent(String, long)
  */
+@Deprecated
 public enum ConsistentSnapshotEngine {
 
     ROCKSDB,

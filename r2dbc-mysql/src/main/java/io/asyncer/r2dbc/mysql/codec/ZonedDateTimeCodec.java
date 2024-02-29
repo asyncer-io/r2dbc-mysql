@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -45,13 +45,13 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
     }
 
     @Override
-    public ZonedDateTime decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public ZonedDateTime decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return decode0(value, binary, context);
     }
 
     @Override
-    public ChronoZonedDateTime<LocalDate> decode(ByteBuf value, MySqlColumnMetadata metadata,
+    public ChronoZonedDateTime<LocalDate> decode(ByteBuf value, MySqlReadableMetadata metadata,
         ParameterizedType target, boolean binary, CodecContext context) {
         return decode0(value, binary, context);
     }
@@ -67,12 +67,12 @@ final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, ParameterizedType target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, ParameterizedType target) {
         return DateTimes.canDecodeChronology(metadata.getType(), target, ChronoZonedDateTime.class);
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return DateTimes.canDecodeDateTime(metadata.getType(), target, ZonedDateTime.class);
     }
 

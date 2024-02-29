@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlColumnMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlNativeTypeMetadata;
 import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
@@ -48,28 +50,28 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
 
     private final int collationId;
 
-    private MySqlColumnDescriptor(int index, short typeId, String name, ColumnDefinition definition,
+    private MySqlColumnDescriptor(int index, short typeId, String name, int definitions,
         long size, int decimals, int collationId) {
         require(index >= 0, "index must not be a negative integer");
         require(size >= 0, "size must not be a negative integer");
         require(decimals >= 0, "decimals must not be a negative integer");
         requireNonNull(name, "name must not be null");
-        require(collationId > 0, "collationId must be a positive integer");
-        requireNonNull(definition, "definition must not be null");
+
+        MySqlTypeMetadata typeMetadata = new MySqlTypeMetadata(typeId, definitions, collationId);
 
         this.index = index;
-        this.typeMetadata = new MySqlTypeMetadata(typeId, definition);
-        this.type = MySqlType.of(typeId, definition);
+        this.typeMetadata = typeMetadata;
+        this.type = MySqlType.of(typeMetadata);
         this.name = name;
-        this.nullability = definition.isNotNull() ? Nullability.NON_NULL : Nullability.NULLABLE;
+        this.nullability = typeMetadata.isNotNull() ? Nullability.NON_NULL : Nullability.NULLABLE;
         this.size = size;
         this.decimals = decimals;
         this.collationId = collationId;
     }
 
     static MySqlColumnDescriptor create(int index, DefinitionMetadataMessage message) {
-        ColumnDefinition definition = message.getDefinition();
-        return new MySqlColumnDescriptor(index, message.getTypeId(), message.getColumn(), definition,
+        int definitions = message.getDefinitions();
+        return new MySqlColumnDescriptor(index, message.getTypeId(), message.getColumn(), definitions,
             message.getSize(), message.getDecimals(), message.getCollationId());
     }
 
@@ -88,7 +90,7 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
     }
 
     @Override
-    public MySqlTypeMetadata getNativeTypeMetadata() {
+    public MySqlNativeTypeMetadata getNativeTypeMetadata() {
         return typeMetadata;
     }
 
@@ -99,12 +101,11 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
 
     @Override
     public Integer getPrecision() {
+        // FIXME: NEW_DECIMAL and DECIMAL are "exact" fixed-point number.
+        // So the `size` have to subtract:
+        // 1. if signed, 1 byte for the sign
+        // 2. if decimals > 0, 1 byte for the dot
         return (int) size;
-    }
-
-    @Override
-    public long getNativePrecision() {
-        return size;
     }
 
     @Override

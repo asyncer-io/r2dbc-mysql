@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlRow;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
@@ -49,16 +51,16 @@ import java.util.function.Predicate;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
- * An implementation of {@link Result} representing the results of a query against the MySQL database.
+ * An implementation of {@link MySqlResult} representing the results of a query against the MySQL database.
  * <p>
  * A {@link Segment} provided by this implementation may be both {@link UpdateCount} and {@link RowSegment},
  * see also {@link MySqlOkSegment}.
  */
-public final class MySqlResult implements Result {
+final class MySqlSegmentResult implements MySqlResult {
 
     private final Flux<Segment> segments;
 
-    private MySqlResult(Flux<Segment> segments) {
+    private MySqlSegmentResult(Flux<Segment> segments) {
         this.segments = segments;
     }
 
@@ -81,7 +83,7 @@ public final class MySqlResult implements Result {
 
         return segments.handle((segment, sink) -> {
             if (segment instanceof RowSegment) {
-                Row row = ((RowSegment) segment).row();
+                MySqlRow row = ((RowSegment) segment).row();
 
                 try {
                     sink.next(f.apply(row, row.getMetadata()));
@@ -116,10 +118,10 @@ public final class MySqlResult implements Result {
     }
 
     @Override
-    public MySqlResult filter(Predicate<Segment> filter) {
+    public MySqlResult filter(Predicate<Result.Segment> filter) {
         requireNonNull(filter, "filter must not be null");
 
-        return new MySqlResult(segments.filter(segment -> {
+        return new MySqlSegmentResult(segments.filter(segment -> {
             if (filter.test(segment)) {
                 return true;
             }
@@ -133,7 +135,7 @@ public final class MySqlResult implements Result {
     }
 
     @Override
-    public <T> Flux<T> flatMap(Function<Segment, ? extends Publisher<? extends T>> f) {
+    public <T> Flux<T> flatMap(Function<Result.Segment, ? extends Publisher<? extends T>> f) {
         requireNonNull(f, "mapping function must not be null");
 
         return segments.flatMap(segment -> {
@@ -160,7 +162,7 @@ public final class MySqlResult implements Result {
         requireNonNull(context, "context must not be null");
         requireNonNull(messages, "messages must not be null");
 
-        return new MySqlResult(OperatorUtils.discardOnCancel(messages)
+        return new MySqlSegmentResult(OperatorUtils.discardOnCancel(messages)
             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
             .handle(new MySqlSegments(binary, codecs, context, syntheticKeyName)));
     }
@@ -200,14 +202,14 @@ public final class MySqlResult implements Result {
 
         private final FieldValue[] fields;
 
-        private MySqlRowSegment(FieldValue[] fields, MySqlRowMetadata metadata, Codecs codecs, boolean binary,
+        private MySqlRowSegment(FieldValue[] fields, MySqlRowDescriptor metadata, Codecs codecs, boolean binary,
             ConnectionContext context) {
-            this.row = new MySqlRow(fields, metadata, codecs, binary, context);
+            this.row = new MySqlDataRow(fields, metadata, codecs, binary, context);
             this.fields = fields;
         }
 
         @Override
-        public Row row() {
+        public MySqlRow row() {
             return row;
         }
 
@@ -258,7 +260,7 @@ public final class MySqlResult implements Result {
         }
 
         @Override
-        public Row row() {
+        public MySqlRow row() {
             return new InsertSyntheticRow(codecs, keyName, lastInsertId);
         }
     }
@@ -276,7 +278,7 @@ public final class MySqlResult implements Result {
 
         private final AtomicLong rowCount = new AtomicLong(0);
 
-        private MySqlRowMetadata rowMetadata;
+        private MySqlRowDescriptor rowMetadata;
 
         private MySqlSegments(boolean binary, Codecs codecs, ConnectionContext context,
             @Nullable String syntheticKeyName) {
@@ -292,11 +294,11 @@ public final class MySqlResult implements Result {
                 // Updated rows can be identified either by OK or rows in case of RETURNING
                 rowCount.getAndIncrement();
 
-                MySqlRowMetadata metadata = this.rowMetadata;
+                MySqlRowDescriptor metadata = this.rowMetadata;
 
                 if (metadata == null) {
                     ReferenceCountUtil.safeRelease(message);
-                    sink.error(new IllegalStateException("No MySqlRowMetadata available"));
+                    sink.error(new IllegalStateException("No metadata available"));
                     return;
                 }
 
@@ -316,7 +318,7 @@ public final class MySqlResult implements Result {
                     return;
                 }
 
-                this.rowMetadata = MySqlRowMetadata.create(metadataMessages);
+                this.rowMetadata = MySqlRowDescriptor.create(metadataMessages);
             } else if (message instanceof OkMessage) {
                 OkMessage msg = (OkMessage) message;
 

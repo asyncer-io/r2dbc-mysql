@@ -16,6 +16,8 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
@@ -48,7 +50,7 @@ final class PrepareSimpleStatement extends SimpleStatementSupport {
     public Flux<MySqlResult> execute() {
         return Flux.defer(() -> QueryFlow.execute(client,
                 StringUtils.extendReturning(sql, returningIdentifiers()), BINDINGS, fetchSize, prepareCache))
-            .map(messages -> MySqlResult.toResult(true, codecs, context, syntheticKeyName(), messages));
+            .map(messages -> MySqlSegmentResult.toResult(true, codecs, context, syntheticKeyName(), messages));
     }
 
     @Override

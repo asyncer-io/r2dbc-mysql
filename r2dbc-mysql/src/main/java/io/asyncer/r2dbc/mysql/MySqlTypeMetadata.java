@@ -16,36 +16,94 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlNativeTypeMetadata;
+import io.asyncer.r2dbc.mysql.collation.CharCollation;
+
 /**
- * A metadata descriptor considers MySQL types.
+ * An implementation of {@link MySqlNativeTypeMetadata}.
  */
-public final class MySqlTypeMetadata {
+final class MySqlTypeMetadata implements MySqlNativeTypeMetadata {
 
-    private final int id;
+    private static final short NOT_NULL = 1;
 
-    private final ColumnDefinition definition;
+//    public static final short PRIMARY_PART = 1 << 1; // This field is a part of the primary key
+//    public static final short UNIQUE_PART = 1 << 2; // This field is a part of a unique key
+//    public static final short KEY_PART = 1 << 3; // This field is a part of a normal key
+//    public static final short BLOB = 1 << 4;
 
-    MySqlTypeMetadata(int id, ColumnDefinition definition) {
-        this.id = id;
-        this.definition = definition;
-    }
+    private static final short UNSIGNED = 1 << 5;
+
+//    public static final short ZEROFILL = 1 << 6;
+
+    public static final short BINARY = 1 << 7;
+
+    private static final short ENUM = 1 << 8;
+
+//    public static final short AUTO_INCREMENT = 1 << 9;
+//    public static final short TIMESTAMP = 1 << 10;
+
+    private static final short SET = 1 << 11; // type is set
+
+//    public static final short NO_DEFAULT = 1 << 12; // column has no default value
+//    public static final short ON_UPDATE_NOW = 1 << 13; // field will be set to NOW() in UPDATE statement
+
+    private static final short ALL_USED = NOT_NULL | UNSIGNED | BINARY | ENUM | SET;
+
+    private final int typeId;
 
     /**
-     * Get the native type identifier.
-     *
-     * @return the native type identifier.
+     * The original bitmap of definitions.
+     * <p>
+     * MySQL uses 32-bits definition flags, but only returns the lower 16-bits.
      */
-    public int getId() {
-        return id;
-    }
+    private final short definitions;
 
     /**
-     * Get the {@link ColumnDefinition} that potentially exposes more type differences.
-     *
-     * @return the column definitions.
+     * The character collation id of the column.
+     * <p>
+     * collationId > 0 when protocol version == 4.1, 0 otherwise.
      */
-    public ColumnDefinition getDefinition() {
-        return definition;
+    private final int collationId;
+
+    MySqlTypeMetadata(int typeId, int definitions, int collationId) {
+        this.typeId = typeId;
+        this.definitions = (short) (definitions & ALL_USED);
+        this.collationId = collationId;
+    }
+
+    @Override
+    public int getTypeId() {
+        return typeId;
+    }
+
+    @Override
+    public boolean isNotNull() {
+        return (definitions & NOT_NULL) != 0;
+    }
+
+    @Override
+    public boolean isUnsigned() {
+        return (definitions & UNSIGNED) != 0;
+    }
+
+    @Override
+    public boolean isBinary() {
+        // Utilize collationId to ascertain whether it is binary or not.
+        // This is necessary since the union of JSON columns, varchar binary, and char binary
+        // results in a bitmap with the BINARY flag set.
+        // see: https://github.com/asyncer-io/r2dbc-mysql/issues/91
+        // FIXME: use collationId to check, definitions is not reliable even in protocol version < 4.1
+        return (collationId == 0 && (definitions & BINARY) != 0) || collationId == CharCollation.BINARY_ID;
+    }
+
+    @Override
+    public boolean isEnum() {
+        return (definitions & ENUM) != 0;
+    }
+
+    @Override
+    public boolean isSet() {
+        return (definitions & SET) != 0;
     }
 
     @Override
@@ -59,16 +117,20 @@ public final class MySqlTypeMetadata {
 
         MySqlTypeMetadata that = (MySqlTypeMetadata) o;
 
-        return id == that.id && definition.equals(that.definition);
+        return typeId == that.typeId && definitions == that.definitions && collationId == that.collationId;
     }
 
     @Override
     public int hashCode() {
-        return 31 * id + definition.hashCode();
+        int result = 31 * typeId + (int) definitions;
+        return 31 * result + collationId;
     }
 
     @Override
     public String toString() {
-        return "MySqlTypeMetadata(" + id + ", " + definition + ')';
+        return "MySqlTypeMetadata{typeId=" + typeId +
+            ", definitions=0x" + Integer.toHexString(definitions) +
+            ", collationId=" + collationId +
+            '}';
     }
 }

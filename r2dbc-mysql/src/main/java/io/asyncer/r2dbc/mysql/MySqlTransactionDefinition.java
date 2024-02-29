@@ -33,7 +33,9 @@ import java.util.Map;
  * and 1073741824.
  *
  * @since 0.9.0
+ * @deprecated since 1.1.3, use {@link io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition} instead.
  */
+@Deprecated
 public final class MySqlTransactionDefinition implements TransactionDefinition {
 
     /**
@@ -43,7 +45,8 @@ public final class MySqlTransactionDefinition implements TransactionDefinition {
      * same as if a {@code START TRANSACTION} followed by a {@code SELECT ...} from any InnoDB table was
      * issued.
      */
-    public static final Option<Boolean> WITH_CONSISTENT_SNAPSHOT = Option.valueOf("withConsistentSnapshot");
+    public static final Option<Boolean> WITH_CONSISTENT_SNAPSHOT =
+        io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition.WITH_CONSISTENT_SNAPSHOT;
 
     /**
      * Use {@code WITH CONSISTENT [engine] SNAPSHOT} for Facebook/MySQL or similar property. Only available
@@ -52,8 +55,8 @@ public final class MySqlTransactionDefinition implements TransactionDefinition {
      * Note: This is an extended syntax based on specific distributions. Please check whether the server
      * supports this property before using it.
      */
-    public static final Option<ConsistentSnapshotEngine> CONSISTENT_SNAPSHOT_ENGINE =
-        Option.valueOf("consistentSnapshotEngine");
+    public static final Option<?> CONSISTENT_SNAPSHOT_ENGINE =
+        io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition.CONSISTENT_SNAPSHOT_ENGINE;
 
     /**
      * Use {@code WITH CONSISTENT SNAPSHOT FROM SESSION [session_id]} for Percona/MySQL or similar property.
@@ -67,7 +70,7 @@ public final class MySqlTransactionDefinition implements TransactionDefinition {
      * supports this property before using it.
      */
     public static final Option<Long> CONSISTENT_SNAPSHOT_FROM_SESSION =
-        Option.valueOf("consistentSnapshotFromSession");
+        io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition.CONSISTENT_SNAPSHOT_FROM_SESSION;
 
     private static final MySqlTransactionDefinition EMPTY =
         new MySqlTransactionDefinition(Collections.emptyMap());
@@ -186,7 +189,7 @@ public final class MySqlTransactionDefinition implements TransactionDefinition {
          * @return this builder.
          */
         public Builder consistentSnapshotEngine(@Nullable ConsistentSnapshotEngine snapshotEngine) {
-            return option(CONSISTENT_SNAPSHOT_ENGINE, snapshotEngine);
+            return option(CONSISTENT_SNAPSHOT_ENGINE, snapshotEngine == null ? null : snapshotEngine.asSql());
         }
 
         /**
@@ -199,7 +202,7 @@ public final class MySqlTransactionDefinition implements TransactionDefinition {
             return option(CONSISTENT_SNAPSHOT_FROM_SESSION, sessionId);
         }
 
-        private <T> Builder option(Option<T> key, @Nullable T value) {
+        private Builder option(Option<?> key, @Nullable Object value) {
             if (value == null) {
                 this.options.remove(key);
             } else {

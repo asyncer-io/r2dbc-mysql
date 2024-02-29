@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.r2dbc.spi.IsolationLevel;
 import io.r2dbc.spi.TransactionDefinition;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,32 +41,26 @@ class StartTransactionStateTest {
     static Stream<Arguments> buildStartTransaction() {
         return Stream.of(
             Arguments.of(MySqlTransactionDefinition.empty(), "BEGIN"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .isolationLevel(IsolationLevel.READ_UNCOMMITTED)
-                .build(), "BEGIN"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .readOnly(true)
-                .build(), "START TRANSACTION READ ONLY"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .readOnly(false)
-                .build(), "START TRANSACTION READ WRITE"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .withConsistentSnapshot(true)
-                .build(), "START TRANSACTION WITH CONSISTENT SNAPSHOT"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .withConsistentSnapshot(true)
-                .readOnly(true)
-                .build(), "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .withConsistentSnapshot(true)
-                .readOnly(false)
-                .build(), "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ WRITE"),
-            Arguments.of(MySqlTransactionDefinition.builder()
-                .withConsistentSnapshot(true)
-                .consistentSnapshotEngine(ConsistentSnapshotEngine.ROCKSDB)
-                .consistentSnapshotFromSession(3L)
-                .readOnly(true)
-                .build(), "START TRANSACTION WITH CONSISTENT ROCKSDB SNAPSHOT FROM SESSION 3, READ ONLY")
-            );
+            Arguments.of(MySqlTransactionDefinition.from(IsolationLevel.READ_UNCOMMITTED), "BEGIN"),
+            Arguments.of(MySqlTransactionDefinition.mutability(false), "START TRANSACTION READ ONLY"),
+            Arguments.of(MySqlTransactionDefinition.mutability(true), "START TRANSACTION READ WRITE"),
+            Arguments.of(
+                MySqlTransactionDefinition.empty().consistent(),
+                "START TRANSACTION WITH CONSISTENT SNAPSHOT"
+            ),
+            Arguments.of(
+                MySqlTransactionDefinition.mutability(false).consistent(),
+                "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY"
+            ),
+            Arguments.of(
+                MySqlTransactionDefinition.mutability(true).consistent(),
+                "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ WRITE"
+            ),
+            Arguments.of(
+                MySqlTransactionDefinition.mutability(false)
+                    .consistent("ROCKSDB", 3L),
+                "START TRANSACTION WITH CONSISTENT ROCKSDB SNAPSHOT FROM SESSION 3, READ ONLY"
+            )
+        );
     }
 }

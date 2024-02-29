@@ -16,8 +16,8 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
@@ -89,7 +89,7 @@ final class DefaultCodecs implements Codecs {
      * release this buffer.
      */
     @Override
-    public <T> T decode(FieldValue value, MySqlColumnMetadata metadata, Class<?> type, boolean binary,
+    public <T> T decode(FieldValue value, MySqlReadableMetadata metadata, Class<?> type, boolean binary,
         CodecContext context) {
         requireNonNull(value, "value must not be null");
         requireNonNull(metadata, "info must not be null");
@@ -117,7 +117,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Override
-    public <T> T decode(FieldValue value, MySqlColumnMetadata metadata, ParameterizedType type,
+    public <T> T decode(FieldValue value, MySqlReadableMetadata metadata, ParameterizedType type,
         boolean binary, CodecContext context) {
         requireNonNull(value, "value must not be null");
         requireNonNull(metadata, "info must not be null");
@@ -199,7 +199,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodePrimitive(FieldValue value, MySqlColumnMetadata metadata, Class<?> type,
+    private <T> T decodePrimitive(FieldValue value, MySqlReadableMetadata metadata, Class<?> type,
         boolean binary, CodecContext context) {
         @SuppressWarnings("unchecked")
         PrimitiveCodec<T> codec = (PrimitiveCodec<T>) this.primitiveCodecs.get(type);
@@ -214,7 +214,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodeNormal(NormalFieldValue value, MySqlColumnMetadata metadata, Class<?> type,
+    private <T> T decodeNormal(NormalFieldValue value, MySqlReadableMetadata metadata, Class<?> type,
         boolean binary, CodecContext context) {
         for (Codec<?> codec : codecs) {
             if (codec.canDecode(metadata, type)) {
@@ -228,7 +228,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodeNormal(NormalFieldValue value, MySqlColumnMetadata metadata, ParameterizedType type,
+    private <T> T decodeNormal(NormalFieldValue value, MySqlReadableMetadata metadata, ParameterizedType type,
         boolean binary, CodecContext context) {
         for (ParametrizedCodec<?> codec : parametrizedCodecs) {
             if (codec.canDecode(metadata, type)) {
@@ -242,7 +242,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodeMassive(LargeFieldValue value, MySqlColumnMetadata metadata, Class<?> type,
+    private <T> T decodeMassive(LargeFieldValue value, MySqlReadableMetadata metadata, Class<?> type,
         boolean binary, CodecContext context) {
         for (MassiveCodec<?> codec : massiveCodecs) {
             if (codec.canDecode(metadata, type)) {
@@ -256,7 +256,7 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodeMassive(LargeFieldValue value, MySqlColumnMetadata metadata, ParameterizedType type,
+    private <T> T decodeMassive(LargeFieldValue value, MySqlReadableMetadata metadata, ParameterizedType type,
         boolean binary, CodecContext context) {
         for (MassiveParametrizedCodec<?> codec : massiveParametrizedCodecs) {
             if (codec.canDecode(metadata, type)) {
@@ -269,7 +269,7 @@ final class DefaultCodecs implements Codecs {
         throw new IllegalArgumentException("Cannot decode massive  " + type + " for " + metadata.getType());
     }
 
-    private static Class<?> chooseClass(MySqlColumnMetadata metadata, Class<?> type) {
+    private static Class<?> chooseClass(MySqlReadableMetadata metadata, Class<?> type) {
         Class<?> javaType = metadata.getType().getJavaType();
         return type.isAssignableFrom(javaType) ? javaType : type;
     }

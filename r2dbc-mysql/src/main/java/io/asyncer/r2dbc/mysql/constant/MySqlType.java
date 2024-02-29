@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql.constant;
 
-import io.asyncer.r2dbc.mysql.ColumnDefinition;
+import io.asyncer.r2dbc.mysql.api.MySqlNativeTypeMetadata;
 import io.r2dbc.spi.Type;
 
 import java.math.BigDecimal;
@@ -671,24 +671,24 @@ public enum MySqlType implements Type {
         return 0;
     }
 
-    public static MySqlType of(int id, ColumnDefinition definition) {
+    public static MySqlType of(MySqlNativeTypeMetadata metadata) {
         // Maybe need to check if it is a string-like type?
-        if (definition.isSet()) {
+        if (metadata.isSet()) {
             return SET;
-        } else if (definition.isEnum()) {
+        } else if (metadata.isEnum()) {
             return ENUM;
         }
 
-        switch (id) {
+        switch (metadata.getTypeId()) {
             case ID_DECIMAL:
             case ID_NEW_DECIMAL:
                 return DECIMAL;
             case ID_TINYINT:
-                return definition.isUnsigned() ? TINYINT_UNSIGNED : TINYINT;
+                return metadata.isUnsigned() ? TINYINT_UNSIGNED : TINYINT;
             case ID_SMALLINT:
-                return definition.isUnsigned() ? SMALLINT_UNSIGNED : SMALLINT;
+                return metadata.isUnsigned() ? SMALLINT_UNSIGNED : SMALLINT;
             case ID_INT:
-                return definition.isUnsigned() ? INT_UNSIGNED : INT;
+                return metadata.isUnsigned() ? INT_UNSIGNED : INT;
             case ID_FLOAT:
                 return FLOAT;
             case ID_DOUBLE:
@@ -698,9 +698,9 @@ public enum MySqlType implements Type {
             case ID_TIMESTAMP:
                 return TIMESTAMP;
             case ID_BIGINT:
-                return definition.isUnsigned() ? BIGINT_UNSIGNED : BIGINT;
+                return metadata.isUnsigned() ? BIGINT_UNSIGNED : BIGINT;
             case ID_MEDIUMINT:
-                return definition.isUnsigned() ? MEDIUMINT_UNSIGNED : MEDIUMINT;
+                return metadata.isUnsigned() ? MEDIUMINT_UNSIGNED : MEDIUMINT;
             case ID_DATE:
                 return DATE;
             case ID_TIME:
@@ -712,7 +712,7 @@ public enum MySqlType implements Type {
             case ID_VARCHAR:
             case ID_VAR_STRING:
             case ID_STRING:
-                return definition.isBinary() ? VARBINARY : VARCHAR;
+                return metadata.isBinary() ? VARBINARY : VARCHAR;
             case ID_BIT:
                 return BIT;
             case ID_JSON:
@@ -722,13 +722,13 @@ public enum MySqlType implements Type {
             case ID_SET:
                 return SET;
             case ID_TINYBLOB:
-                return definition.isBinary() ? TINYBLOB : TINYTEXT;
+                return metadata.isBinary() ? TINYBLOB : TINYTEXT;
             case ID_MEDIUMBLOB:
-                return definition.isBinary() ? MEDIUMBLOB : MEDIUMTEXT;
+                return metadata.isBinary() ? MEDIUMBLOB : MEDIUMTEXT;
             case ID_LONGBLOB:
-                return definition.isBinary() ? LONGBLOB : LONGTEXT;
+                return metadata.isBinary() ? LONGBLOB : LONGTEXT;
             case ID_BLOB:
-                return definition.isBinary() ? BLOB : TEXT;
+                return metadata.isBinary() ? BLOB : TEXT;
             case ID_GEOMETRY:
                 // Most Geometry libraries were using byte[] to encode/decode which based on WKT
                 // (includes Extended-WKT) or WKB

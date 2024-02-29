@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import org.jetbrains.annotations.Nullable;
 

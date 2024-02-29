@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -41,7 +41,7 @@ final class LocalDateCodec extends AbstractClassedCodec<LocalDate> {
     }
 
     @Override
-    public LocalDate decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public LocalDate decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         int bytes = value.readableBytes();
         LocalDate date = binary ? readDateBinary(value, bytes) : readDateText(value);
@@ -64,7 +64,7 @@ final class LocalDateCodec extends AbstractClassedCodec<LocalDate> {
     }
 
     @Override
-    public boolean doCanDecode(MySqlColumnMetadata metadata) {
+    public boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType() == MySqlType.DATE;
     }
 

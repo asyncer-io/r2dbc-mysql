@@ -17,11 +17,12 @@
 package io.asyncer.r2dbc.mysql.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.codec.ParametrizedCodec;
+import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
@@ -52,7 +53,7 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
     }
 
     @Override
-    public Object decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Object decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         Charset charset = metadata.getCharCollation(context).getCharset();
 
@@ -64,7 +65,7 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
     }
 
     @Override
-    public Object decode(ByteBuf value, MySqlColumnMetadata metadata, ParameterizedType target, boolean binary,
+    public Object decode(ByteBuf value, MySqlReadableMetadata metadata, ParameterizedType target, boolean binary,
         CodecContext context) {
         Charset charset = metadata.getCharCollation(context).getCharset();
 
@@ -81,12 +82,12 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return doCanDecode(metadata);
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, ParameterizedType target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, ParameterizedType target) {
         return doCanDecode(metadata);
     }
 
@@ -95,7 +96,7 @@ public final class JacksonCodec implements ParametrizedCodec<Object> {
         return mode.isEncode();
     }
 
-    private boolean doCanDecode(MySqlColumnMetadata metadata) {
+    private boolean doCanDecode(MySqlReadableMetadata metadata) {
         return mode.isDecode() && (metadata.getType() == MySqlType.JSON || metadata.getType() == MySqlType.TEXT);
     }
 

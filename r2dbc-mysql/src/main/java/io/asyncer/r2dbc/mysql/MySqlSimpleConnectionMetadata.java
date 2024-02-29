@@ -16,7 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import io.r2dbc.spi.ConnectionMetadata;
+import io.asyncer.r2dbc.mysql.api.MySqlConnectionMetadata;
 import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -24,20 +24,28 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * Connection metadata for a connection connected to MySQL database.
  */
-public final class MySqlConnectionMetadata implements ConnectionMetadata {
+final class MySqlSimpleConnectionMetadata implements MySqlConnectionMetadata {
 
     private final String version;
 
     private final String product;
 
-    MySqlConnectionMetadata(String version, @Nullable String product) {
+    private final boolean isMariaDb;
+
+    MySqlSimpleConnectionMetadata(String version, @Nullable String product, boolean isMariaDb) {
         this.version = requireNonNull(version, "version must not be null");
         this.product = product == null ? "Unknown" : product;
+        this.isMariaDb = isMariaDb;
     }
 
     @Override
     public String getDatabaseVersion() {
         return version;
+    }
+
+    @Override
+    public boolean isMariaDb() {
+        return isMariaDb;
     }
 
     @Override

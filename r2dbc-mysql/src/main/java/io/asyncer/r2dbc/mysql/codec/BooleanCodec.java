@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -36,7 +36,7 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
     }
 
     @Override
-    public Boolean decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Boolean decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return binary || metadata.getType() == MySqlType.BIT ? value.readBoolean() : value.readByte() != '0';
     }
@@ -52,9 +52,10 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlColumnMetadata metadata) {
+    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
         MySqlType type = metadata.getType();
-        return (type == MySqlType.BIT || type == MySqlType.TINYINT) && metadata.getNativePrecision() == 1;
+        return (type == MySqlType.BIT || type == MySqlType.TINYINT) &&
+            Integer.valueOf(1).equals(metadata.getPrecision());
     }
 
     private static final class BooleanMySqlParameter extends AbstractMySqlParameter {

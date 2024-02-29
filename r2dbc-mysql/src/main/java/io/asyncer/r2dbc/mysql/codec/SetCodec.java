@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
@@ -49,7 +49,7 @@ final class SetCodec implements ParametrizedCodec<String[]> {
     }
 
     @Override
-    public String[] decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public String[] decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         if (!value.isReadable()) {
             return EMPTY_STRINGS;
@@ -67,7 +67,7 @@ final class SetCodec implements ParametrizedCodec<String[]> {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
-    public Set<?> decode(ByteBuf value, MySqlColumnMetadata metadata, ParameterizedType target, boolean binary,
+    public Set<?> decode(ByteBuf value, MySqlReadableMetadata metadata, ParameterizedType target, boolean binary,
         CodecContext context) {
         if (!value.isReadable()) {
             return Collections.emptySet();
@@ -105,12 +105,12 @@ final class SetCodec implements ParametrizedCodec<String[]> {
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         return metadata.getType() == MySqlType.SET && target.isAssignableFrom(String[].class);
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, ParameterizedType target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, ParameterizedType target) {
         if (metadata.getType() != MySqlType.SET) {
             return false;
         }

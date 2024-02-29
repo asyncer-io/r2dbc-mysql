@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import reactor.core.publisher.Flux;
@@ -35,6 +36,6 @@ final class TextParametrizedStatement extends ParametrizedStatementSupport {
     protected Flux<MySqlResult> execute(List<Binding> bindings) {
         return Flux.defer(() -> QueryFlow.execute(client, query, returningIdentifiers(),
                 bindings))
-            .map(messages -> MySqlResult.toResult(false, codecs, context, syntheticKeyName(), messages));
+            .map(messages -> MySqlSegmentResult.toResult(false, codecs, context, syntheticKeyName(), messages));
     }
 }

@@ -16,7 +16,10 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.api.MySqlStatement;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import reactor.core.publisher.Flux;
 
 /**
@@ -24,16 +27,16 @@ import reactor.core.publisher.Flux;
  */
 final class PingStatement implements MySqlStatement {
 
-    private final MySqlConnection connection;
-
     private final Codecs codecs;
 
     private final ConnectionContext context;
 
-    PingStatement(MySqlConnection connection, Codecs codecs, ConnectionContext context) {
-        this.connection = connection;
+    private final Flux<ServerMessage> deferred;
+
+    PingStatement(Codecs codecs, ConnectionContext context, Flux<ServerMessage> deferred) {
         this.codecs = codecs;
         this.context = context;
+        this.deferred = deferred;
     }
 
     @Override
@@ -63,7 +66,8 @@ final class PingStatement implements MySqlStatement {
 
     @Override
     public Flux<MySqlResult> execute() {
-        return Flux.just(MySqlResult.toResult(false, codecs, context, null,
-            connection.doPingInternal()));
+        return Flux.just(
+            MySqlSegmentResult.toResult(false, codecs, context, null, deferred)
+        );
     }
 }

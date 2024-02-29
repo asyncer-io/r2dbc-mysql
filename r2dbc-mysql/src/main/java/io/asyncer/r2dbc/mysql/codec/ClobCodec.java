@@ -16,9 +16,9 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.MySqlColumnMetadata;
 import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
+import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.codec.lob.LobUtils;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
@@ -53,19 +53,19 @@ final class ClobCodec implements MassiveCodec<Clob> {
     }
 
     @Override
-    public Clob decode(ByteBuf value, MySqlColumnMetadata metadata, Class<?> target, boolean binary,
+    public Clob decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return LobUtils.createClob(value, metadata.getCharCollation(context));
     }
 
     @Override
-    public Clob decodeMassive(List<ByteBuf> value, MySqlColumnMetadata metadata, Class<?> target,
+    public Clob decodeMassive(List<ByteBuf> value, MySqlReadableMetadata metadata, Class<?> target,
         boolean binary, CodecContext context) {
         return LobUtils.createClob(value, metadata.getCharCollation(context));
     }
 
     @Override
-    public boolean canDecode(MySqlColumnMetadata metadata, Class<?> target) {
+    public boolean canDecode(MySqlReadableMetadata metadata, Class<?> target) {
         MySqlType type = metadata.getType();
 
         return (type.isLob() || type == MySqlType.JSON) && target.isAssignableFrom(Clob.class);
