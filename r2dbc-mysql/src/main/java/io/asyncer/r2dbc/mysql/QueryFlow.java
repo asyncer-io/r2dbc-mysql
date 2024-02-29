@@ -1281,20 +1281,28 @@ final class StartTransactionState extends AbstractTransactionState {
         return false;
     }
 
-    private static String buildStartTransaction(TransactionDefinition definition) {
+    /**
+     * Visible for testing.
+     *
+     * @param definition the transaction definition
+     * @return the {@code START TRANSACTION} statement
+     */
+    static String buildStartTransaction(TransactionDefinition definition) {
         Boolean readOnly = definition.getAttribute(TransactionDefinition.READ_ONLY);
         Boolean snapshot = definition.getAttribute(MySqlTransactionDefinition.WITH_CONSISTENT_SNAPSHOT);
 
-        if (readOnly == null && (snapshot == null || !snapshot)) {
+        if (readOnly == null && !Boolean.TRUE.equals(snapshot)) {
             return "BEGIN";
         }
 
         StringBuilder builder = new StringBuilder(90).append("START TRANSACTION");
+        boolean first = true;
 
-        if (snapshot != null && snapshot) {
+        if (Boolean.TRUE.equals(snapshot)) {
             ConsistentSnapshotEngine engine =
                 definition.getAttribute(MySqlTransactionDefinition.CONSISTENT_SNAPSHOT_ENGINE);
 
+            first = false;
             builder.append(" WITH CONSISTENT ");
 
             if (engine == null) {
@@ -1312,6 +1320,10 @@ final class StartTransactionState extends AbstractTransactionState {
         }
 
         if (readOnly != null) {
+            if (!first) {
+                builder.append(',');
+            }
+
             if (readOnly) {
                 builder.append(" READ ONLY");
             } else {

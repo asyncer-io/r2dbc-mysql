@@ -18,7 +18,9 @@ package io.asyncer.r2dbc.mysql;
 
 import io.r2dbc.spi.ColumnMetadata;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
+import io.r2dbc.spi.TransactionDefinition;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
@@ -66,6 +68,30 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
             .then(connection.commitTransaction())
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
             .then(connection.beginTransaction())
+            .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+            .then(connection.rollbackTransaction())
+            .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse()));
+    }
+
+    @DisabledIf("envIsLessThanMySql56")
+    @Test
+    void startTransaction() {
+        TransactionDefinition readOnlyConsistent = MySqlTransactionDefinition.builder()
+            .withConsistentSnapshot(true)
+            .readOnly(true)
+            .build();
+        TransactionDefinition readWriteConsistent = MySqlTransactionDefinition.builder()
+            .withConsistentSnapshot(true)
+            .readOnly(false)
+            .build();
+
+        complete(connection -> Mono.<Void>fromRunnable(() -> assertThat(connection.isInTransaction())
+                .isFalse())
+            .then(connection.beginTransaction(readOnlyConsistent))
+            .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
+            .then(connection.rollbackTransaction())
+            .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse())
+            .then(connection.beginTransaction(readWriteConsistent))
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
             .then(connection.rollbackTransaction())
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse()));
