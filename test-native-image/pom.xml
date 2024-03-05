@@ -15,9 +15,9 @@
     <maven.compiler.target>8</maven.compiler.target>
     <skipNativeImage>true</skipNativeImage>
 
-    <reactor.version>2022.0.9</reactor.version>
+    <reactor.version>2022.0.16</reactor.version>
     <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
-    <graalvm.version>21.2.0</graalvm.version>
+    <graalvm.version>20.3.13</graalvm.version>
   </properties>
 
   <dependencies>

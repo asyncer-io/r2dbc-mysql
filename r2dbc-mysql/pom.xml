@@ -75,18 +75,19 @@
     <maven.surefire.skip>false</maven.surefire.skip>
 
     <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
-    <reactor.version>2022.0.9</reactor.version>
-    <assertj.version>3.24.2</assertj.version>
+    <reactor.version>2022.0.16</reactor.version>
+    <netty.version>4.1.106.Final</netty.version>
+    <assertj.version>3.25.3</assertj.version>
     <jmh.version>1.37</jmh.version>
-    <junit.version>5.10.1</junit.version>
-    <logback.version>1.4.14</logback.version>
+    <junit.version>5.10.2</junit.version>
+    <logback.version>1.5.3</logback.version>
     <mockito.version>4.11.0</mockito.version>
-    <mysql.version>8.2.0</mysql.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
+    <mysql.version>8.3.0</mysql.version>
+    <testcontainers.version>1.19.6</testcontainers.version>
     <hikari-cp.version>4.0.3</hikari-cp.version>
-    <spring-framework.version>5.3.31</spring-framework.version>
-    <jackson.version>2.16.0</jackson.version>
-    <mbr.version>0.3.0.RELEASE</mbr.version>
+    <spring-framework.version>5.3.32</spring-framework.version>
+    <jackson.version>2.16.1</jackson.version>
+    <mbr.version>0.4.0.RELEASE</mbr.version>
     <jsr305.version>3.0.2</jsr305.version>
     <zstd-jni.version>1.5.5-11</zstd-jni.version>
     <java-annotations.version>24.1.0</java-annotations.version>
@@ -99,6 +100,13 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
         <version>${reactor.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -145,7 +153,19 @@
     </dependency>
     <dependency>
       <groupId>io.projectreactor.netty</groupId>
-      <artifactId>reactor-netty</artifactId>
+      <artifactId>reactor-netty-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-epoll</artifactId>
+      <classifier>linux-x86_64</classifier>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-kqueue</artifactId>
+      <classifier>osx-x86_64</classifier>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.r2dbc</groupId>
@@ -305,7 +325,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
+        <version>3.12.1</version>
         <configuration>
           <compilerArgs>
             <arg>-Xlint:all</arg>
@@ -379,7 +399,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.2.3</version>
+        <version>3.2.5</version>
         <configuration>
           <runOrder>random</runOrder>
           <includes>
@@ -395,7 +415,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.2.3</version>
+        <version>3.2.5</version>
         <executions>
           <execution>
             <goals>
@@ -488,7 +508,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.2.0</version>
             <executions>
               <execution>
                 <id>run-benchmarks</id>
