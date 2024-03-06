@@ -23,6 +23,7 @@ import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
 import io.r2dbc.spi.Nullability;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
@@ -50,7 +51,8 @@ final class MySqlColumnDescriptor implements MySqlColumnMetadata {
 
     private final int collationId;
 
-    private MySqlColumnDescriptor(int index, short typeId, String name, int definitions,
+    @VisibleForTesting
+    MySqlColumnDescriptor(int index, short typeId, String name, int definitions,
         long size, int decimals, int collationId) {
         require(index >= 0, "index must not be a negative integer");
         require(size >= 0, "size must not be a negative integer");
