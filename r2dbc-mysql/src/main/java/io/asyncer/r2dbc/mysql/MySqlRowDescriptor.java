@@ -19,54 +19,34 @@ package io.asyncer.r2dbc.mysql;
 import io.asyncer.r2dbc.mysql.api.MySqlRowMetadata;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.server.DefinitionMetadataMessage;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
  * An implementation of {@link MySqlRowMetadata} for MySQL database text/binary results.
- *
- * @see MySqlNames column name searching rules.
  */
 final class MySqlRowDescriptor implements MySqlRowMetadata {
 
     private final MySqlColumnDescriptor[] originMetadata;
 
-    private final MySqlColumnDescriptor[] sortedMetadata;
+    @Nullable
+    private Map<String, Integer> indexMap;
 
-    private final ColumnNameSet nameSet;
-
-    private MySqlRowDescriptor(MySqlColumnDescriptor[] metadata) {
-        int size = metadata.length;
-
-        switch (size) {
-            case 0:
-                throw new IllegalArgumentException("Least 1 column metadata");
-            case 1:
-                String name = metadata[0].getName();
-
-                this.originMetadata = metadata;
-                this.sortedMetadata = metadata;
-                this.nameSet = ColumnNameSet.of(name);
-
-                break;
-            default:
-                MySqlColumnDescriptor[] sortedMetadata = new MySqlColumnDescriptor[size];
-                System.arraycopy(metadata, 0, sortedMetadata, 0, size);
-                Arrays.sort(sortedMetadata, ColumnNameSet.NAME_COMPARATOR);
-
-                String[] originNames = getNames(metadata);
-                String[] sortedNames = getNames(sortedMetadata);
-
-                this.originMetadata = metadata;
-                this.sortedMetadata = sortedMetadata;
-                this.nameSet = ColumnNameSet.of(originNames, sortedNames);
-
-                break;
-        }
+    /**
+     * Visible for testing
+     */
+    @VisibleForTesting
+    MySqlRowDescriptor(MySqlColumnDescriptor[] metadata) {
+        originMetadata = metadata;
     }
 
     @Override
@@ -78,24 +58,43 @@ final class MySqlRowDescriptor implements MySqlRowMetadata {
         return originMetadata[index];
     }
 
+    private static Map<String, Integer> createIndexMap(MySqlColumnDescriptor[] metadata) {
+        final int size = metadata.length;
+        final Map<String, Integer> map = new HashMap<>(size);
+
+        for (int i = 0; i < size; ++i) {
+            map.putIfAbsent(metadata[i].getName().toLowerCase(Locale.ROOT), i);
+        }
+
+        return map;
+    }
+
+    private int find(final String name) {
+        Map<String, Integer> indexMap = this.indexMap;
+        if (null == indexMap) {
+            indexMap = this.indexMap = createIndexMap(originMetadata);
+        }
+        return indexMap.getOrDefault(name.toLowerCase(Locale.ROOT), -1);
+    }
+
     @Override
     public MySqlColumnDescriptor getColumnMetadata(String name) {
         requireNonNull(name, "name must not be null");
 
-        int index = nameSet.findIndex(name);
+        final int index = find(name);
 
         if (index < 0) {
             throw new NoSuchElementException("Column name '" + name + "' does not exist");
         }
 
-        return sortedMetadata[index];
+        return originMetadata[index];
     }
 
     @Override
     public boolean contains(String name) {
         requireNonNull(name, "name must not be null");
 
-        return nameSet.contains(name);
+        return find(name) >= 0;
     }
 
     @Override
@@ -105,8 +104,7 @@ final class MySqlRowDescriptor implements MySqlRowMetadata {
 
     @Override
     public String toString() {
-        return "MySqlRowDescriptor{metadata=" + Arrays.toString(originMetadata) + ", sortedNames=" +
-            Arrays.toString(nameSet.getSortedNames()) + '}';
+        return "MySqlRowDescriptor{metadata=" + Arrays.toString(originMetadata) + '}';
     }
 
     MySqlColumnDescriptor[] unwrap() {
@@ -122,16 +120,5 @@ final class MySqlRowDescriptor implements MySqlRowMetadata {
         }
 
         return new MySqlRowDescriptor(metadata);
-    }
-
-    private static String[] getNames(MySqlColumnDescriptor[] metadata) {
-        int size = metadata.length;
-        String[] names = new String[size];
-
-        for (int i = 0; i < size; ++i) {
-            names[i] = metadata[i].getName();
-        }
-
-        return names;
     }
 }

@@ -52,15 +52,11 @@ final class InsertSyntheticRow implements MySqlRow, MySqlRowMetadata, MySqlColum
 
     private final long lastInsertId;
 
-    private final ColumnNameSet nameSet;
-
     InsertSyntheticRow(Codecs codecs, String keyName, long lastInsertId) {
         this.codecs = requireNonNull(codecs, "codecs must not be null");
         this.keyName = requireNonNull(keyName, "keyName must not be null");
         // lastInsertId may be negative if key is BIGINT UNSIGNED and value overflow than signed int64.
         this.lastInsertId = lastInsertId;
-        // Singleton name must be sorted.
-        this.nameSet = ColumnNameSet.of(keyName);
     }
 
     @Override
@@ -164,14 +160,14 @@ final class InsertSyntheticRow implements MySqlRow, MySqlRowMetadata, MySqlColum
             lastInsertId < 0 ? Long.toUnsignedString(lastInsertId) : lastInsertId));
     }
 
-    private void assertValidName(String name) {
-        if (!contains0(name)) {
-            throw new NoSuchElementException("Column name '" + name + "' does not exist in " + this.nameSet);
-        }
+    private boolean contains0(final String name) {
+        return keyName.equalsIgnoreCase(name);
     }
 
-    private boolean contains0(String name) {
-        return nameSet.contains(name);
+    private void assertValidName(final String name) {
+        if (!contains0(name)) {
+            throw new NoSuchElementException("Column name '" + name + "' does not exist in {" + name + '}');
+        }
     }
 
     private <T> T get0(Class<?> type) {
