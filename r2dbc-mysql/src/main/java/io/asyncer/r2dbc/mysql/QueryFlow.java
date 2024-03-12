@@ -107,10 +107,10 @@ final class QueryFlow {
     };
 
     /**
-     * Execute multiple bindings of a server-preparing statement with one-by-one binary execution. The
-     * execution terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. If client
-     * receives a {@link ErrorMessage} will cancel subsequent {@link Binding}s. The exchange will be completed
-     * by {@link CompleteMessage} after receive the last result for the last binding.
+     * Execute multiple bindings of a server-preparing statement with one-by-one binary execution. The execution
+     * terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. If client receives a
+     * {@link ErrorMessage} will cancel subsequent {@link Binding}s. The exchange will be completed by
+     * {@link CompleteMessage} after receive the last result for the last binding.
      *
      * @param client    the {@link Client} to exchange messages with.
      * @param sql       the statement for exception tracing.
@@ -133,10 +133,10 @@ final class QueryFlow {
     }
 
     /**
-     * Execute multiple bindings of a client-preparing statement with one-by-one text query. The execution
-     * terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage}
-     * will emit an exception and cancel subsequent {@link Binding}s. This exchange will be completed by
-     * {@link CompleteMessage} after receive the last result for the last binding.
+     * Execute multiple bindings of a client-preparing statement with one-by-one text query. The execution terminates
+     * with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception
+     * and cancel subsequent {@link Binding}s. This exchange will be completed by {@link CompleteMessage} after receive
+     * the last result for the last binding.
      *
      * @param client    the {@link Client} to exchange messages with.
      * @param query     the {@link Query} for synthetic client-preparing statement.
@@ -159,8 +159,8 @@ final class QueryFlow {
 
     /**
      * Execute a simple compound query. Query execution terminates with the last {@link CompleteMessage} or a
-     * {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception. The exchange will be completed
-     * by {@link CompleteMessage} after receive the last result for the last binding.
+     * {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception. The exchange will be completed by
+     * {@link CompleteMessage} after receive the last result for the last binding.
      *
      * @param client the {@link Client} to exchange messages with.
      * @param sql    the query to execute, can be contains multi-statements.
@@ -172,9 +172,9 @@ final class QueryFlow {
 
     /**
      * Execute multiple simple compound queries with one-by-one. Query execution terminates with the last
-     * {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception and
-     * cancel subsequent statements' execution. The exchange will be completed by {@link CompleteMessage}
-     * after receive the last result for the last binding.
+     * {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception and cancel
+     * subsequent statements' execution. The exchange will be completed by {@link CompleteMessage} after receive the
+     * last result for the last binding.
      *
      * @param client     the {@link Client} to exchange messages with.
      * @param statements bundled sql for execute.
@@ -195,8 +195,8 @@ final class QueryFlow {
     }
 
     /**
-     * Login a {@link Client} and receive the {@code client} after logon. It will emit an exception when
-     * client receives a {@link ErrorMessage}.
+     * Login a {@link Client} and receive the {@code client} after logon. It will emit an exception when client receives
+     * a {@link ErrorMessage}.
      *
      * @param client                the {@link Client} to exchange messages with.
      * @param sslMode               the {@link SslMode} defines SSL capability and behavior.
@@ -219,10 +219,9 @@ final class QueryFlow {
     }
 
     /**
-     * Execute a simple query and return a {@link Mono} for the complete signal or error. Query execution
-     * terminates with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage}
-     * will emit an exception. The exchange will be completed by {@link CompleteMessage} after receive the
-     * last result for the last binding.
+     * Execute a simple query and return a {@link Mono} for the complete signal or error. Query execution terminates
+     * with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception.
+     * The exchange will be completed by {@link CompleteMessage} after receive the last result for the last binding.
      * <p>
      * Note: this method does not support {@code LOCAL INFILE} due to it should be used for excepted queries.
      *
@@ -246,18 +245,19 @@ final class QueryFlow {
     }
 
     /**
-     * Begins a new transaction with a {@link TransactionDefinition}.  It will change current transaction
-     * statuses of the {@link ConnectionState}.
+     * Begins a new transaction with a {@link TransactionDefinition}.  It will change current transaction statuses of
+     * the {@link ConnectionState}.
      *
      * @param client         the {@link Client} to exchange messages with.
      * @param state          the connection state for checks and sets transaction statuses.
      * @param batchSupported if connection supports batch query.
      * @param definition     the {@link TransactionDefinition}.
+     * @param context        the {@link ConnectionContext} for initialization.
      * @return receives complete signal.
      */
     static Mono<Void> beginTransaction(Client client, ConnectionState state, boolean batchSupported,
-        TransactionDefinition definition) {
-        final StartTransactionState startState = new StartTransactionState(state, definition);
+        TransactionDefinition definition, ConnectionContext context) {
+        final StartTransactionState startState = new StartTransactionState(state, definition, context);
 
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(startState)).then();
@@ -267,8 +267,8 @@ final class QueryFlow {
     }
 
     /**
-     * Commits or rollbacks current transaction.  It will recover statuses of the {@link ConnectionState} in
-     * the initial connection state.
+     * Commits or rollbacks current transaction.  It will recover statuses of the {@link ConnectionState} in the initial
+     * connection state.
      *
      * @param client         the {@link Client} to exchange messages with.
      * @param state          the connection state for checks and resets transaction statuses.
@@ -298,9 +298,9 @@ final class QueryFlow {
 
     /**
      * Execute a simple query statement. Query execution terminates with the last {@link CompleteMessage} or a
-     * {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception. The exchange will be completed
-     * by {@link CompleteMessage} after receive the last result for the last binding. The exchange will be
-     * completed by {@link CompleteMessage} after receive the last result for the last binding.
+     * {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception. The exchange will be completed by
+     * {@link CompleteMessage} after receive the last result for the last binding. The exchange will be completed by
+     * {@link CompleteMessage} after receive the last result for the last binding.
      *
      * @param client the {@link Client} to exchange messages with.
      * @param sql    the query to execute, can be contains multi-statements.
@@ -310,7 +310,8 @@ final class QueryFlow {
         return client.exchange(new SimpleQueryExchangeable(sql));
     }
 
-    private QueryFlow() { }
+    private QueryFlow() {
+    }
 }
 
 /**
@@ -523,12 +524,12 @@ final class MultiQueryExchangeable extends BaseFluxExchangeable {
 }
 
 /**
- * An implementation of {@link FluxExchangeable} that considers server-preparing queries. Which contains a
- * built-in state machine.
+ * An implementation of {@link FluxExchangeable} that considers server-preparing queries. Which contains a built-in
+ * state machine.
  * <p>
- * It will reset a prepared statement if cache has matched it, otherwise it will prepare statement to a new
- * statement ID and put the ID into the cache. If the statement ID does not exist in the cache after the last
- * row sent, the ID will be closed.
+ * It will reset a prepared statement if cache has matched it, otherwise it will prepare statement to a new statement ID
+ * and put the ID into the cache. If the statement ID does not exist in the cache after the last row sent, the ID will
+ * be closed.
  */
 final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
 
@@ -813,8 +814,8 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
 /**
  * An implementation of {@link FluxExchangeable} that considers login to the database.
  * <p>
- * Not like other {@link FluxExchangeable}s, it is started by a server-side message, which should be an
- * implementation of {@link HandshakeRequest}.
+ * Not like other {@link FluxExchangeable}s, it is started by a server-side message, which should be an implementation
+ * of {@link HandshakeRequest}.
  */
 final class LoginExchangeable extends FluxExchangeable<Void> {
 
@@ -1181,6 +1182,7 @@ final class CommitRollbackState extends AbstractTransactionState {
         }
 
         if (state.isLockWaitTimeoutChanged()) {
+            // If server does not support lock wait timeout, the state will not be changed, so it is safe.
             tasks |= LOCK_WAIT_TIMEOUT;
             statements.add("SET innodb_lock_wait_timeout=" + state.getSessionLockWaitTimeout());
         }
@@ -1224,9 +1226,12 @@ final class StartTransactionState extends AbstractTransactionState {
 
     private final TransactionDefinition definition;
 
-    StartTransactionState(ConnectionState state, TransactionDefinition definition) {
+    private final ConnectionContext context;
+
+    StartTransactionState(ConnectionState state, TransactionDefinition definition, ConnectionContext context) {
         super(state);
         this.definition = definition;
+        this.context = context;
     }
 
     @Override
@@ -1237,9 +1242,14 @@ final class StartTransactionState extends AbstractTransactionState {
         }
         final Duration timeout = definition.getAttribute(TransactionDefinition.LOCK_WAIT_TIMEOUT);
         if (timeout != null) {
-            final long lockWaitTimeout = timeout.getSeconds();
-            tasks |= LOCK_WAIT_TIMEOUT;
-            statements.add("SET innodb_lock_wait_timeout=" + lockWaitTimeout);
+            if (context.isLockWaitTimeoutSupported()) {
+                long lockWaitTimeout = timeout.getSeconds();
+                tasks |= LOCK_WAIT_TIMEOUT;
+                statements.add("SET innodb_lock_wait_timeout=" + lockWaitTimeout);
+            } else {
+                QueryFlow.logger.warn(
+                    "Lock wait timeout is not supported by server, transaction definition lockWaitTimeout is ignored");
+            }
         }
 
         final IsolationLevel isolationLevel = definition.getAttribute(TransactionDefinition.ISOLATION_LEVEL);

@@ -205,7 +205,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     @Override
     public Mono<Void> beginTransaction(TransactionDefinition definition) {
-        return Mono.defer(() -> QueryFlow.beginTransaction(client, this, batchSupported, definition));
+        return Mono.defer(() -> QueryFlow.beginTransaction(client, this, batchSupported, definition, context));
     }
 
     @Override
@@ -306,8 +306,8 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     }
 
     /**
-     * MySQL does not have any way to query the isolation level of the current transaction, only inferred from
-     * past statements, so driver can not make sure the result is right.
+     * MySQL does not have any way to query the isolation level of the current transaction, only inferred from past
+     * statements, so driver can not make sure the result is right.
      * <p>
      * See <a href="https://bugs.mysql.com/bug.php?id=53341">MySQL Bug 53341</a>
      * <p>
@@ -424,6 +424,11 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     public Mono<Void> setLockWaitTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
 
+        if (!context.isLockWaitTimeoutSupported()) {
+            logger.warn("Lock wait timeout is not supported by server, setLockWaitTimeout operation is ignored");
+            return Mono.empty();
+        }
+
         long timeoutSeconds = timeout.getSeconds();
         return QueryFlow.executeVoid(client, "SET innodb_lock_wait_timeout=" + timeoutSeconds)
             .doOnSuccess(ignored -> this.lockWaitTimeout = this.currentLockWaitTimeout = timeoutSeconds);
@@ -484,11 +489,18 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     ) {
         Mono<MySqlConnection> connection = initSessionVariables(client, sessionVariables)
             .then(loadSessionVariables(client, codecs, context))
+            .flatMap(data -> loadInnoDbEngineStatus(data, client, codecs, context))
             .map(data -> {
                 ZoneId timeZone = data.timeZone;
                 if (timeZone != null) {
                     logger.debug("Got server time zone {} from loading session variables", timeZone);
                     context.setTimeZone(timeZone);
+                }
+
+                if (data.lockWaitTimeoutSupported) {
+                    context.enableLockWaitTimeoutSupported();
+                } else {
+                    logger.info("Lock wait timeout is not supported by server, all related operations will be ignored");
                 }
 
                 return new MySqlSimpleConnection(client, context, codecs, data.level, data.lockWaitTimeout,
@@ -534,10 +546,10 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     private static Mono<SessionData> loadSessionVariables(
         Client client, Codecs codecs, ConnectionContext context
     ) {
-        StringBuilder query = new StringBuilder(160)
+        StringBuilder query = new StringBuilder(128)
             .append("SELECT ")
             .append(transactionIsolationColumn(context))
-            .append(",@@innodb_lock_wait_timeout AS l,@@version_comment AS v");
+            .append(",@@version_comment AS v");
 
         Function<MySqlResult, Flux<SessionData>> handler;
 
@@ -552,6 +564,24 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
             .execute()
             .flatMap(handler)
             .last();
+    }
+
+    private static Mono<SessionData> loadInnoDbEngineStatus(
+        SessionData data, Client client, Codecs codecs, ConnectionContext context
+    ) {
+        return new TextSimpleStatement(client, codecs, context,
+            "SHOW VARIABLES LIKE 'innodb\\\\_lock\\\\_wait\\\\_timeout'")
+            .execute()
+            .flatMap(r -> r.map(readable -> {
+                String value = readable.get(1, String.class);
+
+                if (value == null || value.isEmpty()) {
+                    return data;
+                } else {
+                    return data.lockWaitTimeout(Long.parseLong(value));
+                }
+            }))
+            .single(data);
     }
 
     private static Mono<Void> initDatabase(Client client, String database) {
@@ -572,16 +602,15 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     private static Flux<SessionData> convertSessionData(MySqlResult r, boolean timeZone) {
         return r.map(readable -> {
             IsolationLevel level = convertIsolationLevel(readable.get(0, String.class));
-            long lockWaitTimeout = convertLockWaitTimeout(readable.get(1, Long.class));
-            String product = readable.get(2, String.class);
+            String product = readable.get(1, String.class);
 
-            return new SessionData(level, lockWaitTimeout, product, timeZone ? readZoneId(readable) : null);
+            return new SessionData(level, product, timeZone ? readZoneId(readable) : null);
         });
     }
 
     private static ZoneId readZoneId(Readable readable) {
-        String systemTimeZone = readable.get(3, String.class);
-        String timeZone = readable.get(4, String.class);
+        String systemTimeZone = readable.get(2, String.class);
+        String timeZone = readable.get(3, String.class);
 
         if (timeZone == null || timeZone.isEmpty() || "SYSTEM".equalsIgnoreCase(timeZone)) {
             if (systemTimeZone == null || systemTimeZone.isEmpty()) {
@@ -628,24 +657,13 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         return IsolationLevel.REPEATABLE_READ;
     }
 
-    private static long convertLockWaitTimeout(@Nullable Long timeout) {
-        if (timeout == null) {
-            logger.error("Lock wait timeout is null, fallback to " + DEFAULT_LOCK_WAIT_TIMEOUT + " seconds");
-
-            return DEFAULT_LOCK_WAIT_TIMEOUT;
-        }
-
-        return timeout;
-    }
-
     /**
-     * Resolves the column of session isolation level, the {@literal @@tx_isolation} has been marked as
-     * deprecated.
+     * Resolves the column of session isolation level, the {@literal @@tx_isolation} has been marked as deprecated.
      * <p>
      * If server is MariaDB, {@literal @@transaction_isolation} is used starting from {@literal 11.1.1}.
      * <p>
-     * If the server is MySQL, use {@literal @@transaction_isolation} starting from {@literal 8.0.3}, or
-     * between {@literal 5.7.20} and {@literal 8.0.0} (exclusive).
+     * If the server is MySQL, use {@literal @@transaction_isolation} starting from {@literal 8.0.3}, or between
+     * {@literal 5.7.20} and {@literal 8.0.0} (exclusive).
      */
     private static String transactionIsolationColumn(ConnectionContext context) {
         ServerVersion version = context.getServerVersion();
@@ -664,20 +682,26 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
         private final IsolationLevel level;
 
-        private final long lockWaitTimeout;
-
         @Nullable
         private final String product;
 
         @Nullable
         private final ZoneId timeZone;
 
-        private SessionData(IsolationLevel level, long lockWaitTimeout, @Nullable String product,
-            @Nullable ZoneId timeZone) {
+        private long lockWaitTimeout = -1;
+
+        private boolean lockWaitTimeoutSupported;
+
+        private SessionData(IsolationLevel level, @Nullable String product, @Nullable ZoneId timeZone) {
             this.level = level;
-            this.lockWaitTimeout = lockWaitTimeout;
             this.product = product;
             this.timeZone = timeZone;
+        }
+
+        SessionData lockWaitTimeout(long timeout) {
+            this.lockWaitTimeoutSupported = true;
+            this.lockWaitTimeout = timeout;
+            return this;
         }
     }
 }
