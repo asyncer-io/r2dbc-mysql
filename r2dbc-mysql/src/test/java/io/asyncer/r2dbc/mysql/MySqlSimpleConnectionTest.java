@@ -55,9 +55,8 @@ class MySqlSimpleConnectionTest {
         when(client.getContext()).thenReturn(ConnectionContextTest.mock());
 
         this.client = client;
-        this.noPrepare = new MySqlSimpleConnection(client,
-            codecs, level, 50, Caches.createQueryCache(0),
-            Caches.createPrepareCache(0), product, null);
+        this.noPrepare = new MySqlSimpleConnection(client, codecs, level, 50,
+            Caches.createQueryCache(0), Caches.createPrepareCache(0), product, null);
     }
 
     @Test

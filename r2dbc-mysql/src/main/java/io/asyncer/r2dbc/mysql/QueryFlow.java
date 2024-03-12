@@ -201,20 +201,23 @@ final class QueryFlow {
      * @param client                the {@link Client} to exchange messages with.
      * @param sslMode               the {@link SslMode} defines SSL capability and behavior.
      * @param database              the database that will be connected.
-     * @param user                  the user that will be login.
-     * @param password              the password of the {@code user}.
+     * @param credential            the {@link Credential} for login.
      * @param compressionAlgorithms the list of compression algorithms.
      * @param zstdCompressionLevel  the zstd compression level.
-     * @param context               the {@link ConnectionContext} for initialization.
      * @return the messages received in response to the login exchange.
      */
-    static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password,
+
+    static Mono<Client> login(Client client, SslMode sslMode, String database, Credential credential,
         Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel) {
-        return client.exchange(new LoginExchangeable(client, sslMode, database, user, password,
-                compressionAlgorithms, zstdCompressionLevel))
-            .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
-            .then(Mono.just(client));
+        return client.exchange(new LoginExchangeable(
+            client,
+            sslMode,
+            database,
+            credential.getUser(),
+            credential.getPassword(),
+            compressionAlgorithms,
+            zstdCompressionLevel
+        )).onErrorResume(e -> client.forceClose().then(Mono.error(e))).then(Mono.just(client));
     }
 
     /**
