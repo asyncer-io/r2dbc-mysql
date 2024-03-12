@@ -53,6 +53,8 @@ public final class ConnectionContext implements CodecContext {
     @Nullable
     private ZoneId timeZone;
 
+    private boolean lockWaitTimeoutSupported = false;
+
     /**
      * Assume that the auto commit is always turned on, it will be set after handshake V10 request message, or
      * OK message which means handshake V9 completed.
@@ -160,6 +162,22 @@ public final class ConnectionContext implements CodecContext {
      */
     public int getLocalInfileBufferSize() {
         return localInfileBufferSize;
+    }
+
+    /**
+     * Checks if the server supports lock wait timeout.
+     *
+     * @return if the server supports lock wait timeout.
+     */
+    public boolean isLockWaitTimeoutSupported() {
+        return lockWaitTimeoutSupported;
+    }
+
+    /**
+     * Enables lock wait timeout supported when loading session variables.
+     */
+    public void enableLockWaitTimeoutSupported() {
+        this.lockWaitTimeoutSupported = true;
     }
 
     /**
