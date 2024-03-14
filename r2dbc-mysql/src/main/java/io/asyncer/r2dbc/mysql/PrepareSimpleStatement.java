@@ -40,9 +40,8 @@ final class PrepareSimpleStatement extends SimpleStatementSupport {
 
     private int fetchSize = 0;
 
-    PrepareSimpleStatement(Client client, Codecs codecs, ConnectionContext context, String sql,
-        PrepareCache prepareCache) {
-        super(client, codecs, context, sql);
+    PrepareSimpleStatement(Client client, Codecs codecs, String sql, PrepareCache prepareCache) {
+        super(client, codecs, sql);
         this.prepareCache = prepareCache;
     }
 
@@ -50,7 +49,7 @@ final class PrepareSimpleStatement extends SimpleStatementSupport {
     public Flux<MySqlResult> execute() {
         return Flux.defer(() -> QueryFlow.execute(client,
                 StringUtils.extendReturning(sql, returningIdentifiers()), BINDINGS, fetchSize, prepareCache))
-            .map(messages -> MySqlSegmentResult.toResult(true, codecs, context, syntheticKeyName(), messages));
+            .map(messages -> MySqlSegmentResult.toResult(true, client, codecs, syntheticKeyName(), messages));
     }
 
     @Override

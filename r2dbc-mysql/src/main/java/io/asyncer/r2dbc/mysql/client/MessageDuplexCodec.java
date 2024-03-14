@@ -67,6 +67,9 @@ final class MessageDuplexCodec extends ByteToMessageDecoder implements ChannelOu
 
     private DecodeContext decodeContext = DecodeContext.login();
 
+    /**
+     * It can be retained because reconnect and redirect will re-create the {@link MessageDuplexCodec}.
+     */
     private final ConnectionContext context;
 
     private final ServerMessageDecoder decoder = new ServerMessageDecoder();

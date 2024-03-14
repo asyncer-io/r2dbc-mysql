@@ -18,25 +18,23 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.api.MySqlStatement;
+import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
-import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * An implementation of {@link MySqlStatement} considers the lightweight ping syntax.
  */
 final class PingStatement implements MySqlStatement {
 
+    private final Client client;
+
     private final Codecs codecs;
 
-    private final ConnectionContext context;
-
-    private final Flux<ServerMessage> deferred;
-
-    PingStatement(Codecs codecs, ConnectionContext context, Flux<ServerMessage> deferred) {
+    PingStatement(Client client, Codecs codecs) {
+        this.client = client;
         this.codecs = codecs;
-        this.context = context;
-        this.deferred = deferred;
     }
 
     @Override
@@ -66,8 +64,12 @@ final class PingStatement implements MySqlStatement {
 
     @Override
     public Flux<MySqlResult> execute() {
-        return Flux.just(
-            MySqlSegmentResult.toResult(false, codecs, context, null, deferred)
-        );
+        return Flux.from(Mono.fromSupplier(() -> MySqlSegmentResult.toResult(
+            false,
+            client,
+            codecs,
+            null,
+            MySqlSimpleConnection.doPingInternal(client)
+        )));
     }
 }

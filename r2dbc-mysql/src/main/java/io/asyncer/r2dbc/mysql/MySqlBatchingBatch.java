@@ -36,14 +36,11 @@ final class MySqlBatchingBatch implements MySqlBatch {
 
     private final Codecs codecs;
 
-    private final ConnectionContext context;
-
     private final StringJoiner queries = new StringJoiner(";");
 
-    MySqlBatchingBatch(Client client, Codecs codecs, ConnectionContext context) {
+    MySqlBatchingBatch(Client client, Codecs codecs) {
         this.client = requireNonNull(client, "client must not be null");
         this.codecs = requireNonNull(codecs, "codecs must not be null");
-        this.context = requireNonNull(context, "context must not be null");
     }
 
     @Override
@@ -65,7 +62,7 @@ final class MySqlBatchingBatch implements MySqlBatch {
     @Override
     public Flux<MySqlResult> execute() {
         return QueryFlow.execute(client, getSql())
-            .map(messages -> MySqlSegmentResult.toResult(false, codecs, context, null, messages));
+            .map(messages -> MySqlSegmentResult.toResult(false, client, codecs, null, messages));
     }
 
     @Override

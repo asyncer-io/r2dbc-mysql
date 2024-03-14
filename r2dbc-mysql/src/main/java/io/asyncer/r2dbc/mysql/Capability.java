@@ -177,6 +177,11 @@ public final class Capability {
         TRANSACTIONS | SECURE_SALT | MULTI_STATEMENTS | MULTI_RESULTS | PS_MULTI_RESULTS |
         PLUGIN_AUTH | CONNECT_ATTRS | VAR_INT_SIZED_AUTH | SESSION_TRACK | DEPRECATE_EOF | ZSTD_COMPRESS;
 
+    /**
+     * The default capabilities for a MySQL connection. It contains all client supported capabilities.
+     */
+    public static final Capability DEFAULT = new Capability(ALL_SUPPORTED);
+
     private final long bitmap;
 
     /**
@@ -373,7 +378,8 @@ public final class Capability {
      * @return the {@link Capability} without unknown flags.
      */
     public static Capability of(long capabilities) {
-        return new Capability(capabilities & ALL_SUPPORTED);
+        long c = capabilities & ALL_SUPPORTED;
+        return c == ALL_SUPPORTED ? DEFAULT : new Capability(c);
     }
 
     static final class Builder {

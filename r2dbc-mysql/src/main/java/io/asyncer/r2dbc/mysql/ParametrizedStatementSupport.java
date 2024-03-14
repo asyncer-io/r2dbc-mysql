@@ -41,8 +41,6 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
 
-    protected final Client client;
-
     protected final Codecs codecs;
 
     protected final Query query;
@@ -51,13 +49,12 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
-    ParametrizedStatementSupport(Client client, Codecs codecs, Query query, ConnectionContext context) {
-        super(context);
+    ParametrizedStatementSupport(Client client, Codecs codecs, Query query) {
+        super(client);
 
         requireNonNull(query, "query must not be null");
         require(query.getParameters() > 0, "parameters must be a positive integer");
 
-        this.client = requireNonNull(client, "client must not be null");
         this.codecs = requireNonNull(codecs, "codecs must not be null");
         this.query = query;
         this.bindings = new Bindings(query.getParameters());
@@ -75,7 +72,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
     public final MySqlStatement bind(int index, Object value) {
         requireNonNull(value, "value must not be null");
 
-        addBinding(index, codecs.encode(value, context));
+        addBinding(index, codecs.encode(value, client.getContext()));
         return this;
     }
 
@@ -84,7 +81,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
         requireNonNull(name, "name must not be null");
         requireNonNull(value, "value must not be null");
 
-        addBinding(getIndexes(name), codecs.encode(value, context));
+        addBinding(getIndexes(name), codecs.encode(value, client.getContext()));
         return this;
     }
 

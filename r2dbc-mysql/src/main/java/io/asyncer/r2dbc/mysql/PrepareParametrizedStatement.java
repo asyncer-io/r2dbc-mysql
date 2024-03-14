@@ -37,9 +37,8 @@ final class PrepareParametrizedStatement extends ParametrizedStatementSupport {
 
     private int fetchSize = 0;
 
-    PrepareParametrizedStatement(Client client, Codecs codecs, Query query, ConnectionContext context,
-        PrepareCache prepareCache) {
-        super(client, codecs, query, context);
+    PrepareParametrizedStatement(Client client, Codecs codecs, Query query, PrepareCache prepareCache) {
+        super(client, codecs, query);
         this.prepareCache = prepareCache;
     }
 
@@ -49,7 +48,7 @@ final class PrepareParametrizedStatement extends ParametrizedStatementSupport {
                 StringUtils.extendReturning(query.getFormattedSql(), returningIdentifiers()),
                 bindings, fetchSize, prepareCache
             ))
-            .map(messages -> MySqlSegmentResult.toResult(true, codecs, context, syntheticKeyName(), messages));
+            .map(messages -> MySqlSegmentResult.toResult(true, client, codecs, syntheticKeyName(), messages));
     }
 
     @Override

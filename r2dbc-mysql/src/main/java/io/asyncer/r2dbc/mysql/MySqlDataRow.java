@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlRow;
 import io.asyncer.r2dbc.mysql.api.MySqlRowMetadata;
+import io.asyncer.r2dbc.mysql.codec.CodecContext;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.r2dbc.spi.Row;
@@ -42,10 +43,13 @@ final class MySqlDataRow implements MySqlRow {
      */
     private final boolean binary;
 
-    private final ConnectionContext context;
+    /**
+     * It can be retained because it is provided by the executed connection instead of the current connection.
+     */
+    private final CodecContext context;
 
     MySqlDataRow(FieldValue[] fields, MySqlRowDescriptor rowMetadata, Codecs codecs, boolean binary,
-        ConnectionContext context) {
+        CodecContext context) {
         this.fields = requireNonNull(fields, "fields must not be null");
         this.rowMetadata = requireNonNull(rowMetadata, "rowMetadata must not be null");
         this.codecs = requireNonNull(codecs, "codecs must not be null");

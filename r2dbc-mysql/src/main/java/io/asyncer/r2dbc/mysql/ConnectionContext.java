@@ -30,16 +30,12 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * The MySQL connection context considers the behavior of server or client.
  * <p>
- * WARNING: Do NOT change any data outside of this project, try to configure {@code ConnectionFactoryOptions}
- * or {@code MySqlConnectionConfiguration} to control connection context and client behavior.
+ * WARNING: Do NOT change any data outside of this project, try to configure {@code ConnectionFactoryOptions} or
+ * {@code MySqlConnectionConfiguration} to control connection context and client behavior.
  */
 public final class ConnectionContext implements CodecContext {
 
     private static final ServerVersion NONE_VERSION = ServerVersion.create(0, 0, 0);
-
-    private volatile int connectionId = -1;
-
-    private volatile ServerVersion serverVersion = NONE_VERSION;
 
     private final ZeroDateOption zeroDateOption;
 
@@ -50,19 +46,24 @@ public final class ConnectionContext implements CodecContext {
 
     private final boolean preserveInstants;
 
+    private int connectionId = -1;
+
+    private ServerVersion serverVersion = NONE_VERSION;
+
+    private Capability capability = Capability.DEFAULT;
+
     @Nullable
     private ZoneId timeZone;
 
     private boolean lockWaitTimeoutSupported = false;
 
     /**
-     * Assume that the auto commit is always turned on, it will be set after handshake V10 request message, or
-     * OK message which means handshake V9 completed.
+     * Assume that the auto commit is always turned on, it will be set after handshake V10 request message, or OK
+     * message which means handshake V9 completed.
+     * <p>
+     * It would be updated multiple times, so {@code volatile} is required.
      */
     private volatile short serverStatuses = ServerStatuses.AUTO_COMMIT;
-
-    @Nullable
-    private volatile Capability capability = null;
 
     ConnectionContext(
         ZeroDateOption zeroDateOption,
@@ -79,6 +80,19 @@ public final class ConnectionContext implements CodecContext {
     }
 
     /**
+     * Initializes this context.
+     *
+     * @param connectionId the connection identifier that is specified by server.
+     * @param version      the server version.
+     * @param capability   the connection capabilities.
+     */
+    void init(int connectionId, ServerVersion version, Capability capability) {
+        this.connectionId = connectionId;
+        this.serverVersion = version;
+        this.capability = capability;
+    }
+
+    /**
      * Get the connection identifier that is specified by server.
      *
      * @return the connection identifier.
@@ -87,22 +101,13 @@ public final class ConnectionContext implements CodecContext {
         return connectionId;
     }
 
-    /**
-     * Initializes this context.
-     *
-     * @param connectionId the connection identifier that is specified by server.
-     * @param version      the server version.
-     * @param capability   the connection capabilities.
-     */
-    public void init(int connectionId, ServerVersion version, Capability capability) {
-        this.connectionId = connectionId;
-        this.serverVersion = version;
-        this.capability = capability;
-    }
-
     @Override
     public ServerVersion getServerVersion() {
         return serverVersion;
+    }
+
+    public Capability getCapability() {
+        return capability;
     }
 
     @Override
@@ -123,7 +128,7 @@ public final class ConnectionContext implements CodecContext {
         return timeZone;
     }
 
-    public boolean isTimeZoneInitialized() {
+    boolean isTimeZoneInitialized() {
         return timeZone != null;
     }
 
@@ -133,9 +138,9 @@ public final class ConnectionContext implements CodecContext {
         return (capability != null && capability.isMariaDb()) || serverVersion.isMariaDb();
     }
 
-    void setTimeZone(ZoneId timeZone) {
+    void initTimeZone(ZoneId timeZone) {
         if (isTimeZoneInitialized()) {
-            throw new IllegalStateException("Server timezone have been initialized");
+            throw new IllegalStateException("Connection timezone have been initialized");
         }
         this.timeZone = timeZone;
     }
@@ -176,7 +181,7 @@ public final class ConnectionContext implements CodecContext {
     /**
      * Enables lock wait timeout supported when loading session variables.
      */
-    public void enableLockWaitTimeoutSupported() {
+    void enableLockWaitTimeoutSupported() {
         this.lockWaitTimeoutSupported = true;
     }
 
@@ -196,14 +201,5 @@ public final class ConnectionContext implements CodecContext {
      */
     public void setServerStatuses(short serverStatuses) {
         this.serverStatuses = serverStatuses;
-    }
-
-    /**
-     * Get the connection capability. Should use it after this context initialized.
-     *
-     * @return the connection capability.
-     */
-    public Capability getCapability() {
-        return capability;
     }
 }

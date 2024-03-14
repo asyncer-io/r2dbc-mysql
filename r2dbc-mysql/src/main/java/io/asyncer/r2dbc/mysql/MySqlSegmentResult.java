@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.api.MySqlRow;
+import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.NettyBufferUtils;
 import io.asyncer.r2dbc.mysql.internal.util.OperatorUtils;
@@ -53,8 +54,8 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 /**
  * An implementation of {@link MySqlResult} representing the results of a query against the MySQL database.
  * <p>
- * A {@link Segment} provided by this implementation may be both {@link UpdateCount} and {@link RowSegment},
- * see also {@link MySqlOkSegment}.
+ * A {@link Segment} provided by this implementation may be both {@link UpdateCount} and {@link RowSegment}, see also
+ * {@link MySqlOkSegment}.
  */
 final class MySqlSegmentResult implements MySqlResult {
 
@@ -156,15 +157,15 @@ final class MySqlSegmentResult implements MySqlResult {
         });
     }
 
-    static MySqlResult toResult(boolean binary, Codecs codecs, ConnectionContext context,
-                                @Nullable String syntheticKeyName, Flux<ServerMessage> messages) {
+    static MySqlResult toResult(boolean binary, Client client, Codecs codecs,
+        @Nullable String syntheticKeyName, Flux<ServerMessage> messages) {
+        requireNonNull(client, "client must not be null");
         requireNonNull(codecs, "codecs must not be null");
-        requireNonNull(context, "context must not be null");
         requireNonNull(messages, "messages must not be null");
 
         return new MySqlSegmentResult(OperatorUtils.discardOnCancel(messages)
             .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
-            .handle(new MySqlSegments(binary, codecs, context, syntheticKeyName)));
+            .handle(new MySqlSegments(binary, client, codecs, syntheticKeyName)));
     }
 
     private static final class MySqlMessage implements Message {
@@ -269,9 +270,9 @@ final class MySqlSegmentResult implements MySqlResult {
 
         private final boolean binary;
 
-        private final Codecs codecs;
+        private final Client client;
 
-        private final ConnectionContext context;
+        private final Codecs codecs;
 
         @Nullable
         private final String syntheticKeyName;
@@ -280,11 +281,10 @@ final class MySqlSegmentResult implements MySqlResult {
 
         private MySqlRowDescriptor rowMetadata;
 
-        private MySqlSegments(boolean binary, Codecs codecs, ConnectionContext context,
-            @Nullable String syntheticKeyName) {
+        private MySqlSegments(boolean binary, Client client, Codecs codecs, @Nullable String syntheticKeyName) {
             this.binary = binary;
+            this.client = client;
             this.codecs = codecs;
-            this.context = context;
             this.syntheticKeyName = syntheticKeyName;
         }
 
@@ -310,7 +310,7 @@ final class MySqlSegmentResult implements MySqlResult {
                     ReferenceCountUtil.safeRelease(message);
                 }
 
-                sink.next(new MySqlRowSegment(fields, metadata, codecs, binary, context));
+                sink.next(new MySqlRowSegment(fields, metadata, codecs, binary, client.getContext()));
             } else if (message instanceof SyntheticMetadataMessage) {
                 DefinitionMetadataMessage[] metadataMessages = ((SyntheticMetadataMessage) message).unwrap();
 
@@ -322,7 +322,7 @@ final class MySqlSegmentResult implements MySqlResult {
             } else if (message instanceof OkMessage) {
                 OkMessage msg = (OkMessage) message;
 
-                if (MySqlStatementSupport.supportReturning(context) && msg.isEndOfRows()) {
+                if (MySqlStatementSupport.supportReturning(client.getContext()) && msg.isEndOfRows()) {
                     sink.next(new MySqlUpdateCount(rowCount.getAndSet(0)));
                 } else {
                     long rows = msg.getAffectedRows();
