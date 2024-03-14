@@ -28,8 +28,7 @@ import static org.mockito.Mockito.mock;
  */
 class MySqlSyntheticBatchTest {
 
-    private final MySqlSyntheticBatch batch = new MySqlSyntheticBatch(mock(Client.class), mock(Codecs.class),
-        ConnectionContextTest.mock());
+    private final MySqlSyntheticBatch batch = new MySqlSyntheticBatch(mock(Client.class), mock(Codecs.class));
 
     @SuppressWarnings("ConstantConditions")
     @Test

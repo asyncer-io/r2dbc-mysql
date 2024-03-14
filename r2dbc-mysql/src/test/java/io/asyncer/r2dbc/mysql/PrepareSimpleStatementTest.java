@@ -23,13 +23,12 @@ import io.asyncer.r2dbc.mysql.codec.Codecs;
 import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link PrepareSimpleStatement}.
  */
 class PrepareSimpleStatementTest implements StatementTestSupport<PrepareSimpleStatement> {
-
-    private final Client client = mock(Client.class);
 
     private final Codecs codecs = mock(Codecs.class);
 
@@ -61,10 +60,13 @@ class PrepareSimpleStatementTest implements StatementTestSupport<PrepareSimpleSt
 
     @Override
     public PrepareSimpleStatement makeInstance(boolean isMariaDB, String ignored, String sql) {
+        Client client = mock(Client.class);
+
+        when(client.getContext()).thenReturn(ConnectionContextTest.mock(isMariaDB));
+
         return new PrepareSimpleStatement(
             client,
             codecs,
-            ConnectionContextTest.mock(isMariaDB),
             sql,
             Caches.createPrepareCache(0)
         );

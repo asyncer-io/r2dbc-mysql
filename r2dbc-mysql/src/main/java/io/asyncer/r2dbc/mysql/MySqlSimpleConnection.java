@@ -64,8 +64,6 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(MySqlSimpleConnection.class);
 
-    private static final int DEFAULT_LOCK_WAIT_TIMEOUT = 50;
-
     private static final String PING_MARKER = "/* ping */";
 
     private static final ServerVersion MARIA_11_1_1 = ServerVersion.create(11, 1, 1, true);
@@ -139,8 +137,6 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     private final boolean batchSupported;
 
-    private final ConnectionContext context;
-
     private final MySqlConnectionMetadata metadata;
 
     private volatile IsolationLevel sessionLevel;
@@ -174,11 +170,12 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
      */
     private volatile long currentLockWaitTimeout;
 
-    MySqlSimpleConnection(Client client, ConnectionContext context, Codecs codecs, IsolationLevel level,
+    MySqlSimpleConnection(Client client, Codecs codecs, IsolationLevel level,
         long lockWaitTimeout, QueryCache queryCache, PrepareCache prepareCache, @Nullable String product,
         @Nullable Predicate<String> prepare) {
+        ConnectionContext context = client.getContext();
+
         this.client = client;
-        this.context = context;
         this.sessionLevel = level;
         this.currentLevel = level;
         this.codecs = codecs;
@@ -205,7 +202,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     @Override
     public Mono<Void> beginTransaction(TransactionDefinition definition) {
-        return Mono.defer(() -> QueryFlow.beginTransaction(client, this, batchSupported, definition, context));
+        return Mono.defer(() -> QueryFlow.beginTransaction(client, this, batchSupported, definition));
     }
 
     @Override
@@ -227,9 +224,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     @Override
     public MySqlBatch createBatch() {
-        return batchSupported ? new MySqlBatchingBatch(client, codecs, context) :
-            new MySqlSyntheticBatch(client, codecs, context);
-
+        return batchSupported ? new MySqlBatchingBatch(client, codecs) : new MySqlSyntheticBatch(client, codecs);
     }
 
     @Override
@@ -244,7 +239,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         requireNonNull(sql, "sql must not be null");
 
         if (sql.startsWith(PING_MARKER)) {
-            return new PingStatement(codecs, context, Flux.defer(this::doPingInternal));
+            return new PingStatement(client, codecs);
         }
 
         Query query = queryCache.get(sql);
@@ -252,22 +247,22 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         if (query.isSimple()) {
             if (prepare != null && prepare.test(sql)) {
                 logger.debug("Create a simple statement provided by prepare query");
-                return new PrepareSimpleStatement(client, codecs, context, sql, prepareCache);
+                return new PrepareSimpleStatement(client, codecs, sql, prepareCache);
             }
 
             logger.debug("Create a simple statement provided by text query");
 
-            return new TextSimpleStatement(client, codecs, context, sql);
+            return new TextSimpleStatement(client, codecs, sql);
         }
 
         if (prepare == null) {
             logger.debug("Create a parametrized statement provided by text query");
-            return new TextParametrizedStatement(client, codecs, query, context);
+            return new TextParametrizedStatement(client, codecs, query);
         }
 
         logger.debug("Create a parametrized statement provided by prepare query");
 
-        return new PrepareParametrizedStatement(client, codecs, query, context, prepareCache);
+        return new PrepareParametrizedStatement(client, codecs, query, prepareCache);
     }
 
     @Override
@@ -355,7 +350,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
                 return Mono.just(false);
             }
 
-            return doPingInternal()
+            return doPingInternal(client)
                 .last()
                 .map(VALIDATE)
                 .onErrorResume(e -> {
@@ -417,14 +412,14 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
 
     @Override
     public boolean isInTransaction() {
-        return (context.getServerStatuses() & ServerStatuses.IN_TRANSACTION) != 0;
+        return (client.getContext().getServerStatuses() & ServerStatuses.IN_TRANSACTION) != 0;
     }
 
     @Override
     public Mono<Void> setLockWaitTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
 
-        if (!context.isLockWaitTimeoutSupported()) {
+        if (!client.getContext().isLockWaitTimeoutSupported()) {
             logger.warn("Lock wait timeout is not supported by server, setLockWaitTimeout operation is ignored");
             return Mono.empty();
         }
@@ -437,6 +432,8 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     @Override
     public Mono<Void> setStatementTimeout(Duration timeout) {
         requireNonNull(timeout, "timeout must not be null");
+
+        final ConnectionContext context = client.getContext();
         final boolean isMariaDb = context.isMariaDb();
         final ServerVersion serverVersion = context.getServerVersion();
         final long timeoutMs = timeout.toMillis();
@@ -461,12 +458,12 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         );
     }
 
-    private Flux<ServerMessage> doPingInternal() {
-        return client.exchange(PingMessage.INSTANCE, PING);
+    private boolean isSessionAutoCommit() {
+        return (client.getContext().getServerStatuses() & ServerStatuses.AUTO_COMMIT) != 0;
     }
 
-    private boolean isSessionAutoCommit() {
-        return (context.getServerStatuses() & ServerStatuses.AUTO_COMMIT) != 0;
+    static Flux<ServerMessage> doPingInternal(Client client) {
+        return client.exchange(PingMessage.INSTANCE, PING);
     }
 
     /**
@@ -474,7 +471,6 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
      *
      * @param client           must be logged-in.
      * @param codecs           the {@link Codecs}.
-     * @param context          must be initialized.
      * @param database         the database that should be lazy init.
      * @param queryCache       the cache of {@link Query}.
      * @param prepareCache     the cache of server-preparing result.
@@ -483,18 +479,19 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
      * @return a {@link Mono} will emit an initialized {@link MySqlConnection}.
      */
     static Mono<MySqlConnection> init(
-        Client client, Codecs codecs, ConnectionContext context, String database,
+        Client client, Codecs codecs, String database,
         QueryCache queryCache, PrepareCache prepareCache,
         List<String> sessionVariables, @Nullable Predicate<String> prepare
     ) {
         Mono<MySqlConnection> connection = initSessionVariables(client, sessionVariables)
-            .then(loadSessionVariables(client, codecs, context))
-            .flatMap(data -> loadInnoDbEngineStatus(data, client, codecs, context))
+            .then(loadSessionVariables(client, codecs))
+            .flatMap(data -> loadInnoDbEngineStatus(data, client, codecs))
             .map(data -> {
+                ConnectionContext context = client.getContext();
                 ZoneId timeZone = data.timeZone;
                 if (timeZone != null) {
                     logger.debug("Got server time zone {} from loading session variables", timeZone);
-                    context.setTimeZone(timeZone);
+                    context.initTimeZone(timeZone);
                 }
 
                 if (data.lockWaitTimeoutSupported) {
@@ -503,7 +500,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
                     logger.info("Lock wait timeout is not supported by server, all related operations will be ignored");
                 }
 
-                return new MySqlSimpleConnection(client, context, codecs, data.level, data.lockWaitTimeout,
+                return new MySqlSimpleConnection(client, codecs, data.level, data.lockWaitTimeout,
                     queryCache, prepareCache, data.product, prepare);
             });
 
@@ -543,9 +540,8 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         return QueryFlow.executeVoid(client, query.toString());
     }
 
-    private static Mono<SessionData> loadSessionVariables(
-        Client client, Codecs codecs, ConnectionContext context
-    ) {
+    private static Mono<SessionData> loadSessionVariables(Client client, Codecs codecs) {
+        ConnectionContext context = client.getContext();
         StringBuilder query = new StringBuilder(128)
             .append("SELECT ")
             .append(transactionIsolationColumn(context))
@@ -560,17 +556,14 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
             handler = r -> convertSessionData(r, true);
         }
 
-        return new TextSimpleStatement(client, codecs, context, query.toString())
+        return new TextSimpleStatement(client, codecs, query.toString())
             .execute()
             .flatMap(handler)
             .last();
     }
 
-    private static Mono<SessionData> loadInnoDbEngineStatus(
-        SessionData data, Client client, Codecs codecs, ConnectionContext context
-    ) {
-        return new TextSimpleStatement(client, codecs, context,
-            "SHOW VARIABLES LIKE 'innodb\\\\_lock\\\\_wait\\\\_timeout'")
+    private static Mono<SessionData> loadInnoDbEngineStatus(SessionData data, Client client, Codecs codecs) {
+        return new TextSimpleStatement(client, codecs, "SHOW VARIABLES LIKE 'innodb\\\\_lock\\\\_wait\\\\_timeout'")
             .execute()
             .flatMap(r -> r.map(readable -> {
                 String value = readable.get(1, String.class);

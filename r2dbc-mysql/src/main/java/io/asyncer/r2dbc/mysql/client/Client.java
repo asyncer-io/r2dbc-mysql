@@ -46,21 +46,21 @@ public interface Client {
     InternalLogger logger = InternalLoggerFactory.getInstance(Client.class);
 
     /**
-     * Perform an exchange of a request message. Calling this method while a previous exchange is active will
-     * return a deferred handle and queue the request until the previous exchange terminates.
+     * Perform an exchange of a request message. Calling this method while a previous exchange is active will return a
+     * deferred handle and queue the request until the previous exchange terminates.
      *
      * @param request one and only one request message for get server responses
-     * @param handler response handler, {@link SynchronousSink#complete()} should be called after the last
-     *                response frame is sent to complete the stream and prevent multiple subscribers from
-     *                consuming previous, active response streams
+     * @param handler response handler, {@link SynchronousSink#complete()} should be called after the last response
+     *                frame is sent to complete the stream and prevent multiple subscribers from consuming previous,
+     *                active response streams
      * @param <T>     handling response type
      * @return A {@link Flux} of incoming messages that ends with the end of the frame
      */
     <T> Flux<T> exchange(ClientMessage request, BiConsumer<ServerMessage, SynchronousSink<T>> handler);
 
     /**
-     * Perform an exchange of multi-request messages. Calling this method while a previous exchange is active
-     * will return a deferred handle and queue the request until the previous exchange terminates.
+     * Perform an exchange of multi-request messages. Calling this method while a previous exchange is active will
+     * return a deferred handle and queue the request until the previous exchange terminates.
      *
      * @param exchangeable request messages and response handler
      * @param <T>          handling response type
@@ -92,6 +92,14 @@ public interface Client {
     ByteBufAllocator getByteBufAllocator();
 
     /**
+     * Returns the current {@link ConnectionContext}. It should not be retained long-term as it may change on reconnects
+     * or redirects.
+     *
+     * @return the {@link ConnectionContext}
+     */
+    ConnectionContext getContext();
+
+    /**
      * Checks if the connection is open.
      *
      * @return if connection is valid
@@ -117,20 +125,20 @@ public interface Client {
      * @param tcpNoDelay     if enable the {@link ChannelOption#TCP_NODELAY}
      * @param context        the connection context
      * @param connectTimeout connect timeout, or {@code null} if it has no timeout
-     * @param loopResources the loop resources to use
+     * @param loopResources  the loop resources to use
      * @return A {@link Mono} that will emit a connected {@link Client}.
      * @throws IllegalArgumentException if {@code ssl}, {@code address} or {@code context} is {@code null}.
      * @throws ArithmeticException      if {@code connectTimeout} milliseconds overflow as an int
      */
     static Mono<Client> connect(MySqlSslConfiguration ssl, SocketAddress address, boolean tcpKeepAlive,
-                                boolean tcpNoDelay, ConnectionContext context, @Nullable Duration connectTimeout,
-                                LoopResources loopResources) {
+        boolean tcpNoDelay, ConnectionContext context, @Nullable Duration connectTimeout,
+        LoopResources loopResources) {
         requireNonNull(ssl, "ssl must not be null");
         requireNonNull(address, "address must not be null");
         requireNonNull(context, "context must not be null");
 
         TcpClient tcpClient = TcpClient.newConnection()
-                                       .runOn(loopResources);
+            .runOn(loopResources);
 
         if (connectTimeout != null) {
             tcpClient = tcpClient.option(ChannelOption.CONNECT_TIMEOUT_MILLIS,

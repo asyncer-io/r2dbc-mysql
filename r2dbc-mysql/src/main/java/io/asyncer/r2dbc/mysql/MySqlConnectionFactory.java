@@ -151,7 +151,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             final String user,
             final SslMode sslMode,
             final Set<CompressionAlgorithm> compressionAlgorithms,
-            final int zstdCompressionLevel,
+            final int zstdLevel,
             final ConnectionContext context,
             final Extensions extensions,
             final List<String> sessionVariables,
@@ -163,8 +163,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
             .flatMap(client -> {
                 // Lazy init database after handshake/login
                 String db = createDbIfNotExist ? "" : database;
-                return QueryFlow.login(client, sslMode, db, user, password, compressionAlgorithms,
-                    zstdCompressionLevel, context);
+                return QueryFlow.login(client, sslMode, db, user, password, compressionAlgorithms, zstdLevel);
             })
             .flatMap(client -> {
                 ByteBufAllocator allocator = client.getByteBufAllocator();
@@ -175,7 +174,7 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 extensions.forEach(CodecRegistrar.class, registrar ->
                     registrar.register(allocator, builder));
 
-                return MySqlSimpleConnection.init(client, builder.build(), context, db, queryCache.get(),
+                return MySqlSimpleConnection.init(client, builder.build(), db, queryCache.get(),
                     prepareCache, sessionVariables, prepare);
             });
     }

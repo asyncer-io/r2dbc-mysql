@@ -210,10 +210,9 @@ final class QueryFlow {
      */
     static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
         @Nullable CharSequence password,
-        Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
-        ConnectionContext context) {
+        Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel) {
         return client.exchange(new LoginExchangeable(client, sslMode, database, user, password,
-                compressionAlgorithms, zstdCompressionLevel, context))
+                compressionAlgorithms, zstdCompressionLevel))
             .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
             .then(Mono.just(client));
     }
@@ -252,12 +251,11 @@ final class QueryFlow {
      * @param state          the connection state for checks and sets transaction statuses.
      * @param batchSupported if connection supports batch query.
      * @param definition     the {@link TransactionDefinition}.
-     * @param context        the {@link ConnectionContext} for initialization.
      * @return receives complete signal.
      */
     static Mono<Void> beginTransaction(Client client, ConnectionState state, boolean batchSupported,
-        TransactionDefinition definition, ConnectionContext context) {
-        final StartTransactionState startState = new StartTransactionState(state, definition, context);
+        TransactionDefinition definition) {
+        final StartTransactionState startState = new StartTransactionState(state, definition, client);
 
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(startState)).then();
@@ -845,8 +843,6 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
     private final int zstdCompressionLevel;
 
-    private final ConnectionContext context;
-
     private boolean handshake = true;
 
     private MySqlAuthProvider authProvider;
@@ -857,7 +853,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
 
     LoginExchangeable(Client client, SslMode sslMode, String database, String user,
         @Nullable CharSequence password, Set<CompressionAlgorithm> compressions,
-        int zstdCompressionLevel, ConnectionContext context) {
+        int zstdCompressionLevel) {
         this.client = client;
         this.sslMode = sslMode;
         this.database = database;
@@ -865,7 +861,6 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         this.password = password;
         this.compressions = compressions;
         this.zstdCompressionLevel = zstdCompressionLevel;
-        this.context = context;
         this.sslCompleted = sslMode == SslMode.TUNNEL;
     }
 
@@ -889,7 +884,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
                 Capability capability = initHandshake(request);
 
                 if (capability.isSslEnabled()) {
-                    emitNext(SslRequest.from(capability, context.getClientCollation().getId()), sink);
+                    emitNext(SslRequest.from(capability, client.getContext().getClientCollation().getId()), sink);
                 } else {
                     emitNext(createHandshakeResponse(capability), sink);
                 }
@@ -906,14 +901,14 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             sink.complete();
         } else if (message instanceof SyntheticSslResponseMessage) {
             sslCompleted = true;
-            emitNext(createHandshakeResponse(context.getCapability()), sink);
+            emitNext(createHandshakeResponse(client.getContext().getCapability()), sink);
         } else if (message instanceof AuthMoreDataMessage) {
             AuthMoreDataMessage msg = (AuthMoreDataMessage) message;
 
             if (msg.isFailed()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Connection (id {}) fast authentication failed, use full authentication",
-                        context.getConnectionId());
+                        client.getContext().getConnectionId());
                 }
 
                 emitNext(createAuthResponse("full authentication"), sink);
@@ -952,7 +947,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), phase), CLI_SPECIFIC);
         }
 
-        return new AuthResponse(authProvider.authentication(password, salt, context.getClientCollation()));
+        return new AuthResponse(authProvider.authentication(password, salt, client.getContext().getClientCollation()));
     }
 
     private Capability clientCapability(Capability serverCapability) {
@@ -969,8 +964,9 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         } else if (!serverCapability.isSslEnabled()) {
             // Server unsupported SSL.
             if (sslMode.requireSsl()) {
-                throw new R2dbcPermissionDeniedException("Server version '" + context.getServerVersion() +
-                    "' does not support SSL but mode '" + sslMode + "' requires SSL", CLI_SPECIFIC);
+                // Before handshake, Client.context does not be initialized
+                throw new R2dbcPermissionDeniedException("Server does not support SSL but mode '" + sslMode +
+                    "' requires SSL", CLI_SPECIFIC);
             } else if (sslMode.startSsl()) {
                 // SSL has start yet, and client can disable SSL, disable now.
                 client.sslUnsupported();
@@ -1012,7 +1008,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             builder.disableConnectWithDatabase();
         }
 
-        if (context.getLocalInfilePath() == null) {
+        if (client.getContext().getLocalInfilePath() == null) {
             builder.disableLoadDataLocalInfile();
         }
 
@@ -1036,7 +1032,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
         Capability capability = clientCapability(message.getServerCapability());
 
         // No need initialize server statuses because it has initialized by read filter.
-        this.context.init(header.getConnectionId(), serverVersion, capability);
+        this.client.getContext().init(header.getConnectionId(), serverVersion, capability);
         this.authProvider = MySqlAuthProvider.build(message.getAuthType());
         this.salt = message.getSalt();
 
@@ -1057,7 +1053,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
                 CLI_SPECIFIC);
         }
 
-        byte[] authorization = authProvider.authentication(password, salt, context.getClientCollation());
+        byte[] authorization = authProvider.authentication(password, salt, client.getContext().getClientCollation());
         String authType = authProvider.getType();
 
         if (MySqlAuthProvider.NO_AUTH_PROVIDER.equals(authType)) {
@@ -1066,7 +1062,7 @@ final class LoginExchangeable extends FluxExchangeable<Void> {
             authType = MySqlAuthProvider.CACHING_SHA2_PASSWORD;
         }
 
-        return HandshakeResponse.from(capability, context.getClientCollation().getId(), user, authorization,
+        return HandshakeResponse.from(capability, client.getContext().getClientCollation().getId(), user, authorization,
             authType, database, ATTRIBUTES, zstdCompressionLevel);
     }
 
@@ -1226,12 +1222,12 @@ final class StartTransactionState extends AbstractTransactionState {
 
     private final TransactionDefinition definition;
 
-    private final ConnectionContext context;
+    private final Client client;
 
-    StartTransactionState(ConnectionState state, TransactionDefinition definition, ConnectionContext context) {
+    StartTransactionState(ConnectionState state, TransactionDefinition definition, Client client) {
         super(state);
         this.definition = definition;
-        this.context = context;
+        this.client = client;
     }
 
     @Override
@@ -1242,7 +1238,7 @@ final class StartTransactionState extends AbstractTransactionState {
         }
         final Duration timeout = definition.getAttribute(TransactionDefinition.LOCK_WAIT_TIMEOUT);
         if (timeout != null) {
-            if (context.isLockWaitTimeoutSupported()) {
+            if (client.getContext().isLockWaitTimeoutSupported()) {
                 long lockWaitTimeout = timeout.getSeconds();
                 tasks |= LOCK_WAIT_TIMEOUT;
                 statements.add("SET innodb_lock_wait_timeout=" + lockWaitTimeout);

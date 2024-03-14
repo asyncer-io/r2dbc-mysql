@@ -29,8 +29,7 @@ import static org.mockito.Mockito.mock;
  */
 class MySqlBatchingBatchTest {
 
-    private final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class),
-        ConnectionContextTest.mock());
+    private final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class));
 
     @Test
     void add() {
@@ -62,8 +61,7 @@ class MySqlBatchingBatchTest {
 
     @Test
     void addNothing() {
-        final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class),
-            ConnectionContextTest.mock());
+        final MySqlBatchingBatch batch = new MySqlBatchingBatch(mock(Client.class), mock(Codecs.class));
         assertEquals(batch.getSql(), "");
     }
 }

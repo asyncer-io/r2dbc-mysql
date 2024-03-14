@@ -241,6 +241,11 @@ final class ReactorNettyClient implements Client {
     }
 
     @Override
+    public ConnectionContext getContext() {
+        return context;
+    }
+
+    @Override
     public boolean isConnected() {
         return state < ST_CLOSED && connection.channel().isOpen();
     }

@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
  */
 class MySqlSimpleConnectionTest {
 
-    private final Client client = mock(Client.class);
+    private final Client client;
 
     private final Codecs codecs = mock(Codecs.class);
 
@@ -47,20 +47,29 @@ class MySqlSimpleConnectionTest {
 
     private final String product = "MockConnection";
 
-    private final MySqlSimpleConnection noPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
-        codecs, level, 50, Caches.createQueryCache(0),
-        Caches.createPrepareCache(0), product, null);
+    private final MySqlSimpleConnection noPrepare;
+
+    MySqlSimpleConnectionTest() {
+        Client client = mock(Client.class);
+
+        when(client.getContext()).thenReturn(ConnectionContextTest.mock());
+
+        this.client = client;
+        this.noPrepare = new MySqlSimpleConnection(client,
+            codecs, level, 50, Caches.createQueryCache(0),
+            Caches.createPrepareCache(0), product, null);
+    }
 
     @Test
     void createStatement() {
         String condition = "SELECT * FROM test";
-        MySqlSimpleConnection allPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection allPrepare = new MySqlSimpleConnection(client,
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> true);
-        MySqlSimpleConnection halfPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection halfPrepare = new MySqlSimpleConnection(client,
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> false);
-        MySqlSimpleConnection conditionPrepare = new MySqlSimpleConnection(client, ConnectionContextTest.mock(),
+        MySqlSimpleConnection conditionPrepare = new MySqlSimpleConnection(client,
             codecs, level, 50, Caches.createQueryCache(0),
             Caches.createPrepareCache(0), product, sql -> sql.equals(condition));
 

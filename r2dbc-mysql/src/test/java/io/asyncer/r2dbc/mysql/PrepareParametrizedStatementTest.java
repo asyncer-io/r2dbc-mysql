@@ -23,13 +23,12 @@ import io.asyncer.r2dbc.mysql.codec.Codecs;
 import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link PrepareParametrizedStatement}.
  */
 class PrepareParametrizedStatementTest implements StatementTestSupport<PrepareParametrizedStatement> {
-
-    private final Client client = mock(Client.class);
 
     private final Codecs codecs = Codecs.builder().build();
 
@@ -46,11 +45,14 @@ class PrepareParametrizedStatementTest implements StatementTestSupport<PreparePa
 
     @Override
     public PrepareParametrizedStatement makeInstance(boolean isMariaDB, String sql, String ignored) {
+        Client client = mock(Client.class);
+
+        when(client.getContext()).thenReturn(ConnectionContextTest.mock(isMariaDB));
+
         return new PrepareParametrizedStatement(
             client,
             codecs,
             Query.parse(sql),
-            ConnectionContextTest.mock(isMariaDB),
             Caches.createPrepareCache(0)
         );
     }

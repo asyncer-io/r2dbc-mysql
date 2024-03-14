@@ -17,6 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlStatement;
+import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,19 +33,20 @@ abstract class MySqlStatementSupport implements MySqlStatement {
 
     private static final String LAST_INSERT_ID = "LAST_INSERT_ID";
 
-    protected final ConnectionContext context;
+    protected final Client client;
 
     @Nullable
     private String[] generatedColumns = null;
 
-    MySqlStatementSupport(ConnectionContext context) {
-        this.context = requireNonNull(context, "context must not be null");
+    MySqlStatementSupport(Client client) {
+        this.client = requireNonNull(client, "client must not be null");
     }
 
     @Override
     public final MySqlStatement returnGeneratedValues(String... columns) {
         requireNonNull(columns, "columns must not be null");
 
+        ConnectionContext context = client.getContext();
         int len = columns.length;
 
         if (len == 0) {
@@ -71,7 +73,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
         String[] columns = this.generatedColumns;
 
         // MariaDB should use `RETURNING` clause instead.
-        if (columns == null || supportReturning(this.context)) {
+        if (columns == null || supportReturning(this.client.getContext())) {
             return null;
         }
 
@@ -85,7 +87,7 @@ abstract class MySqlStatementSupport implements MySqlStatement {
     final String returningIdentifiers() {
         String[] columns = this.generatedColumns;
 
-        if (columns == null || !supportReturning(context)) {
+        if (columns == null || !supportReturning(this.client.getContext())) {
             return "";
         }
 

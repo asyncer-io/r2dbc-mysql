@@ -20,13 +20,12 @@ import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link TextSimpleStatement}.
  */
 class TextSimpleStatementTest implements StatementTestSupport<TextSimpleStatement> {
-
-    private final Client client = mock(Client.class);
 
     private final Codecs codecs = mock(Codecs.class);
 
@@ -52,7 +51,11 @@ class TextSimpleStatementTest implements StatementTestSupport<TextSimpleStatemen
 
     @Override
     public TextSimpleStatement makeInstance(boolean isMariaDB, String ignored, String sql) {
-        return new TextSimpleStatement(client, codecs, ConnectionContextTest.mock(isMariaDB), sql);
+        Client client = mock(Client.class);
+
+        when(client.getContext()).thenReturn(ConnectionContextTest.mock(isMariaDB));
+
+        return new TextSimpleStatement(client, codecs, sql);
     }
 
     @Override

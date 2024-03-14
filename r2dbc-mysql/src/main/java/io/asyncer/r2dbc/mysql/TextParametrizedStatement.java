@@ -28,14 +28,13 @@ import java.util.List;
  */
 final class TextParametrizedStatement extends ParametrizedStatementSupport {
 
-    TextParametrizedStatement(Client client, Codecs codecs, Query query, ConnectionContext context) {
-        super(client, codecs, query, context);
+    TextParametrizedStatement(Client client, Codecs codecs, Query query) {
+        super(client, codecs, query);
     }
 
     @Override
     protected Flux<MySqlResult> execute(List<Binding> bindings) {
-        return Flux.defer(() -> QueryFlow.execute(client, query, returningIdentifiers(),
-                bindings))
-            .map(messages -> MySqlSegmentResult.toResult(false, codecs, context, syntheticKeyName(), messages));
+        return Flux.defer(() -> QueryFlow.execute(client, query, returningIdentifiers(), bindings))
+            .map(messages -> MySqlSegmentResult.toResult(false, client, codecs, syntheticKeyName(), messages));
     }
 }

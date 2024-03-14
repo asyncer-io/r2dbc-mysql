@@ -77,6 +77,9 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
 
     private static final ServerVersion MYSQL_5_7_28 = ServerVersion.create(5, 7, 28);
 
+    /**
+     * It can be retained because reconnect and redirect will re-create the {@link SslBridgeHandler}.
+     */
     private final ConnectionContext context;
 
     private final MySqlSslConfiguration ssl;

@@ -46,15 +46,15 @@ public class ConnectionContextTest {
     void setTwiceTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
             8192, true, null);
-        context.setTimeZone(ZoneId.systemDefault());
-        assertThatIllegalStateException().isThrownBy(() -> context.setTimeZone(ZoneId.systemDefault()));
+        context.initTimeZone(ZoneId.systemDefault());
+        assertThatIllegalStateException().isThrownBy(() -> context.initTimeZone(ZoneId.systemDefault()));
     }
 
     @Test
     void badSetTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
             8192, true, ZoneId.systemDefault());
-        assertThatIllegalStateException().isThrownBy(() -> context.setTimeZone(ZoneId.systemDefault()));
+        assertThatIllegalStateException().isThrownBy(() -> context.initTimeZone(ZoneId.systemDefault()));
     }
 
     public static ConnectionContext mock() {

@@ -27,8 +27,8 @@ import reactor.core.publisher.Flux;
  */
 final class TextSimpleStatement extends SimpleStatementSupport {
 
-    TextSimpleStatement(Client client, Codecs codecs, ConnectionContext context, String sql) {
-        super(client, codecs, context, sql);
+    TextSimpleStatement(Client client, Codecs codecs, String sql) {
+        super(client, codecs, sql);
     }
 
     @Override
@@ -36,6 +36,6 @@ final class TextSimpleStatement extends SimpleStatementSupport {
         return Flux.defer(() -> QueryFlow.execute(
             client,
             StringUtils.extendReturning(sql, returningIdentifiers())
-        ).map(messages -> MySqlSegmentResult.toResult(false, codecs, context, syntheticKeyName(), messages)));
+        ).map(messages -> MySqlSegmentResult.toResult(false, client, codecs, syntheticKeyName(), messages)));
     }
 }
