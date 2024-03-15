@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Codec to encode and decode values based on MySQL data binary/text protocol.
  * <p>
- * Use {@link ParametrizedCodec} for support {@code ParameterizedType} encoding/decoding.
+ * Use {@link ParameterizedCodec} for support {@code ParameterizedType} encoding/decoding.
  *
  * @param <T> the type that is handled by this codec.
  */

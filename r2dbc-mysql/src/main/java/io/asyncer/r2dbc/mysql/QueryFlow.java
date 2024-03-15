@@ -87,8 +87,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A message flow considers both of parametrized and text queries, such as {@link TextParametrizedStatement},
- * {@link PrepareParametrizedStatement}, {@link TextSimpleStatement}, {@link PrepareSimpleStatement} and
+ * A message flow considers both of parameterized and text queries, such as {@link TextParameterizedStatement},
+ * {@link PrepareParameterizedStatement}, {@link TextSimpleStatement}, {@link PrepareSimpleStatement} and
  * {@link MySqlBatch}.
  */
 final class QueryFlow {

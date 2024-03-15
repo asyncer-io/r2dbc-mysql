@@ -41,7 +41,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.InternalArrays.EMPTY_STRINGS;
  * Codec for {@link Set}{@code <}{@link String}{@code >}, {@link Set}{@code <}{@link Enum}{@code >} and the
  * {@link String}{@code []}.
  */
-final class SetCodec implements ParametrizedCodec<String[]> {
+final class SetCodec implements ParameterizedCodec<String[]> {
 
     static final SetCodec INSTANCE = new SetCodec();
 

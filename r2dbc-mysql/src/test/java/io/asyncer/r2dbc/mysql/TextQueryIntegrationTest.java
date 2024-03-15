@@ -17,7 +17,7 @@
 package io.asyncer.r2dbc.mysql;
 
 /**
- * Integration tests for {@link TextSimpleStatement} and {@link TextParametrizedStatement}.
+ * Integration tests for {@link TextSimpleStatement} and {@link TextParameterizedStatement}.
  */
 class TextQueryIntegrationTest extends QueryIntegrationTestSupport {
 

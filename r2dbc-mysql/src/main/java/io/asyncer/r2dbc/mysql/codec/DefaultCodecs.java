@@ -44,11 +44,11 @@ final class DefaultCodecs implements Codecs {
 
     private final Codec<?>[] codecs;
 
-    private final ParametrizedCodec<?>[] parametrizedCodecs;
+    private final ParameterizedCodec<?>[] parameterizedCodecs;
 
     private final MassiveCodec<?>[] massiveCodecs;
 
-    private final MassiveParametrizedCodec<?>[] massiveParametrizedCodecs;
+    private final MassiveParameterizedCodec<?>[] massiveParameterizedCodecs;
 
     private final Map<Type, PrimitiveCodec<?>> primitiveCodecs;
 
@@ -56,32 +56,32 @@ final class DefaultCodecs implements Codecs {
         this.codecs = requireNonNull(codecs, "codecs must not be null");
 
         Map<Type, PrimitiveCodec<?>> primitiveCodecs = new HashMap<>();
-        List<ParametrizedCodec<?>> parametrizedCodecs = new ArrayList<>();
+        List<ParameterizedCodec<?>> parameterizedCodecs = new ArrayList<>();
         List<MassiveCodec<?>> massiveCodecs = new ArrayList<>();
-        List<MassiveParametrizedCodec<?>> massiveParamCodecs = new ArrayList<>();
+        List<MassiveParameterizedCodec<?>> massiveParamCodecs = new ArrayList<>();
 
         for (Codec<?> codec : codecs) {
             if (codec instanceof PrimitiveCodec<?>) {
                 // Primitive codec must be class-based codec, cannot support ParameterizedType.
                 PrimitiveCodec<?> c = (PrimitiveCodec<?>) codec;
                 primitiveCodecs.put(c.getPrimitiveClass(), c);
-            } else if (codec instanceof ParametrizedCodec<?>) {
-                parametrizedCodecs.add((ParametrizedCodec<?>) codec);
+            } else if (codec instanceof ParameterizedCodec<?>) {
+                parameterizedCodecs.add((ParameterizedCodec<?>) codec);
             }
 
             if (codec instanceof MassiveCodec<?>) {
                 massiveCodecs.add((MassiveCodec<?>) codec);
 
-                if (codec instanceof MassiveParametrizedCodec<?>) {
-                    massiveParamCodecs.add((MassiveParametrizedCodec<?>) codec);
+                if (codec instanceof MassiveParameterizedCodec<?>) {
+                    massiveParamCodecs.add((MassiveParameterizedCodec<?>) codec);
                 }
             }
         }
 
         this.primitiveCodecs = primitiveCodecs;
         this.massiveCodecs = massiveCodecs.toArray(new MassiveCodec<?>[0]);
-        this.massiveParametrizedCodecs = massiveParamCodecs.toArray(new MassiveParametrizedCodec<?>[0]);
-        this.parametrizedCodecs = parametrizedCodecs.toArray(new ParametrizedCodec<?>[0]);
+        this.massiveParameterizedCodecs = massiveParamCodecs.toArray(new MassiveParameterizedCodec<?>[0]);
+        this.parameterizedCodecs = parameterizedCodecs.toArray(new ParameterizedCodec<?>[0]);
     }
 
     /**
@@ -230,7 +230,7 @@ final class DefaultCodecs implements Codecs {
     @Nullable
     private <T> T decodeNormal(NormalFieldValue value, MySqlReadableMetadata metadata, ParameterizedType type,
         boolean binary, CodecContext context) {
-        for (ParametrizedCodec<?> codec : parametrizedCodecs) {
+        for (ParameterizedCodec<?> codec : parameterizedCodecs) {
             if (codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
                 T result = (T) codec.decode(value.getBufferSlice(), metadata, type, binary, context);
@@ -258,7 +258,7 @@ final class DefaultCodecs implements Codecs {
     @Nullable
     private <T> T decodeMassive(LargeFieldValue value, MySqlReadableMetadata metadata, ParameterizedType type,
         boolean binary, CodecContext context) {
-        for (MassiveParametrizedCodec<?> codec : massiveParametrizedCodecs) {
+        for (MassiveParameterizedCodec<?> codec : massiveParameterizedCodecs) {
             if (codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
                 T result = (T) codec.decodeMassive(value.getBufferSlices(), metadata, type, binary, context);

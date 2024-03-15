@@ -32,11 +32,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 interface StatementTestSupport<T extends MySqlStatementSupport> {
 
-    String PARAMETRIZED = "SELECT * FROM test WHERE id = ?id AND name = ?";
+    String PARAMETERIZED = "SELECT * FROM test WHERE id = ?id AND name = ?";
 
     String SIMPLE = "SELECT * FROM test WHERE id = 1 AND name = 'Mirrors'";
 
-    T makeInstance(boolean isMariaDB, String parametrizedSql, String simpleSql);
+    T makeInstance(boolean isMariaDB, String parameterizedSql, String simpleSql);
 
     boolean supportsBinding();
 
@@ -48,7 +48,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void bind() {
         assertTrue(supportsBinding(), "Must skip test case #bind() for simple statements");
 
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
         statement.bind(0, 1);
         statement.bind("id", 1);
         statement.bind(1, 1);
@@ -57,7 +57,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badBind() {
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         if (supportsBinding()) {
             assertThrows(IllegalArgumentException.class, () -> statement.bind(0, null));
@@ -89,7 +89,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void bindNull() {
         assertTrue(supportsBinding(), "Must skip test case #bindNull() for simple statements");
 
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
         statement.bindNull(0, Integer.class);
         statement.bindNull("id", Integer.class);
         statement.bindNull(1, Integer.class);
@@ -98,7 +98,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badBindNull() {
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         if (supportsBinding()) {
             assertThrows(IllegalArgumentException.class, () -> statement.bindNull(0, null));
@@ -128,7 +128,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void add() {
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         if (!supportsBinding()) {
             statement.add();
@@ -146,14 +146,14 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     default void badAdd() {
         assertTrue(supportsBinding(), "Must skip test case #badAdd() for simple statements");
 
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
         statement.bind(0, 1);
         assertThrows(IllegalStateException.class, statement::add);
     }
 
     @Test
     default void mySqlReturnGeneratedValues() {
-        T s = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T s = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         s.returnGeneratedValues();
 
@@ -173,7 +173,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void mariaDbReturnGeneratedValues() {
-        T s = makeInstance(true, PARAMETRIZED, SIMPLE);
+        T s = makeInstance(true, PARAMETERIZED, SIMPLE);
 
         s.returnGeneratedValues();
 
@@ -203,7 +203,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void badReturnGeneratedValues() {
-        T s = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T s = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String) null));
         assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String[]) null));
@@ -215,7 +215,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
     @SuppressWarnings("ConstantConditions")
     @Test
     default void mariaDbBadReturnGeneratedValues() {
-        T s = makeInstance(true, PARAMETRIZED, SIMPLE);
+        T s = makeInstance(true, PARAMETERIZED, SIMPLE);
 
         assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String) null));
         assertThatIllegalArgumentException().isThrownBy(() -> s.returnGeneratedValues((String[]) null));
@@ -229,7 +229,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void fetchSize() throws IllegalAccessException {
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
         assertEquals(0, getFetchSize(statement), "Must skip test case #fetchSize() for text-based queries");
 
         for (int i = 1; i <= 10; ++i) {
@@ -247,7 +247,7 @@ interface StatementTestSupport<T extends MySqlStatementSupport> {
 
     @Test
     default void badFetchSize() {
-        T statement = makeInstance(false, PARAMETRIZED, SIMPLE);
+        T statement = makeInstance(false, PARAMETERIZED, SIMPLE);
 
         assertThrows(IllegalArgumentException.class, () -> statement.fetchSize(-1));
         assertThrows(IllegalArgumentException.class, () -> statement.fetchSize(-10));

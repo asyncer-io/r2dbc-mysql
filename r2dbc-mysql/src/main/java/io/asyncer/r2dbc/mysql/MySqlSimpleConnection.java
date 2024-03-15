@@ -256,13 +256,13 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
         }
 
         if (prepare == null) {
-            logger.debug("Create a parametrized statement provided by text query");
-            return new TextParametrizedStatement(client, codecs, query);
+            logger.debug("Create a parameterized statement provided by text query");
+            return new TextParameterizedStatement(client, codecs, query);
         }
 
-        logger.debug("Create a parametrized statement provided by prepare query");
+        logger.debug("Create a parameterized statement provided by prepare query");
 
-        return new PrepareParametrizedStatement(client, codecs, query, prepareCache);
+        return new PrepareParameterizedStatement(client, codecs, query, prepareCache);
     }
 
     @Override

@@ -883,7 +883,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configures the protocol of parametrized statements to the text protocol.
+         * Configures the protocol of parameterized statements to the text protocol.
          * <p>
          * The text protocol is default protocol that's using client-preparing. See also MySQL
          * documentations.
@@ -897,7 +897,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configures the protocol of parametrized statements to the binary protocol.
+         * Configures the protocol of parameterized statements to the binary protocol.
          * <p>
          * The binary protocol is compact protocol that's using server-preparing. See also MySQL
          * documentations.
@@ -910,7 +910,7 @@ public final class MySqlConnectionConfiguration {
         }
 
         /**
-         * Configures the protocol of parametrized statements and prepare-preferred simple statements to the
+         * Configures the protocol of parameterized statements and prepare-preferred simple statements to the
          * binary protocol.
          * <p>
          * The {@code preferPrepareStatement} configures whether to prefer prepare execution on a
@@ -1025,7 +1025,7 @@ public final class MySqlConnectionConfiguration {
         /**
          * Configures the maximum size of the server-preparing cache. Usually it should be power of two.
          * Default to {@code 256}. Driver will use unbounded cache if size is less than {@code 0}. It is used
-         * only if using server-preparing parametrized statements, i.e. the {@link #useServerPrepareStatement}
+         * only if using server-preparing parameterized statements, i.e. the {@link #useServerPrepareStatement}
          * is set.
          * <p>
          * Notice: the cache is using EC model (the PACELC theorem) for ensure consistency. Consistency is

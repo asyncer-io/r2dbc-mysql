@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @param <T> the type that is handled by this codec.
  */
-public interface MassiveParametrizedCodec<T> extends ParametrizedCodec<T>, MassiveCodec<T> {
+public interface MassiveParameterizedCodec<T> extends ParameterizedCodec<T>, MassiveCodec<T> {
 
     /**
      * Decode a massive value as specified {@link ParameterizedType}.

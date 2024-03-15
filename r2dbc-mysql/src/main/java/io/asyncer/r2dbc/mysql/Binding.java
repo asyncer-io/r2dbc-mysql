@@ -22,9 +22,9 @@ import io.asyncer.r2dbc.mysql.message.client.PreparedTextQueryMessage;
 import java.util.Arrays;
 
 /**
- * A collection of {@link MySqlParameter} for one bind invocation of a parametrized statement.
+ * A collection of {@link MySqlParameter} for one bind invocation of a parameterized statement.
  *
- * @see ParametrizedStatementSupport
+ * @see ParameterizedStatementSupport
  */
 final class Binding {
 
@@ -40,7 +40,7 @@ final class Binding {
      * Add a {@link MySqlParameter} to the binding.
      *
      * @param index the index of the {@link MySqlParameter}
-     * @param value the {@link MySqlParameter} from {@link PrepareParametrizedStatement}
+     * @param value the {@link MySqlParameter} from {@link PrepareParameterizedStatement}
      */
     void add(int index, MySqlParameter value) {
         if (index < 0 || index >= this.values.length) {

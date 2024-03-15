@@ -24,11 +24,11 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 
 /**
- * An implementation of {@link ParametrizedStatementSupport} based on MySQL text query.
+ * An implementation of {@link ParameterizedStatementSupport} based on MySQL text query.
  */
-final class TextParametrizedStatement extends ParametrizedStatementSupport {
+final class TextParameterizedStatement extends ParameterizedStatementSupport {
 
-    TextParametrizedStatement(Client client, Codecs codecs, Query query) {
+    TextParameterizedStatement(Client client, Codecs codecs, Query query) {
         super(client, codecs, query);
     }
 
