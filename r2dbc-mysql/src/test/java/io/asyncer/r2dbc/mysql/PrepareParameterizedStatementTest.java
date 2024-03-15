@@ -16,34 +16,44 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+
+import java.lang.reflect.Field;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link TextParametrizedStatement}.
+ * Unit tests for {@link PrepareParameterizedStatement}.
  */
-class TextParametrizedStatementTest implements StatementTestSupport<TextParametrizedStatement> {
+class PrepareParameterizedStatementTest implements StatementTestSupport<PrepareParameterizedStatement> {
 
     private final Codecs codecs = Codecs.builder().build();
 
-    @Override
-    public void fetchSize() {
-        // No-op
+    private final Field fetchSize = PrepareParameterizedStatement.class.getDeclaredField("fetchSize");
+
+    PrepareParameterizedStatementTest() throws NoSuchFieldException {
+        fetchSize.setAccessible(true);
     }
 
     @Override
-    public TextParametrizedStatement makeInstance(boolean isMariaDB, String sql, String ignored) {
+    public int getFetchSize(PrepareParameterizedStatement statement) throws IllegalAccessException {
+        return fetchSize.getInt(statement);
+    }
+
+    @Override
+    public PrepareParameterizedStatement makeInstance(boolean isMariaDB, String sql, String ignored) {
         Client client = mock(Client.class);
 
         when(client.getContext()).thenReturn(ConnectionContextTest.mock(isMariaDB));
 
-        return new TextParametrizedStatement(
+        return new PrepareParameterizedStatement(
             client,
             codecs,
-            Query.parse(sql)
+            Query.parse(sql),
+            Caches.createPrepareCache(0)
         );
     }
 

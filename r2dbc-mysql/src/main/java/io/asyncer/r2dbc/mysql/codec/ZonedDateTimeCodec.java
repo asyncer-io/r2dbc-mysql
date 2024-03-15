@@ -37,7 +37,7 @@ import java.time.chrono.ChronoZonedDateTime;
  * <p>
  * For now, supports only A.D. calendar in {@link ChronoZonedDateTime}.
  */
-final class ZonedDateTimeCodec implements ParametrizedCodec<ZonedDateTime> {
+final class ZonedDateTimeCodec implements ParameterizedCodec<ZonedDateTime> {
 
     static final ZonedDateTimeCodec INSTANCE = new ZonedDateTimeCodec();
 

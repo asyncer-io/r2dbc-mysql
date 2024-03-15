@@ -29,15 +29,15 @@ import java.util.List;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 
 /**
- * An implementation of {@link ParametrizedStatementSupport} based on MySQL prepare query.
+ * An implementation of {@link ParameterizedStatementSupport} based on MySQL prepare query.
  */
-final class PrepareParametrizedStatement extends ParametrizedStatementSupport {
+final class PrepareParameterizedStatement extends ParameterizedStatementSupport {
 
     private final PrepareCache prepareCache;
 
     private int fetchSize = 0;
 
-    PrepareParametrizedStatement(Client client, Codecs codecs, Query query, PrepareCache prepareCache) {
+    PrepareParameterizedStatement(Client client, Codecs codecs, Query query, PrepareCache prepareCache) {
         super(client, codecs, query);
         this.prepareCache = prepareCache;
     }

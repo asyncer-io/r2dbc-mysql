@@ -36,7 +36,7 @@ import java.time.chrono.ChronoLocalDateTime;
  * <p>
  * For now, supports only A.D. calendar in {@link ChronoLocalDateTime}.
  */
-final class LocalDateTimeCodec implements ParametrizedCodec<LocalDateTime> {
+final class LocalDateTimeCodec implements ParameterizedCodec<LocalDateTime> {
 
     static final LocalDateTimeCodec INSTANCE = new LocalDateTimeCodec();
 

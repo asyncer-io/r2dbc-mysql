@@ -21,8 +21,7 @@ import io.asyncer.r2dbc.mysql.MySqlParameter;
 import io.asyncer.r2dbc.mysql.ParameterWriter;
 import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
 import io.asyncer.r2dbc.mysql.codec.CodecContext;
-import io.asyncer.r2dbc.mysql.codec.ParametrizedCodec;
-import io.asyncer.r2dbc.mysql.collation.CharCollation;
+import io.asyncer.r2dbc.mysql.codec.ParameterizedCodec;
 import io.asyncer.r2dbc.mysql.constant.MySqlType;
 import io.asyncer.r2dbc.mysql.internal.util.VarIntUtils;
 import io.netty.buffer.ByteBuf;
@@ -42,7 +41,7 @@ import java.nio.charset.Charset;
 /**
  * A JSON codec based on Jackson.
  */
-public final class JacksonCodec implements ParametrizedCodec<Object> {
+public final class JacksonCodec implements ParameterizedCodec<Object> {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 

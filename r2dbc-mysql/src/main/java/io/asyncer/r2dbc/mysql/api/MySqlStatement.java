@@ -35,7 +35,7 @@ public interface MySqlStatement extends Statement {
      * {@inheritDoc}
      *
      * @return {@link MySqlStatement this}
-     * @throws IllegalStateException if the statement is parametrized and not all parameters are provided
+     * @throws IllegalStateException if the statement is parameterized and not all parameters are provided
      */
     @Override
     MySqlStatement add();
@@ -96,7 +96,7 @@ public interface MySqlStatement extends Statement {
      * {@inheritDoc}
      *
      * @return a {@link Flux} representing {@link MySqlResult}s of the statement
-     * @throws IllegalStateException if the statement is parametrized and not all parameters are provided
+     * @throws IllegalStateException if the statement is parameterized and not all parameters are provided
      */
     @Override
     Flux<? extends MySqlResult> execute();

@@ -78,28 +78,28 @@ class MySqlSimpleConnectionTest {
         assertThat(noPrepare.createStatement(condition))
             .isExactlyInstanceOf(TextSimpleStatement.class);
         assertThat(noPrepare.createStatement("SELECT * FROM test WHERE id=?"))
-            .isExactlyInstanceOf(TextParametrizedStatement.class);
+            .isExactlyInstanceOf(TextParameterizedStatement.class);
 
         assertThat(allPrepare.createStatement("SELECT * FROM test WHERE id=1"))
             .isExactlyInstanceOf(PrepareSimpleStatement.class);
         assertThat(allPrepare.createStatement(condition))
             .isExactlyInstanceOf(PrepareSimpleStatement.class);
         assertThat(allPrepare.createStatement("SELECT * FROM test WHERE id=?"))
-            .isExactlyInstanceOf(PrepareParametrizedStatement.class);
+            .isExactlyInstanceOf(PrepareParameterizedStatement.class);
 
         assertThat(halfPrepare.createStatement("SELECT * FROM test WHERE id=1"))
             .isExactlyInstanceOf(TextSimpleStatement.class);
         assertThat(halfPrepare.createStatement(condition))
             .isExactlyInstanceOf(TextSimpleStatement.class);
         assertThat(halfPrepare.createStatement("SELECT * FROM test WHERE id=?"))
-            .isExactlyInstanceOf(PrepareParametrizedStatement.class);
+            .isExactlyInstanceOf(PrepareParameterizedStatement.class);
 
         assertThat(conditionPrepare.createStatement("SELECT * FROM test WHERE id=1"))
             .isExactlyInstanceOf(TextSimpleStatement.class);
         assertThat(conditionPrepare.createStatement(condition))
             .isExactlyInstanceOf(PrepareSimpleStatement.class);
         assertThat(conditionPrepare.createStatement("SELECT * FROM test WHERE id=?"))
-            .isExactlyInstanceOf(PrepareParametrizedStatement.class);
+            .isExactlyInstanceOf(PrepareParameterizedStatement.class);
     }
 
     @SuppressWarnings("ConstantConditions")

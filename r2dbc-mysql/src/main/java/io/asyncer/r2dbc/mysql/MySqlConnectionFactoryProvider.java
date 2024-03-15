@@ -201,14 +201,14 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
         Option.valueOf("createDatabaseIfNotExist");
 
     /**
-     * Enable server preparing for parametrized statements and prefer server preparing simple statements.
+     * Enable server preparing for parameterized statements and prefer server preparing simple statements.
      * <p>
      * The value can be a {@link Boolean}. If it is {@code true}, driver will use server preparing for
-     * parametrized statements and text query for simple statements. If it is {@code false}, driver will use
-     * client preparing for parametrized statements and text query for simple statements.
+     * parameterized statements and text query for simple statements. If it is {@code false}, driver will use
+     * client preparing for parameterized statements and text query for simple statements.
      * <p>
      * The value can be a {@link Predicate}{@code <}{@link String}{@code >}. If it is set, driver will server
-     * preparing for parametrized statements, it configures whether to prefer prepare execution on a
+     * preparing for parameterized statements, it configures whether to prefer prepare execution on a
      * statement-by-statement basis (simple statements). The {@link Predicate}{@code <}{@link String}{@code >}
      * accepts the simple SQL query string and returns a {@code boolean} flag indicating preference.
      * <p>

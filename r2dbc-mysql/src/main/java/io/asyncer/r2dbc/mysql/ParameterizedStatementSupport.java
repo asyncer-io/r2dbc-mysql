@@ -34,12 +34,12 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 
 /**
- * Base class considers parametrized {@link MySqlStatement} with parameter markers.
+ * Base class considers parameterized {@link MySqlStatement} with parameter markers.
  * <p>
  * MySQL uses indexed parameters which are marked by {@literal ?} without naming. Implementations should use
  * {@link Query} to supports named parameters.
  */
-abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
+abstract class ParameterizedStatementSupport extends MySqlStatementSupport {
 
     protected final Codecs codecs;
 
@@ -49,7 +49,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
-    ParametrizedStatementSupport(Client client, Codecs codecs, Query query) {
+    ParameterizedStatementSupport(Client client, Codecs codecs, Query query) {
         super(client);
 
         requireNonNull(query, "query must not be null");
@@ -113,7 +113,7 @@ abstract class ParametrizedStatementSupport extends MySqlStatementSupport {
 
         return Flux.defer(() -> {
             if (!executed.compareAndSet(false, true)) {
-                return Flux.error(new IllegalStateException("Parametrized statement was already executed"));
+                return Flux.error(new IllegalStateException("Parameterized statement was already executed"));
             }
 
             return execute(bindings.bindings);

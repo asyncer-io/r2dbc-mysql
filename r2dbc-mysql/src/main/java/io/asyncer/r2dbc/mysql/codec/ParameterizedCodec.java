@@ -29,7 +29,7 @@ import java.lang.reflect.ParameterizedType;
  *
  * @param <T> the type without parameter that is handled by this codec.
  */
-public interface ParametrizedCodec<T> extends Codec<T> {
+public interface ParameterizedCodec<T> extends Codec<T> {
 
     /**
      * Decodes a {@link ByteBuf} as specified {@link ParameterizedType}.
