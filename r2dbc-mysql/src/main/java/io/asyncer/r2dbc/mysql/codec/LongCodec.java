@@ -73,7 +73,7 @@ final class LongCodec extends AbstractPrimitiveCodec<Long> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
+    public boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 

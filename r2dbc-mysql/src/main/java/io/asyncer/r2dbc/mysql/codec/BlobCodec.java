@@ -50,6 +50,11 @@ final class BlobCodec implements MassiveCodec<Blob> {
     }
 
     @Override
+    public Class<? extends Blob> getMainClass() {
+        return Blob.class;
+    }
+
+    @Override
     public Blob decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return LobUtils.createBlob(value);

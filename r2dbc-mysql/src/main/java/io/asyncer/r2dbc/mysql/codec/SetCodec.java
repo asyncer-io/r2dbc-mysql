@@ -49,6 +49,11 @@ final class SetCodec implements ParameterizedCodec<String[]> {
     }
 
     @Override
+    public Class<? extends String[]> getMainClass() {
+        return String[].class;
+    }
+
+    @Override
     public String[] decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         if (!value.isReadable()) {

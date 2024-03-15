@@ -53,6 +53,11 @@ final class ClobCodec implements MassiveCodec<Clob> {
     }
 
     @Override
+    public Class<? extends Clob> getMainClass() {
+        return Clob.class;
+    }
+
+    @Override
     public Clob decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return LobUtils.createClob(value, metadata.getCharCollation(context));

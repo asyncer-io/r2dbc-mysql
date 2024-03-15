@@ -29,11 +29,17 @@ import java.nio.charset.Charset;
 /**
  * Codec for {@code enum class}.
  */
-final class EnumCodec implements Codec<Enum<?>> {
+@SuppressWarnings("rawtypes")
+final class EnumCodec implements Codec<Enum> {
 
     static final EnumCodec INSTANCE = new EnumCodec();
 
     private EnumCodec() {
+    }
+
+    @Override
+    public Class<? extends Enum> getMainClass() {
+        return Enum.class;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

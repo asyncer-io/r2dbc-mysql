@@ -40,6 +40,11 @@ final class InstantCodec implements Codec<Instant> {
     }
 
     @Override
+    public Class<? extends Instant> getMainClass() {
+        return Instant.class;
+    }
+
+    @Override
     public Instant decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         LocalDateTime origin = LocalDateTimeCodec.decodeOrigin(value, binary, context);

@@ -27,7 +27,8 @@ import java.util.Arrays;
 /**
  * Unit tests for {@link EnumCodec}.
  */
-class EnumCodecTest implements CodecTestSupport<Enum<?>> {
+@SuppressWarnings("rawtypes")
+class EnumCodecTest implements CodecTestSupport<Enum> {
 
     private final Enum<?>[] enums = {
         // Java has no way to create an element of enum with special character.

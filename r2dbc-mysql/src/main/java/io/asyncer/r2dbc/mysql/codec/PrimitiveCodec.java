@@ -16,9 +16,6 @@
 
 package io.asyncer.r2dbc.mysql.codec;
 
-import io.asyncer.r2dbc.mysql.api.MySqlReadableMetadata;
-import io.netty.buffer.ByteBuf;
-
 /**
  * Base class considers primitive class for {@link Codec} implementations. It should be an internal
  * abstraction.
@@ -28,28 +25,6 @@ import io.netty.buffer.ByteBuf;
  * @param <T> the boxed type that is handled by this codec.
  */
 interface PrimitiveCodec<T> extends Codec<T> {
-
-    /**
-     * Decodes a {@link ByteBuf} as specified {@link Class}.
-     *
-     * @param value    the {@link ByteBuf}.
-     * @param metadata the metadata of the column or the {@code OUT} parameter.
-     * @param target   the specified {@link Class}, which can be a primitive type.
-     * @param binary   if the value should be decoded by binary protocol.
-     * @param context  the codec context.
-     * @return the decoded data that is boxed.
-     */
-    @Override
-    T decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
-        CodecContext context);
-
-    /**
-     * Checks if the field value can be decoded as a primitive data.
-     *
-     * @param metadata the metadata of the column or the {@code OUT} parameter.
-     * @return if it can decode.
-     */
-    boolean canPrimitiveDecode(MySqlReadableMetadata metadata);
 
     /**
      * Gets the primitive {@link Class}, such as {@link Integer#TYPE}, etc.

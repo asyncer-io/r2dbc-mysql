@@ -40,6 +40,11 @@ final class OffsetDateTimeCodec implements Codec<OffsetDateTime> {
     }
 
     @Override
+    public Class<? extends OffsetDateTime> getMainClass() {
+        return OffsetDateTime.class;
+    }
+
+    @Override
     public OffsetDateTime decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         LocalDateTime origin = LocalDateTimeCodec.decodeOrigin(value, binary, context);

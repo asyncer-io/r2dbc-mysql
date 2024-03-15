@@ -22,13 +22,15 @@ import io.asyncer.r2dbc.mysql.internal.util.InternalArrays;
 import io.asyncer.r2dbc.mysql.message.FieldValue;
 import io.asyncer.r2dbc.mysql.message.LargeFieldValue;
 import io.asyncer.r2dbc.mysql.message.NormalFieldValue;
+import io.r2dbc.spi.Blob;
+import io.r2dbc.spi.Clob;
 import io.r2dbc.spi.Parameter;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.concurrent.GuardedBy;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +44,46 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 final class DefaultCodecs implements Codecs {
 
-    private final Codec<?>[] codecs;
+    private static final List<Codec<?>> DEFAULT_CODECS = InternalArrays.asImmutableList(
+        ByteCodec.INSTANCE,
+        ShortCodec.INSTANCE,
+        IntegerCodec.INSTANCE,
+        LongCodec.INSTANCE,
+        BigIntegerCodec.INSTANCE,
+
+        BigDecimalCodec.INSTANCE, // Only all decimals
+        FloatCodec.INSTANCE, // Decimal (precision < 7) or float
+        DoubleCodec.INSTANCE, // Decimal (precision < 16) or double or float
+
+        BooleanCodec.INSTANCE,
+        BitSetCodec.INSTANCE,
+
+        ZonedDateTimeCodec.INSTANCE,
+        LocalDateTimeCodec.INSTANCE,
+        InstantCodec.INSTANCE,
+        OffsetDateTimeCodec.INSTANCE,
+
+        LocalDateCodec.INSTANCE,
+
+        LocalTimeCodec.INSTANCE,
+        DurationCodec.INSTANCE,
+        OffsetTimeCodec.INSTANCE,
+
+        YearCodec.INSTANCE,
+
+        StringCodec.INSTANCE,
+
+        EnumCodec.INSTANCE,
+        SetCodec.INSTANCE,
+
+        ClobCodec.INSTANCE,
+        BlobCodec.INSTANCE,
+
+        ByteBufferCodec.INSTANCE,
+        ByteArrayCodec.INSTANCE
+    );
+
+    private final List<Codec<?>> codecs;
 
     private final ParameterizedCodec<?>[] parameterizedCodecs;
 
@@ -50,21 +91,28 @@ final class DefaultCodecs implements Codecs {
 
     private final MassiveParameterizedCodec<?>[] massiveParameterizedCodecs;
 
-    private final Map<Type, PrimitiveCodec<?>> primitiveCodecs;
+    private final Map<Class<?>, Codec<?>> fastPath;
 
-    private DefaultCodecs(Codec<?>[] codecs) {
-        this.codecs = requireNonNull(codecs, "codecs must not be null");
+    private DefaultCodecs(List<Codec<?>> codecs) {
+        requireNonNull(codecs, "codecs must not be null");
 
-        Map<Type, PrimitiveCodec<?>> primitiveCodecs = new HashMap<>();
+        Map<Class<?>, Codec<?>> fastPath = new HashMap<>();
         List<ParameterizedCodec<?>> parameterizedCodecs = new ArrayList<>();
         List<MassiveCodec<?>> massiveCodecs = new ArrayList<>();
         List<MassiveParameterizedCodec<?>> massiveParamCodecs = new ArrayList<>();
 
         for (Codec<?> codec : codecs) {
+            Class<?> mainClass = codec.getMainClass();
+
+            if (mainClass != null) {
+                fastPath.putIfAbsent(mainClass, codec);
+            }
+
             if (codec instanceof PrimitiveCodec<?>) {
                 // Primitive codec must be class-based codec, cannot support ParameterizedType.
                 PrimitiveCodec<?> c = (PrimitiveCodec<?>) codec;
-                primitiveCodecs.put(c.getPrimitiveClass(), c);
+
+                fastPath.putIfAbsent(c.getPrimitiveClass(), c);
             } else if (codec instanceof ParameterizedCodec<?>) {
                 parameterizedCodecs.add((ParameterizedCodec<?>) codec);
             }
@@ -78,15 +126,16 @@ final class DefaultCodecs implements Codecs {
             }
         }
 
-        this.primitiveCodecs = primitiveCodecs;
+        this.fastPath = fastPath;
+        this.codecs = codecs;
         this.massiveCodecs = massiveCodecs.toArray(new MassiveCodec<?>[0]);
         this.massiveParameterizedCodecs = massiveParamCodecs.toArray(new MassiveParameterizedCodec<?>[0]);
         this.parameterizedCodecs = parameterizedCodecs.toArray(new ParameterizedCodec<?>[0]);
     }
 
     /**
-     * Note: this method should NEVER release {@code buf} because of it come from {@code MySqlRow} which will
-     * release this buffer.
+     * Note: this method should NEVER release {@code buf} because of it come from {@code MySqlRow} which will release
+     * this buffer.
      */
     @Override
     public <T> T decode(FieldValue value, MySqlReadableMetadata metadata, Class<?> type, boolean binary,
@@ -104,10 +153,7 @@ final class DefaultCodecs implements Codecs {
 
         Class<?> target = chooseClass(metadata, type);
 
-        // Fast map for primitive classes.
-        if (target.isPrimitive()) {
-            return decodePrimitive(value, metadata, target, binary, context);
-        } else if (value instanceof NormalFieldValue) {
+        if (value instanceof NormalFieldValue) {
             return decodeNormal((NormalFieldValue) value, metadata, target, binary, context);
         } else if (value instanceof LargeFieldValue) {
             return decodeMassive((LargeFieldValue) value, metadata, target, binary, context);
@@ -171,9 +217,16 @@ final class DefaultCodecs implements Codecs {
         requireNonNull(value, "value must not be null");
         requireNonNull(context, "context must not be null");
 
-        final Object valueToEncode = getValueToEncode(value);
+        Object valueToEncode = getValueToEncode(value);
+
         if (null == valueToEncode) {
             return encodeNull();
+        }
+
+        Codec<?> fast = encodeFast(valueToEncode);
+
+        if (fast != null && fast.canEncode(valueToEncode)) {
+            return fast.encode(valueToEncode, context);
         }
 
         for (Codec<?> codec : codecs) {
@@ -199,23 +252,46 @@ final class DefaultCodecs implements Codecs {
     }
 
     @Nullable
-    private <T> T decodePrimitive(FieldValue value, MySqlReadableMetadata metadata, Class<?> type,
-        boolean binary, CodecContext context) {
-        @SuppressWarnings("unchecked")
-        PrimitiveCodec<T> codec = (PrimitiveCodec<T>) this.primitiveCodecs.get(type);
+    @SuppressWarnings("unchecked")
+    private <T> Codec<T> decodeFast(Class<?> type) {
+        Codec<T> codec = (Codec<T>) fastPath.get(type);
 
-        if (codec != null && value instanceof NormalFieldValue && codec.canPrimitiveDecode(metadata)) {
-            return codec.decode(((NormalFieldValue) value).getBufferSlice(), metadata, type, binary, context);
+        if (codec == null && type.isEnum()) {
+            return (Codec<T>) fastPath.get(Enum.class);
         }
 
-        // Mismatch, no one else can support this primitive class.
-        throw new IllegalArgumentException("Cannot decode " + value.getClass().getSimpleName() + " of " +
-            type + " for " + metadata.getType());
+        return codec;
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    private <T> Codec<T> encodeFast(Object value) {
+        Codec<T> codec = (Codec<T>) fastPath.get(value.getClass());
+
+        if (codec == null) {
+            if (value instanceof ByteBuffer) {
+                return (Codec<T>) fastPath.get(ByteBuffer.class);
+            } else if (value instanceof Blob) {
+                return (Codec<T>) fastPath.get(Blob.class);
+            } else if (value instanceof Clob) {
+                return (Codec<T>) fastPath.get(Clob.class);
+            } else if (value instanceof Enum<?>) {
+                return (Codec<T>) fastPath.get(Enum.class);
+            }
+        }
+
+        return codec;
     }
 
     @Nullable
     private <T> T decodeNormal(NormalFieldValue value, MySqlReadableMetadata metadata, Class<?> type,
         boolean binary, CodecContext context) {
+        Codec<T> fast = decodeFast(type);
+
+        if (fast != null && fast.canDecode(metadata, type)) {
+            return fast.decode(value.getBufferSlice(), metadata, type, binary, context);
+        }
+
         for (Codec<?> codec : codecs) {
             if (codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
@@ -244,6 +320,12 @@ final class DefaultCodecs implements Codecs {
     @Nullable
     private <T> T decodeMassive(LargeFieldValue value, MySqlReadableMetadata metadata, Class<?> type,
         boolean binary, CodecContext context) {
+        Codec<T> fast = decodeFast(type);
+
+        if (fast instanceof MassiveCodec<?> && fast.canDecode(metadata, type)) {
+            return ((MassiveCodec<T>) fast).decodeMassive(value.getBufferSlices(), metadata, type, binary, context);
+        }
+
         for (MassiveCodec<?> codec : massiveCodecs) {
             if (codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
@@ -269,50 +351,17 @@ final class DefaultCodecs implements Codecs {
         throw new IllegalArgumentException("Cannot decode massive  " + type + " for " + metadata.getType());
     }
 
+    /**
+     * Chooses the {@link Class} to use for decoding. It helps to find {@link Codec} on the fast path. e.g.
+     * {@link Object} -> {@link String} for {@code TEXT}, {@link Number} -> {@link Integer} for {@code INT}, etc.
+     *
+     * @param metadata the metadata of the column or the {@code OUT} parameter.
+     * @param type     the {@link Class} specified by the user.
+     * @return the {@link Class} to use for decoding.
+     */
     private static Class<?> chooseClass(MySqlReadableMetadata metadata, Class<?> type) {
         Class<?> javaType = metadata.getType().getJavaType();
         return type.isAssignableFrom(javaType) ? javaType : type;
-    }
-
-    private static Codec<?>[] defaultCodecs() {
-        return new Codec<?>[] {
-            ByteCodec.INSTANCE,
-            ShortCodec.INSTANCE,
-            IntegerCodec.INSTANCE,
-            LongCodec.INSTANCE,
-            BigIntegerCodec.INSTANCE,
-
-            BigDecimalCodec.INSTANCE, // Only all decimals
-            FloatCodec.INSTANCE, // Decimal (precision < 7) or float
-            DoubleCodec.INSTANCE, // Decimal (precision < 16) or double or float
-
-            BooleanCodec.INSTANCE,
-            BitSetCodec.INSTANCE,
-
-            ZonedDateTimeCodec.INSTANCE,
-            LocalDateTimeCodec.INSTANCE,
-            InstantCodec.INSTANCE,
-            OffsetDateTimeCodec.INSTANCE,
-
-            LocalDateCodec.INSTANCE,
-
-            LocalTimeCodec.INSTANCE,
-            DurationCodec.INSTANCE,
-            OffsetTimeCodec.INSTANCE,
-
-            YearCodec.INSTANCE,
-
-            StringCodec.INSTANCE,
-
-            EnumCodec.INSTANCE,
-            SetCodec.INSTANCE,
-
-            ClobCodec.INSTANCE,
-            BlobCodec.INSTANCE,
-
-            ByteBufferCodec.INSTANCE,
-            ByteArrayCodec.INSTANCE
-        };
     }
 
     static final class Builder implements CodecsBuilder {
@@ -327,12 +376,10 @@ final class DefaultCodecs implements Codecs {
             lock.lock();
             try {
                 if (codecs.isEmpty()) {
-                    Codec<?>[] defaultCodecs = defaultCodecs();
-
-                    codecs.ensureCapacity(defaultCodecs.length + 1);
+                    codecs.ensureCapacity(DEFAULT_CODECS.size() + 1);
                     // Add first.
                     codecs.add(codec);
-                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs));
+                    codecs.addAll(DEFAULT_CODECS);
                 } else {
                     codecs.add(0, codec);
                 }
@@ -347,7 +394,7 @@ final class DefaultCodecs implements Codecs {
             lock.lock();
             try {
                 if (codecs.isEmpty()) {
-                    codecs.addAll(InternalArrays.asImmutableList(defaultCodecs()));
+                    codecs.addAll(DEFAULT_CODECS);
                 }
                 codecs.add(codec);
             } finally {
@@ -362,9 +409,9 @@ final class DefaultCodecs implements Codecs {
             try {
                 try {
                     if (codecs.isEmpty()) {
-                        return new DefaultCodecs(defaultCodecs());
+                        return new DefaultCodecs(DEFAULT_CODECS);
                     }
-                    return new DefaultCodecs(codecs.toArray(new Codec<?>[0]));
+                    return new DefaultCodecs(InternalArrays.asImmutableList(codecs.toArray(new Codec<?>[0])));
                 } finally {
                     codecs.clear();
                     codecs.trimToSize();
