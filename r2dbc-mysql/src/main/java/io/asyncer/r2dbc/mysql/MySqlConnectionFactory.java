@@ -174,8 +174,20 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 extensions.forEach(CodecRegistrar.class, registrar ->
                     registrar.register(allocator, builder));
 
-                return MySqlSimpleConnection.init(client, builder.build(), db, queryCache.get(),
+                Mono<MySqlConnection> c = MySqlSimpleConnection.init(client, builder.build(), db, queryCache.get(),
                     prepareCache, sessionVariables, prepare);
+
+                if (configuration.getLockWaitTimeout() != null) {
+                    c = c.flatMap(connection -> connection.setLockWaitTimeout(configuration.getLockWaitTimeout())
+                        .thenReturn(connection));
+                }
+
+                if (configuration.getStatementTimeout() != null) {
+                    c = c.flatMap(connection -> connection.setStatementTimeout(configuration.getStatementTimeout())
+                        .thenReturn(connection));
+                }
+
+                return c;
             });
     }
 
