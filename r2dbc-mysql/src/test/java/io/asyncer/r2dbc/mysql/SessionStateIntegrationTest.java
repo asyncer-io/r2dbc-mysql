@@ -17,7 +17,9 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
+import io.r2dbc.spi.R2dbcTimeoutException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,6 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -120,6 +123,57 @@ class SessionStateIntegrationTest {
             .as(StepVerifier::create)
             .expectNext(expected)
             .verifyComplete();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "PT1S", "PT10S", "PT1M" })
+    void initLockWaitTimeout(String timeout) {
+        Duration lockWaitTimeout = Duration.parse(timeout);
+
+        connectionFactory(builder -> builder.lockWaitTimeout(lockWaitTimeout))
+            .create()
+            .flatMapMany(connection -> connection.createStatement("SELECT @@innodb_lock_wait_timeout").execute()
+                .flatMap(result -> result.map(r -> r.get(0, Long.class)))
+                .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .expectNext(lockWaitTimeout.getSeconds())
+            .verifyComplete();
+    }
+
+    @EnabledIf("isGreaterThanOrEqualToMariaDB10_1_1MySql5_7_4")
+    @ParameterizedTest
+    @ValueSource(strings = { "PT0.1S", "PT0.5S" })
+    void initStatementTimeout(String timeout) {
+        Duration statementTimeout = Duration.parse(timeout);
+
+        connectionFactory(builder -> builder.statementTimeout(statementTimeout))
+            .create()
+            .flatMapMany(connection -> connection.createStatement("SELECT 1 WHERE SLEEP(1) > 1").execute()
+                .flatMap(result -> result.map(r -> r.get(0)))
+                .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .verifyError(R2dbcTimeoutException.class);
+    }
+
+    static boolean isGreaterThanOrEqualToMariaDB10_1_1MySql5_7_4() {
+        String version = System.getProperty("test.mysql.version");
+
+        if (version == null || version.isEmpty()) {
+            return false;
+        }
+
+        ServerVersion ver = ServerVersion.parse(version);
+        String type = System.getProperty("test.db.type");
+
+        if ("mariadb".equalsIgnoreCase(type)) {
+            return ver.isGreaterThanOrEqualTo(ServerVersion.create(10, 1, 1));
+        }
+
+        return ver.isGreaterThanOrEqualTo(ServerVersion.create(5, 7, 4));
     }
 
     static Stream<Arguments> sessionVariables() {

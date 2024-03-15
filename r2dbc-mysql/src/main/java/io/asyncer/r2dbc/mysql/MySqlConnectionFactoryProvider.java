@@ -42,9 +42,11 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.r2dbc.spi.ConnectionFactoryOptions.HOST;
+import static io.r2dbc.spi.ConnectionFactoryOptions.LOCK_WAIT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PASSWORD;
 import static io.r2dbc.spi.ConnectionFactoryOptions.PORT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.SSL;
+import static io.r2dbc.spi.ConnectionFactoryOptions.STATEMENT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.USER;
 
 /**
@@ -393,6 +395,10 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
             MySqlConnectionFactoryProvider::splitVariables,
             String[]::new
         ).to(builder::sessionVariables);
+        mapper.optional(LOCK_WAIT_TIMEOUT).as(Duration.class, Duration::parse)
+            .to(builder::lockWaitTimeout);
+        mapper.optional(STATEMENT_TIMEOUT).as(Duration.class, Duration::parse)
+            .to(builder::statementTimeout);
 
         return builder.build();
     }

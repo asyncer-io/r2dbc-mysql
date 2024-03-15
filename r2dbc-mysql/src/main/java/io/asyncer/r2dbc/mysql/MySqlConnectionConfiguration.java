@@ -102,6 +102,12 @@ public final class MySqlConnectionConfiguration {
     private final List<String> sessionVariables;
 
     @Nullable
+    private final Duration lockWaitTimeout;
+
+    @Nullable
+    private final Duration statementTimeout;
+
+    @Nullable
     private final Path loadLocalInfilePath;
 
     private final int localInfileBufferSize;
@@ -130,7 +136,7 @@ public final class MySqlConnectionConfiguration {
         boolean forceConnectionTimeZoneToSession,
         String user, @Nullable CharSequence password, @Nullable String database,
         boolean createDatabaseIfNotExist, @Nullable Predicate<String> preferPrepareStatement,
-        List<String> sessionVariables,
+        List<String> sessionVariables, @Nullable Duration lockWaitTimeout, @Nullable Duration statementTimeout,
         @Nullable Path loadLocalInfilePath, int localInfileBufferSize,
         int queryCacheSize, int prepareCacheSize,
         Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
@@ -154,6 +160,8 @@ public final class MySqlConnectionConfiguration {
         this.createDatabaseIfNotExist = createDatabaseIfNotExist;
         this.preferPrepareStatement = preferPrepareStatement;
         this.sessionVariables = sessionVariables;
+        this.lockWaitTimeout = lockWaitTimeout;
+        this.statementTimeout = statementTimeout;
         this.loadLocalInfilePath = loadLocalInfilePath;
         this.localInfileBufferSize = localInfileBufferSize;
         this.queryCacheSize = queryCacheSize;
@@ -246,6 +254,16 @@ public final class MySqlConnectionConfiguration {
     }
 
     @Nullable
+    Duration getLockWaitTimeout() {
+        return lockWaitTimeout;
+    }
+
+    @Nullable
+    Duration getStatementTimeout() {
+        return statementTimeout;
+    }
+
+    @Nullable
     Path getLoadLocalInfilePath() {
         return loadLocalInfilePath;
     }
@@ -309,6 +327,8 @@ public final class MySqlConnectionConfiguration {
             createDatabaseIfNotExist == that.createDatabaseIfNotExist &&
             Objects.equals(preferPrepareStatement, that.preferPrepareStatement) &&
             sessionVariables.equals(that.sessionVariables) &&
+            Objects.equals(lockWaitTimeout, that.lockWaitTimeout) &&
+            Objects.equals(statementTimeout, that.statementTimeout) &&
             Objects.equals(loadLocalInfilePath, that.loadLocalInfilePath) &&
             localInfileBufferSize == that.localInfileBufferSize &&
             queryCacheSize == that.queryCacheSize &&
@@ -325,9 +345,14 @@ public final class MySqlConnectionConfiguration {
         return Objects.hash(isHost, domain, port, ssl, tcpKeepAlive, tcpNoDelay, connectTimeout,
             preserveInstants, connectionTimeZone, forceConnectionTimeZoneToSession,
             zeroDateOption, user, password, database, createDatabaseIfNotExist,
-            preferPrepareStatement, sessionVariables, loadLocalInfilePath,
-            localInfileBufferSize, queryCacheSize, prepareCacheSize, compressionAlgorithms,
-            zstdCompressionLevel, loopResources, extensions, passwordPublisher);
+            preferPrepareStatement,
+            sessionVariables,
+            lockWaitTimeout,
+            statementTimeout,
+            loadLocalInfilePath, localInfileBufferSize,
+            queryCacheSize, prepareCacheSize,
+            compressionAlgorithms, zstdCompressionLevel,
+            loopResources, extensions, passwordPublisher);
     }
 
     @Override
@@ -343,6 +368,8 @@ public final class MySqlConnectionConfiguration {
                 ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
                 ", preferPrepareStatement=" + preferPrepareStatement +
                 ", sessionVariables=" + sessionVariables +
+                ", lockWaitTimeout=" + lockWaitTimeout +
+                ", statementTimeout=" + statementTimeout +
                 ", loadLocalInfilePath=" + loadLocalInfilePath +
                 ", localInfileBufferSize=" + localInfileBufferSize +
                 ", queryCacheSize=" + queryCacheSize + ", prepareCacheSize=" + prepareCacheSize +
@@ -361,6 +388,8 @@ public final class MySqlConnectionConfiguration {
             ", database='" + database + "', createDatabaseIfNotExist=" + createDatabaseIfNotExist +
             ", preferPrepareStatement=" + preferPrepareStatement +
             ", sessionVariables=" + sessionVariables +
+            ", lockWaitTimeout=" + lockWaitTimeout +
+            ", statementTimeout=" + statementTimeout +
             ", loadLocalInfilePath=" + loadLocalInfilePath +
             ", localInfileBufferSize=" + localInfileBufferSize +
             ", queryCacheSize=" + queryCacheSize +
@@ -433,6 +462,12 @@ public final class MySqlConnectionConfiguration {
         @Nullable
         private Predicate<String> preferPrepareStatement;
 
+        @Nullable
+        private Duration lockWaitTimeout;
+
+        @Nullable
+        private Duration statementTimeout;
+
         private List<String> sessionVariables = Collections.emptyList();
 
         @Nullable
@@ -486,7 +521,11 @@ public final class MySqlConnectionConfiguration {
                 connectionTimeZone,
                 forceConnectionTimeZoneToSession,
                 user, password, database,
-                createDatabaseIfNotExist, preferPrepareStatement, sessionVariables, loadLocalInfilePath,
+                createDatabaseIfNotExist, preferPrepareStatement,
+                sessionVariables,
+                lockWaitTimeout,
+                statementTimeout,
+                loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 compressionAlgorithms, zstdCompressionLevel, loopResources,
                 Extensions.from(extensions, autodetectExtensions), passwordPublisher);
@@ -908,6 +947,30 @@ public final class MySqlConnectionConfiguration {
             requireNonNull(sessionVariables, "sessionVariables must not be null");
 
             this.sessionVariables = InternalArrays.toImmutableList(sessionVariables);
+            return this;
+        }
+
+        /**
+         * Configures the lock wait timeout.  Default to use the server-side default value.
+         *
+         * @param lockWaitTimeout the lock wait timeout, or {@code null} to use the server-side default value.
+         * @return {@link Builder this}
+         * @since 1.1.3
+         */
+        public Builder lockWaitTimeout(@Nullable Duration lockWaitTimeout) {
+            this.lockWaitTimeout = lockWaitTimeout;
+            return this;
+        }
+
+        /**
+         * Configures the statement timeout.  Default to use the server-side default value.
+         *
+         * @param statementTimeout the statement timeout, or {@code null} to use the server-side default value.
+         * @return {@link Builder this}
+         * @since 1.1.3
+         */
+        public Builder statementTimeout(@Nullable Duration statementTimeout) {
+            this.statementTimeout = statementTimeout;
             return this;
         }
 

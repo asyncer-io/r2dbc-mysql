@@ -250,6 +250,9 @@ class MySqlConnectionConfigurationTest {
             .sslHostnameVerifier((host, s) -> true)
             .queryCacheSize(128)
             .prepareCacheSize(0)
+            .sessionVariables("sql_mode=ANSI_QUOTES")
+            .lockWaitTimeout(Duration.ofSeconds(5))
+            .statementTimeout(Duration.ofSeconds(10))
             .autodetectExtensions(false)
             .build();
     }

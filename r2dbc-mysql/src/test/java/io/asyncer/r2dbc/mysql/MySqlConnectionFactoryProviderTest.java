@@ -455,7 +455,7 @@ class MySqlConnectionFactoryProviderTest {
 
     @Test
     void allConfigurationOptions() {
-        List<String> exceptConfigs =  Arrays.asList(
+        List<String> exceptConfigs = Arrays.asList(
             "extendWith",
             "username",
             "zeroDateOption");
@@ -463,9 +463,7 @@ class MySqlConnectionFactoryProviderTest {
             "driver",
             "ssl",
             "protocol",
-            "zeroDate",
-            "lockWaitTimeout",
-            "statementTimeout");
+            "zeroDate");
         Set<String> allOptions = Stream.concat(
                 Arrays.stream(ConnectionFactoryOptions.class.getFields()),
                 Arrays.stream(MySqlConnectionFactoryProvider.class.getFields())
