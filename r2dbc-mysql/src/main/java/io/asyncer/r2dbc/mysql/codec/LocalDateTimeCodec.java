@@ -46,6 +46,11 @@ final class LocalDateTimeCodec implements ParameterizedCodec<LocalDateTime> {
     }
 
     @Override
+    public Class<? extends LocalDateTime> getMainClass() {
+        return LocalDateTime.class;
+    }
+
+    @Override
     public LocalDateTime decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return decodeOrigin(value, binary, context);

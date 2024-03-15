@@ -65,7 +65,7 @@ final class IntegerCodec extends AbstractPrimitiveCodec<Integer> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
+    public boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 

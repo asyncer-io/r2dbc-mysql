@@ -68,7 +68,7 @@ final class DoubleCodec extends AbstractPrimitiveCodec<Double> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
+    public boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 

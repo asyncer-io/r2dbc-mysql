@@ -41,8 +41,7 @@ public interface Codec<T> {
      * @return the decoded result.
      */
     @Nullable
-    T decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
-        CodecContext context);
+    T decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary, CodecContext context);
 
     /**
      * Checks if the field value can be decoded as specified {@link Class}.
@@ -69,4 +68,16 @@ public interface Codec<T> {
      * @return encoded {@link MySqlParameter}.
      */
     MySqlParameter encode(Object value, CodecContext context);
+
+    /**
+     * Gets the main {@link Class} that is handled by this codec. It is used to fast path the codec lookup if it is not
+     * {@code null}. If same main {@link Class} is handled by multiple codecs, the codec with the highest priority will
+     * be used. The priority of the fast path is determined by its order in {@link Codecs}.
+     *
+     * @return the main {@link Class}, or {@code null} if it is not in fast path.
+     */
+    @Nullable
+    default Class<? extends T> getMainClass() {
+        return null;
+    }
 }

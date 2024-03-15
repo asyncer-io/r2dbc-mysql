@@ -45,6 +45,11 @@ final class ZonedDateTimeCodec implements ParameterizedCodec<ZonedDateTime> {
     }
 
     @Override
+    public Class<? extends ZonedDateTime> getMainClass() {
+        return ZonedDateTime.class;
+    }
+
+    @Override
     public ZonedDateTime decode(ByteBuf value, MySqlReadableMetadata metadata, Class<?> target, boolean binary,
         CodecContext context) {
         return decode0(value, binary, context);

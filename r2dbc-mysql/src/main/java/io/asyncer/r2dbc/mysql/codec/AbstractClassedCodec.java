@@ -36,5 +36,10 @@ abstract class AbstractClassedCodec<T> implements Codec<T> {
         return target.isAssignableFrom(this.type) && doCanDecode(metadata);
     }
 
+    @Override
+    public final Class<? extends T> getMainClass() {
+        return this.type;
+    }
+
     protected abstract boolean doCanDecode(MySqlReadableMetadata metadata);
 }

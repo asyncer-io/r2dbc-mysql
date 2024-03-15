@@ -59,7 +59,7 @@ final class ShortCodec extends AbstractPrimitiveCodec<Short> {
     }
 
     @Override
-    public boolean canPrimitiveDecode(MySqlReadableMetadata metadata) {
+    public boolean doCanDecode(MySqlReadableMetadata metadata) {
         return metadata.getType().isNumeric();
     }
 
