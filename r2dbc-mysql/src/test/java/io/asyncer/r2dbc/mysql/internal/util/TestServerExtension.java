@@ -51,6 +51,9 @@ public class TestServerExtension implements BeforeAllCallback {
                         .withCommand("--local-infile=true",
                                      "--character-set-server=utf8mb4",
                                      "--collation-server=utf8mb4_unicode_ci");
+                if (dbVersion.startsWith("5.5")) {
+                    ((MySQLContainer<?>)container).withConfigurationOverride("testcontainer/mysql-5.5");
+                }
             }
         }
 
