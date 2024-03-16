@@ -286,7 +286,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
             EnumSet.of(EnumData.ONE, EnumData.THREE));
     }
 
-    @DisabledIf("envIsLessThanMySql57OrMariaDb102")
+    @DisabledIf("envIsLessThanMySql578OrMariaDb102")
     @Test
     void json() {
         testType(String.class, false, "JSON", null, "{\"data\": 1}", "[\"data\", 1]", "1", "null",
@@ -576,7 +576,7 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     /**
      * ref: <a href="https://github.com/asyncer-io/r2dbc-mysql/issues/91">Issue 91</a>
      */
-    @DisabledIf("envIsLessThanMySql57OrMariaDb102")
+    @DisabledIf("envIsLessThanMySql578OrMariaDb102")
     @Test
     void testUnionQueryWithJsonColumnDecodedAsString() {
         complete(connection ->

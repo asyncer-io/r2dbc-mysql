@@ -126,7 +126,7 @@ abstract class IntegrationTestSupport {
         return ver.isLessThan(ServerVersion.create(5, 6, 0));
     }
 
-    boolean envIsLessThanMySql57OrMariaDb102() {
+    boolean envIsLessThanMySql578OrMariaDb102() {
         String version = TestUtil.getDbVersion();
 
         if (version.isEmpty()) {
@@ -140,7 +140,7 @@ abstract class IntegrationTestSupport {
             return ver.isLessThan(ServerVersion.create(10, 2, 0));
         }
 
-        return ver.isLessThan(ServerVersion.create(5, 7, 0));
+        return ver.isLessThan(ServerVersion.create(5, 7, 8));
     }
 
     static boolean envIsMariaDb10_5_1() {
