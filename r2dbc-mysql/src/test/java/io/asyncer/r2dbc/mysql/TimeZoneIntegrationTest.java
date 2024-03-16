@@ -2,11 +2,14 @@ package io.asyncer.r2dbc.mysql;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.asyncer.r2dbc.mysql.api.MySqlResult;
+import io.asyncer.r2dbc.mysql.internal.util.TestServerExtension;
+import io.asyncer.r2dbc.mysql.internal.util.TestUtil;
 import org.assertj.core.data.TemporalUnitOffset;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,6 +47,7 @@ import static org.assertj.core.api.Assertions.within;
 /**
  * Integration tests for aligning time zone configuration options with jdbc.
  */
+@ExtendWith(TestServerExtension.class)
 @Isolated
 class TimeZoneIntegrationTest {
 
@@ -291,18 +295,13 @@ class TimeZoneIntegrationTest {
     private static MySqlConnectionConfiguration configuration(
         Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
     ) {
-        String password = System.getProperty("test.mysql.password");
-
-        if (password == null || password.isEmpty()) {
-            throw new IllegalStateException("Property test.mysql.password must exists and not be empty");
-        }
 
         MySqlConnectionConfiguration.Builder builder = MySqlConnectionConfiguration.builder()
-            .host("localhost")
-            .port(3306)
-            .user("root")
-            .password(password)
-            .database("r2dbc");
+            .host(TestServerExtension.server.getHost())
+            .port(TestServerExtension.server.getPort())
+            .user(TestServerExtension.server.getUsername())
+            .password(TestServerExtension.server.getPassword())
+            .database(TestServerExtension.server.getDatabase());
 
         return customizer.apply(builder).build();
     }
@@ -328,7 +327,7 @@ class TimeZoneIntegrationTest {
     }
 
     private static String dateTimeSuffix(boolean function) {
-        String version = System.getProperty("test.mysql.version");
+        String version = TestUtil.getDbVersion();
         return version != null && isMicrosecondSupported(version) ? "(6)" : function ? "()" : "";
     }
 

@@ -619,11 +619,18 @@ abstract class QueryIntegrationTestSupport extends IntegrationTestSupport {
     @Test
     @DisabledIf("envIsLessThanMySql574OrMariaDb1011")
     void setStatementTimeoutTest() {
-        final String sql = "SELECT 1 WHERE SLEEP(1) > 1";
+        final String sql = "SELECT COUNT(*) " +
+                           "FROM information_schema.tables a cross join " +
+                           "information_schema.tables b cross join " +
+                           "information_schema.tables c cross join " +
+                           "information_schema.tables d cross join " +
+                           "information_schema.tables e";
+
         timeout(connection -> connection.setStatementTimeout(Duration.ofMillis(500))
                 .then(Mono.from(connection.createStatement(sql).execute()))
                 .flatMapMany(result -> Mono.from(result.map((row, metadata) -> row.get(0, String.class))))
                 .collectList()
+                .doOnNext(System.out::println)
         );
     }
 
