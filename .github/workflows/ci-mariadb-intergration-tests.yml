@@ -21,7 +21,7 @@ jobs:
           cache: maven
       - name: Shutdown the Default MySQL
         run: sudo service mysql stop
-      - name: Integration test with MySQL ${{ matrix.mysql-version }}
+      - name: Integration test with MariaDB ${{ matrix.mysql-version }}
         run: |
           set -o pipefail
           ./mvnw -B verify -Dmaven.javadoc.skip=true \
