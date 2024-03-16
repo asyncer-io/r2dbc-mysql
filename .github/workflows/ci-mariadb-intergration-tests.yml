@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        mariadb-version: [ 10.0.38, 10.1.1, 10.1.18, 10.2.15, 10.2.16, 10.3.7, 10.3.8, 10.5.1, 10.6.17, 10.11.7]
+        mariadb-version: [ 10.0.38, 10.1.18, 10.2.15, 10.2.16, 10.3.7, 10.3.8, 10.5.1, 10.6.17, 10.11.7]
     name: Integration test with MariaDB ${{ matrix.mariadb-version }}
     steps:
       - uses: actions/checkout@v3
@@ -26,7 +26,6 @@ jobs:
           set -o pipefail
           ./mvnw -B verify -Dmaven.javadoc.skip=true \
           -Dmaven.surefire.skip=true \
-          -Dtest.mysql.password=r2dbc-password!@ \
           -Dtest.db.type=mariadb \
           -Dtest.db.version=${{ matrix.mariadb-version }} \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN \
