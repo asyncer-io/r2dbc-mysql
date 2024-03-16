@@ -40,6 +40,7 @@ public class TestServerExtension implements BeforeAllCallback {
             if ("mariadb".equals(dbType)) {
                 container = new MariaDBContainer<>(dbType + ':' + dbVersion)
                         .withUsername("root")
+                        .withPassword("")
                         .withNetwork(Network.newNetwork())
                         .withCommand("--character-set-server=utf8mb4",
                                      "--collation-server=utf8mb4_unicode_ci");
