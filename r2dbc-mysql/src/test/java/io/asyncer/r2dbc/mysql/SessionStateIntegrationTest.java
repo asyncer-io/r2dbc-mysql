@@ -17,9 +17,12 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
+import io.asyncer.r2dbc.mysql.internal.util.TestServerExtension;
+import io.asyncer.r2dbc.mysql.internal.util.TestUtil;
 import io.r2dbc.spi.R2dbcTimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,6 +41,7 @@ import java.util.stream.Stream;
 /**
  * Integration tests for session states.
  */
+@ExtendWith(TestServerExtension.class)
 class SessionStateIntegrationTest {
 
     @Test
@@ -146,11 +150,17 @@ class SessionStateIntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = { "PT0.1S", "PT0.5S" })
     void initStatementTimeout(String timeout) {
+        final String sql = "SELECT COUNT(*) " +
+                           "FROM information_schema.tables a cross join " +
+                           "information_schema.tables b cross join " +
+                           "information_schema.tables c cross join " +
+                           "information_schema.tables d cross join " +
+                           "information_schema.tables e";
         Duration statementTimeout = Duration.parse(timeout);
 
         connectionFactory(builder -> builder.statementTimeout(statementTimeout))
             .create()
-            .flatMapMany(connection -> connection.createStatement("SELECT 1 WHERE SLEEP(1) > 1").execute()
+            .flatMapMany(connection -> connection.createStatement(sql).execute()
                 .flatMap(result -> result.map(r -> r.get(0)))
                 .onErrorResume(e -> connection.close().then(Mono.error(e)))
                 .concatWith(connection.close().then(Mono.empty()))
@@ -160,14 +170,14 @@ class SessionStateIntegrationTest {
     }
 
     static boolean isGreaterThanOrEqualToMariaDB10_1_1MySql5_7_4() {
-        String version = System.getProperty("test.mysql.version");
+        String version = TestUtil.getDbVersion();
 
-        if (version == null || version.isEmpty()) {
+        if (version.isEmpty()) {
             return false;
         }
 
         ServerVersion ver = ServerVersion.parse(version);
-        String type = System.getProperty("test.db.type");
+        String type = TestUtil.getDbType();
 
         if ("mariadb".equalsIgnoreCase(type)) {
             return ver.isGreaterThanOrEqualTo(ServerVersion.create(10, 1, 1));
@@ -187,18 +197,13 @@ class SessionStateIntegrationTest {
     private static MySqlConnectionFactory connectionFactory(
         Function<MySqlConnectionConfiguration.Builder, MySqlConnectionConfiguration.Builder> customizer
     ) {
-        String password = System.getProperty("test.mysql.password");
-
-        if (password == null || password.isEmpty()) {
-            throw new IllegalStateException("Property test.mysql.password must exists and not be empty");
-        }
 
         MySqlConnectionConfiguration.Builder builder = MySqlConnectionConfiguration.builder()
-            .host("localhost")
-            .port(3306)
-            .user("root")
-            .password(password)
-            .database("r2dbc");
+            .host(TestServerExtension.server.getHost())
+            .port(TestServerExtension.server.getPort())
+            .user(TestServerExtension.server.getUsername())
+            .password(TestServerExtension.server.getPassword())
+            .database(TestServerExtension.server.getDatabase());
 
         return MySqlConnectionFactory.from(customizer.apply(builder).build());
     }

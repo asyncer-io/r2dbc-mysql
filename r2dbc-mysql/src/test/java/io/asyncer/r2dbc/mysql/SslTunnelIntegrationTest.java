@@ -18,6 +18,7 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlConnection;
 import io.asyncer.r2dbc.mysql.constant.SslMode;
+import io.asyncer.r2dbc.mysql.internal.util.TestServerExtension;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -49,6 +51,7 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(TestServerExtension.class)
 public class SslTunnelIntegrationTest {
 
     private SelfSignedCertificate server;
@@ -62,19 +65,14 @@ public class SslTunnelIntegrationTest {
         // If the server uses caching_sha2_password, the first time a client connects to the server, the
         // server will require a native SSL connection. So all the SSL tunnel tests should be run after
         // the caching_sha2_password initialization.
-        String password = System.getProperty("test.mysql.password");
-
-        assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
-            .isNotNull()
-            .isNotEmpty();
 
         MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
-            .host("localhost")
-            .port(3306)
+            .host(TestServerExtension.server.getHost())
+            .port(TestServerExtension.server.getPort())
             .connectTimeout(Duration.ofSeconds(3))
-            .user("root")
-            .password(password)
-            .database("r2dbc")
+            .user(TestServerExtension.server.getUsername())
+            .password(TestServerExtension.server.getPassword())
+            .database(TestServerExtension.server.getDatabase())
             .createDatabaseIfNotExist(true)
             .build();
 
@@ -91,7 +89,9 @@ public class SslTunnelIntegrationTest {
         server = new SelfSignedCertificate();
         client = new SelfSignedCertificate();
         final SslContext sslContext = SslContextBuilder.forServer(server.key(), server.cert()).build();
-        sslTunnelServer = new SslTunnelServer("localhost", 3306, sslContext);
+        sslTunnelServer = new SslTunnelServer(TestServerExtension.server.getHost(),
+                                              TestServerExtension.server.getPort(),
+                                              sslContext);
         sslTunnelServer.setUp();
     }
 
@@ -104,18 +104,13 @@ public class SslTunnelIntegrationTest {
 
     @Test
     void sslTunnelConnectionTest() {
-        final String password = System.getProperty("test.mysql.password");
-        assertThat(password).withFailMessage("Property test.mysql.password must exists and not be empty")
-            .isNotNull()
-            .isNotEmpty();
-
         final MySqlConnectionConfiguration configuration = MySqlConnectionConfiguration.builder()
             .host("localhost")
             .port(sslTunnelServer.getLocalPort())
             .connectTimeout(Duration.ofSeconds(3))
-            .user("root")
-            .password(password)
-            .database("r2dbc")
+            .user(TestServerExtension.server.getUsername())
+            .password(TestServerExtension.server.getPassword())
+            .database(TestServerExtension.server.getDatabase())
             .sslMode(SslMode.TUNNEL)
             .sslKey(client.privateKey().getAbsolutePath())
             .sslCert(client.certificate().getAbsolutePath())
