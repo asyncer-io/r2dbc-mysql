@@ -108,9 +108,8 @@ final class DefaultCodecs implements Codecs {
                 fastPath.putIfAbsent(mainClass, codec);
             }
 
-            if (codec instanceof PrimitiveCodec<?>) {
-                // Primitive codec must be class-based codec, cannot support ParameterizedType.
-                PrimitiveCodec<?> c = (PrimitiveCodec<?>) codec;
+            if (codec instanceof AbstractPrimitiveCodec<?>) {
+                AbstractPrimitiveCodec<?> c = (AbstractPrimitiveCodec<?>) codec;
 
                 fastPath.putIfAbsent(c.getPrimitiveClass(), c);
             } else if (codec instanceof ParameterizedCodec<?>) {
@@ -230,7 +229,7 @@ final class DefaultCodecs implements Codecs {
         }
 
         for (Codec<?> codec : codecs) {
-            if (codec.canEncode(valueToEncode)) {
+            if (codec != fast && codec.canEncode(valueToEncode)) {
                 return codec.encode(valueToEncode, context);
             }
         }
@@ -293,7 +292,7 @@ final class DefaultCodecs implements Codecs {
         }
 
         for (Codec<?> codec : codecs) {
-            if (codec.canDecode(metadata, type)) {
+            if (codec != fast && codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
                 Codec<T> c = (Codec<T>) codec;
                 return c.decode(value.getBufferSlice(), metadata, type, binary, context);
@@ -327,7 +326,7 @@ final class DefaultCodecs implements Codecs {
         }
 
         for (MassiveCodec<?> codec : massiveCodecs) {
-            if (codec.canDecode(metadata, type)) {
+            if (codec != fast && codec.canDecode(metadata, type)) {
                 @SuppressWarnings("unchecked")
                 MassiveCodec<T> c = (MassiveCodec<T>) codec;
                 return c.decodeMassive(value.getBufferSlices(), metadata, type, binary, context);
