@@ -25,7 +25,7 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
  *
  * @param <T> the boxed type of handling primitive data.
  */
-abstract class AbstractPrimitiveCodec<T> implements PrimitiveCodec<T> {
+abstract class AbstractPrimitiveCodec<T> implements Codec<T> {
 
     private final Class<T> primitiveClass;
 
@@ -44,7 +44,6 @@ abstract class AbstractPrimitiveCodec<T> implements PrimitiveCodec<T> {
         return (target.isAssignableFrom(boxedClass) || target.equals(primitiveClass)) && doCanDecode(metadata);
     }
 
-    @Override
     public final Class<T> getPrimitiveClass() {
         return primitiveClass;
     }
