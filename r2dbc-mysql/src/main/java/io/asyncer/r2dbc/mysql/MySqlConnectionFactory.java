@@ -20,29 +20,20 @@ import io.asyncer.r2dbc.mysql.api.MySqlConnection;
 import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.cache.QueryCache;
-import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.codec.CodecsBuilder;
-import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
-import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.extension.CodecRegistrar;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.unix.DomainSocketAddress;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.ConnectionFactoryMetadata;
 import org.jetbrains.annotations.Nullable;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
@@ -77,99 +68,33 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
      */
     public static MySqlConnectionFactory from(MySqlConnectionConfiguration configuration) {
         requireNonNull(configuration, "configuration must not be null");
-
         LazyQueryCache queryCache = new LazyQueryCache(configuration.getQueryCacheSize());
 
-        return new MySqlConnectionFactory(Mono.defer(() -> {
-            MySqlSslConfiguration ssl;
-            SocketAddress address;
-
-            if (configuration.isHost()) {
-                ssl = configuration.getSsl();
-                address = InetSocketAddress.createUnresolved(configuration.getDomain(),
-                    configuration.getPort());
-            } else {
-                ssl = MySqlSslConfiguration.disabled();
-                address = new DomainSocketAddress(configuration.getDomain());
-            }
-
-            String database = configuration.getDatabase();
-            boolean createDbIfNotExist = configuration.isCreateDatabaseIfNotExist();
-            String user = configuration.getUser();
-            CharSequence password = configuration.getPassword();
-            SslMode sslMode = ssl.getSslMode();
-            int zstdCompressionLevel = configuration.getZstdCompressionLevel();
-            ZoneId connectionTimeZone = retrieveZoneId(configuration.getConnectionTimeZone());
-            ConnectionContext context = new ConnectionContext(
-                configuration.getZeroDateOption(),
-                configuration.getLoadLocalInfilePath(),
-                configuration.getLocalInfileBufferSize(),
-                configuration.isPreserveInstants(),
-                connectionTimeZone
-            );
-            Set<CompressionAlgorithm> compressionAlgorithms = configuration.getCompressionAlgorithms();
-            Extensions extensions = configuration.getExtensions();
-            Predicate<String> prepare = configuration.getPreferPrepareStatement();
-            int prepareCacheSize = configuration.getPrepareCacheSize();
-            Publisher<String> passwordPublisher = configuration.getPasswordPublisher();
-            boolean forceTimeZone = configuration.isForceConnectionTimeZoneToSession();
-            List<String> sessionVariables = forceTimeZone && connectionTimeZone != null ?
-                mergeSessionVariables(configuration.getSessionVariables(), connectionTimeZone) :
-                configuration.getSessionVariables();
-
-            if (Objects.nonNull(passwordPublisher)) {
-                return Mono.from(passwordPublisher).flatMap(token -> getMySqlConnection(
-                    configuration, queryCache,
-                    ssl, address,
-                    database, createDbIfNotExist,
-                    user, sslMode,
-                    compressionAlgorithms, zstdCompressionLevel,
-                    context, extensions, sessionVariables, prepare,
-                    prepareCacheSize, token
-                ));
-            }
-
-            return getMySqlConnection(
-                configuration, queryCache,
-                ssl, address,
-                database, createDbIfNotExist,
-                user, sslMode,
-                compressionAlgorithms, zstdCompressionLevel,
-                context, extensions, sessionVariables, prepare,
-                prepareCacheSize, password
-            );
-        }));
+        return new MySqlConnectionFactory(Mono.defer(() -> connectWithInit(configuration, queryCache)));
     }
 
-    private static Mono<MySqlConnection> getMySqlConnection(
-            final MySqlConnectionConfiguration configuration,
-            final LazyQueryCache queryCache,
-            final MySqlSslConfiguration ssl,
-            final SocketAddress address,
-            final String database,
-            final boolean createDbIfNotExist,
-            final String user,
-            final SslMode sslMode,
-            final Set<CompressionAlgorithm> compressionAlgorithms,
-            final int zstdLevel,
-            final ConnectionContext context,
-            final Extensions extensions,
-            final List<String> sessionVariables,
-            @Nullable final Predicate<String> prepare,
-            final int prepareCacheSize,
-            @Nullable final CharSequence password) {
-        return Client.connect(ssl, address, configuration.isTcpKeepAlive(), configuration.isTcpNoDelay(),
-                context, configuration.getConnectTimeout(), configuration.getLoopResources())
+    private static Mono<MySqlConnection> connectWithInit(
+        MySqlConnectionConfiguration configuration,
+        LazyQueryCache queryCache
+    ) {
+        return configuration.getSocket()
+            .strategy(configuration)
+            .connect()
             .flatMap(client -> {
-                // Lazy init database after handshake/login
-                String db = createDbIfNotExist ? "" : database;
-                return QueryFlow.login(client, sslMode, db, user, password, compressionAlgorithms, zstdLevel);
-            })
-            .flatMap(client -> {
+                String database = configuration.getDatabase();
+                boolean createDbIfNotExist = configuration.isCreateDatabaseIfNotExist();
+                ZoneId connectionTimeZone = retrieveZoneId(configuration.getConnectionTimeZone());
+                Predicate<String> prepare = configuration.getPreferPrepareStatement();
+                int prepareCacheSize = configuration.getPrepareCacheSize();
+                boolean forceTimeZone = configuration.isForceConnectionTimeZoneToSession();
+                List<String> sessionVariables = forceTimeZone && connectionTimeZone != null ?
+                    mergeSessionVariables(configuration.getSessionVariables(), connectionTimeZone) :
+                    configuration.getSessionVariables();
                 ByteBufAllocator allocator = client.getByteBufAllocator();
                 CodecsBuilder builder = Codecs.builder();
                 PrepareCache prepareCache = Caches.createPrepareCache(prepareCacheSize);
                 String db = createDbIfNotExist ? database : "";
+                Extensions extensions = configuration.getExtensions();
 
                 extensions.forEach(CodecRegistrar.class, registrar ->
                     registrar.register(allocator, builder));
