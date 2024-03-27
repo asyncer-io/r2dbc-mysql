@@ -16,21 +16,36 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.asyncer.r2dbc.mysql.cache.Caches;
+import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
+import io.asyncer.r2dbc.mysql.client.FluxExchangeable;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
+import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.TextQueryMessage;
+import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
 import io.r2dbc.spi.IsolationLevel;
 import org.assertj.core.api.ThrowableTypeAssert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SynchronousSink;
 import reactor.test.StepVerifier;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,39 +54,24 @@ import static org.mockito.Mockito.when;
  */
 class MySqlSimpleConnectionTest {
 
-    private final Client client;
-
-    private final Codecs codecs = mock(Codecs.class);
-
-    private final IsolationLevel level = IsolationLevel.REPEATABLE_READ;
-
-    private final String product = "MockConnection";
-
-    private final MySqlSimpleConnection noPrepare;
-
-    MySqlSimpleConnectionTest() {
-        Client client = mock(Client.class);
-
-        when(client.getContext()).thenReturn(ConnectionContextTest.mock());
-
-        this.client = client;
-        this.noPrepare = new MySqlSimpleConnection(client,
-            codecs, level, 50, Caches.createQueryCache(0),
-            Caches.createPrepareCache(0), product, null);
-    }
+    private static final Codecs CODECS = mock(Codecs.class);
 
     @Test
     void createStatement() {
         String condition = "SELECT * FROM test";
-        MySqlSimpleConnection allPrepare = new MySqlSimpleConnection(client,
-            codecs, level, 50, Caches.createQueryCache(0),
-            Caches.createPrepareCache(0), product, sql -> true);
-        MySqlSimpleConnection halfPrepare = new MySqlSimpleConnection(client,
-            codecs, level, 50, Caches.createQueryCache(0),
-            Caches.createPrepareCache(0), product, sql -> false);
-        MySqlSimpleConnection conditionPrepare = new MySqlSimpleConnection(client,
-            codecs, level, 50, Caches.createQueryCache(0),
-            Caches.createPrepareCache(0), product, sql -> sql.equals(condition));
+        MySqlSimpleConnection allPrepare = new MySqlSimpleConnection(
+            mockClient(),
+            CODECS,
+            Caches.createQueryCache(0), sql -> true);
+        MySqlSimpleConnection halfPrepare = new MySqlSimpleConnection(
+            mockClient(),
+            CODECS,
+            Caches.createQueryCache(0), sql -> false);
+        MySqlSimpleConnection conditionPrepare = new MySqlSimpleConnection(
+            mockClient(),
+            CODECS,
+            Caches.createQueryCache(0), sql -> sql.equals(condition));
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
 
         assertThat(noPrepare.createStatement("SELECT * FROM test WHERE id=1"))
             .isExactlyInstanceOf(TextSimpleStatement.class);
@@ -105,12 +105,14 @@ class MySqlSimpleConnectionTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void badCreateStatement() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         assertThatIllegalArgumentException().isThrownBy(() -> noPrepare.createStatement(null));
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void badCreateSavepoint() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.createSavepoint(""));
@@ -120,6 +122,7 @@ class MySqlSimpleConnectionTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void badReleaseSavepoint() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.releaseSavepoint(""));
@@ -129,6 +132,7 @@ class MySqlSimpleConnectionTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void badRollbackTransactionToSavepoint() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         ThrowableTypeAssert<?> asserted = assertThatIllegalArgumentException();
 
         asserted.isThrownBy(() -> noPrepare.rollbackTransactionToSavepoint(""));
@@ -138,24 +142,120 @@ class MySqlSimpleConnectionTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     void badSetTransactionIsolationLevel() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         assertThatIllegalArgumentException().isThrownBy(() -> noPrepare.setTransactionIsolationLevel(null));
     }
 
-    @Test
-    void shouldSetTransactionIsolationLevelSuccessfully() {
-        ClientMessage message = new TextQueryMessage("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE");
+    @ParameterizedTest
+    @ValueSource(strings = { "READ UNCOMMITTED", "READ COMMITTED", "REPEATABLE READ", "SERIALIZABLE" })
+    void shouldSetTransactionIsolationLevelSuccessfully(String levelSql) {
+        Client client = mockClient();
+        IsolationLevel level = IsolationLevel.valueOf(levelSql);
+        ClientMessage message = new TextQueryMessage("SET SESSION TRANSACTION ISOLATION LEVEL " + levelSql);
+
         when(client.exchange(eq(message), any())).thenReturn(Flux.empty());
 
-        noPrepare.setTransactionIsolationLevel(IsolationLevel.SERIALIZABLE)
+        MySqlSimpleConnection noPrepare = newNoPrepare(client);
+        noPrepare.setTransactionIsolationLevel(level)
             .as(StepVerifier::create)
             .verifyComplete();
 
-        assertThat(noPrepare.getSessionTransactionIsolationLevel()).isEqualTo(IsolationLevel.SERIALIZABLE);
+        assertThat(client.getContext().getCurrentIsolationLevel()).isEqualTo(level);
+        assertThat(client.getContext().getSessionIsolationLevel()).isEqualTo(level);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "READ UNCOMMITTED,SERIALIZABLE",
+        "READ COMMITTED,REPEATABLE READ",
+        "REPEATABLE READ,READ UNCOMMITTED"
+    })
+    void shouldSetTransactionIsolationLevelInTransaction(String levels) {
+        String[] levelStatements = levels.split(",");
+        IsolationLevel currentLevel = IsolationLevel.valueOf(levelStatements[0]);
+        IsolationLevel sessionLevel = IsolationLevel.valueOf(levelStatements[1]);
+        Client client = mockClient();
+        ClientMessage session = new TextQueryMessage("SET SESSION TRANSACTION ISOLATION LEVEL " + sessionLevel.asSql());
+        CompleteMessage mockDone = mock(CompleteMessage.class);
+        @SuppressWarnings("unchecked")
+        SynchronousSink<ClientMessage> sink = (SynchronousSink<ClientMessage>) mock(SynchronousSink.class);
+        AtomicBoolean completed = new AtomicBoolean(false);
+
+        doAnswer(it -> {
+            throw it.getArgument(0, Exception.class);
+        }).when(sink).error(any());
+        doAnswer(it -> {
+            completed.set(true);
+            return null;
+        }).when(sink).complete();
+        when(mockDone.isDone()).thenReturn(true);
+        when(client.exchange(eq(session), any())).thenReturn(Flux.empty());
+        when(client.exchange(any())).thenAnswer(it -> {
+            FluxExchangeable<ClientMessage> exchangeable = it.getArgument(0);
+            @SuppressWarnings("unchecked")
+            CoreSubscriber<? super ClientMessage> subscriber = mock(CoreSubscriber.class);
+            exchangeable.subscribe(subscriber);
+
+            while (!completed.get()) {
+                exchangeable.accept(mockDone, sink);
+            }
+
+            // Mock server status to be in transaction
+            client.getContext().setServerStatuses(ServerStatuses.IN_TRANSACTION);
+
+            return Flux.empty();
+        });
+
+        IsolationLevel mockLevel = IsolationLevel.valueOf("DEFAULT");
+        client.getContext().initSession(
+            mock(PrepareCache.class),
+            mockLevel,
+            false,
+            Duration.ZERO,
+            null,
+            null
+        );
+        MySqlSimpleConnection noPrepare = newNoPrepare(client);
+
+        assertThat(client.getContext().getCurrentIsolationLevel()).isEqualTo(mockLevel);
+        assertThat(client.getContext().getSessionIsolationLevel()).isEqualTo(mockLevel);
+
+        noPrepare.beginTransaction(MySqlTransactionDefinition.from(currentLevel))
+            .as(StepVerifier::create)
+            .verifyComplete();
+
+        assertThat(client.getContext().getCurrentIsolationLevel()).isEqualTo(currentLevel);
+        assertThat(client.getContext().getSessionIsolationLevel()).isEqualTo(mockLevel);
+
+        noPrepare.setTransactionIsolationLevel(sessionLevel)
+            .as(StepVerifier::create)
+            .verifyComplete();
+
+        assertThat(client.getContext().getCurrentIsolationLevel()).isEqualTo(currentLevel);
+        assertThat(client.getContext().getSessionIsolationLevel()).isEqualTo(sessionLevel);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void badValidate() {
+        MySqlSimpleConnection noPrepare = newNoPrepare(mockClient());
         assertThatIllegalArgumentException().isThrownBy(() -> noPrepare.validate(null));
+    }
+
+    private static Client mockClient() {
+        Client client = mock(Client.class);
+
+        when(client.getContext()).thenReturn(ConnectionContextTest.mock());
+
+        return client;
+    }
+
+    private static MySqlSimpleConnection newNoPrepare(Client client) {
+        return new MySqlSimpleConnection(
+            client,
+            CODECS,
+            Caches.createQueryCache(0),
+            null
+        );
     }
 }

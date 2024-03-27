@@ -18,19 +18,12 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlBatch;
 import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
-import io.asyncer.r2dbc.mysql.authentication.MySqlAuthProvider;
-import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.client.FluxExchangeable;
-import io.asyncer.r2dbc.mysql.constant.CompressionAlgorithm;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
-import io.asyncer.r2dbc.mysql.constant.SslMode;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
-import io.asyncer.r2dbc.mysql.message.client.AuthResponse;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
-import io.asyncer.r2dbc.mysql.message.client.HandshakeResponse;
 import io.asyncer.r2dbc.mysql.message.client.LocalInfileResponse;
-import io.asyncer.r2dbc.mysql.message.client.SubsequenceClientMessage;
 import io.asyncer.r2dbc.mysql.message.client.PingMessage;
 import io.asyncer.r2dbc.mysql.message.client.PrepareQueryMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedCloseMessage;
@@ -38,29 +31,21 @@ import io.asyncer.r2dbc.mysql.message.client.PreparedExecuteMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedFetchMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedResetMessage;
 import io.asyncer.r2dbc.mysql.message.client.PreparedTextQueryMessage;
-import io.asyncer.r2dbc.mysql.message.client.SslRequest;
 import io.asyncer.r2dbc.mysql.message.client.TextQueryMessage;
-import io.asyncer.r2dbc.mysql.message.server.AuthMoreDataMessage;
-import io.asyncer.r2dbc.mysql.message.server.ChangeAuthMessage;
 import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
 import io.asyncer.r2dbc.mysql.message.server.EofMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
-import io.asyncer.r2dbc.mysql.message.server.HandshakeHeader;
-import io.asyncer.r2dbc.mysql.message.server.HandshakeRequest;
 import io.asyncer.r2dbc.mysql.message.server.LocalInfileRequest;
 import io.asyncer.r2dbc.mysql.message.server.OkMessage;
 import io.asyncer.r2dbc.mysql.message.server.PreparedOkMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerStatusMessage;
 import io.asyncer.r2dbc.mysql.message.server.SyntheticMetadataMessage;
-import io.asyncer.r2dbc.mysql.message.server.SyntheticSslResponseMessage;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.IsolationLevel;
-import io.r2dbc.spi.R2dbcNonTransientResourceException;
-import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import io.r2dbc.spi.TransactionDefinition;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.CoreSubscriber;
@@ -72,15 +57,10 @@ import reactor.core.publisher.Sinks;
 import reactor.core.publisher.SynchronousSink;
 import reactor.util.concurrent.Queues;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -116,18 +96,16 @@ final class QueryFlow {
      * @param sql       the statement for exception tracing.
      * @param bindings  the data of bindings.
      * @param fetchSize the size of fetching, if it less than or equal to {@literal 0} means fetch all rows.
-     * @param cache     the cache of server-preparing result.
      * @return the messages received in response to this exchange.
      */
-    static Flux<Flux<ServerMessage>> execute(Client client, String sql, List<Binding> bindings, int fetchSize,
-        PrepareCache cache) {
+    static Flux<Flux<ServerMessage>> execute(Client client, String sql, List<Binding> bindings, int fetchSize) {
         return Flux.defer(() -> {
             if (bindings.isEmpty()) {
                 return Flux.empty();
             }
 
             // Note: the prepared SQL may not be sent when the cache matches.
-            return client.exchange(new PrepareExchangeable(cache, sql, bindings.iterator(), fetchSize))
+            return client.exchange(new PrepareExchangeable(client, sql, bindings.iterator(), fetchSize))
                 .windowUntil(RESULT_DONE);
         });
     }
@@ -195,29 +173,6 @@ final class QueryFlow {
     }
 
     /**
-     * Login a {@link Client} and receive the {@code client} after logon. It will emit an exception when client receives
-     * a {@link ErrorMessage}.
-     *
-     * @param client                the {@link Client} to exchange messages with.
-     * @param sslMode               the {@link SslMode} defines SSL capability and behavior.
-     * @param database              the database that will be connected.
-     * @param user                  the user that will be login.
-     * @param password              the password of the {@code user}.
-     * @param compressionAlgorithms the list of compression algorithms.
-     * @param zstdCompressionLevel  the zstd compression level.
-     * @param context               the {@link ConnectionContext} for initialization.
-     * @return the messages received in response to the login exchange.
-     */
-    static Mono<Client> login(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password,
-        Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel) {
-        return client.exchange(new LoginExchangeable(client, sslMode, database, user, password,
-                compressionAlgorithms, zstdCompressionLevel))
-            .onErrorResume(e -> client.forceClose().then(Mono.error(e)))
-            .then(Mono.just(client));
-    }
-
-    /**
      * Execute a simple query and return a {@link Mono} for the complete signal or error. Query execution terminates
      * with the last {@link CompleteMessage} or a {@link ErrorMessage}. The {@link ErrorMessage} will emit an exception.
      * The exchange will be completed by {@link CompleteMessage} after receive the last result for the last binding.
@@ -245,17 +200,15 @@ final class QueryFlow {
 
     /**
      * Begins a new transaction with a {@link TransactionDefinition}.  It will change current transaction statuses of
-     * the {@link ConnectionState}.
+     * the {@link ConnectionContext}.
      *
      * @param client         the {@link Client} to exchange messages with.
-     * @param state          the connection state for checks and sets transaction statuses.
      * @param batchSupported if connection supports batch query.
      * @param definition     the {@link TransactionDefinition}.
      * @return receives complete signal.
      */
-    static Mono<Void> beginTransaction(Client client, ConnectionState state, boolean batchSupported,
-        TransactionDefinition definition) {
-        final StartTransactionState startState = new StartTransactionState(state, definition, client);
+    static Mono<Void> beginTransaction(Client client, boolean batchSupported, TransactionDefinition definition) {
+        final StartTransactionState startState = new StartTransactionState(client, definition);
 
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(startState)).then();
@@ -265,18 +218,15 @@ final class QueryFlow {
     }
 
     /**
-     * Commits or rollbacks current transaction.  It will recover statuses of the {@link ConnectionState} in the initial
-     * connection state.
+     * Commits or rollbacks current transaction.  It will recover statuses of the {@link ConnectionContext}.
      *
      * @param client         the {@link Client} to exchange messages with.
-     * @param state          the connection state for checks and resets transaction statuses.
      * @param commit         if it is commit, otherwise rollback.
      * @param batchSupported if connection supports batch query.
      * @return receives complete signal.
      */
-    static Mono<Void> doneTransaction(Client client, ConnectionState state, boolean commit,
-        boolean batchSupported) {
-        final CommitRollbackState commitState = new CommitRollbackState(state, commit);
+    static Mono<Void> doneTransaction(Client client, boolean commit, boolean batchSupported) {
+        final CommitRollbackState commitState = new CommitRollbackState(client, commit);
 
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(commitState)).then();
@@ -285,13 +235,78 @@ final class QueryFlow {
         return client.exchange(new TransactionMultiExchangeable(commitState)).then();
     }
 
-    static Mono<Void> createSavepoint(Client client, ConnectionState state, String name,
-        boolean batchSupported) {
-        final CreateSavepointState savepointState = new CreateSavepointState(state, name);
+    /**
+     * Creates a savepoint with a name. It will begin a new transaction before creating a savepoint if the connection is
+     * not in a transaction.
+     *
+     * @param client         the {@link Client} to exchange messages with.
+     * @param name           the name of the savepoint.
+     * @param batchSupported if connection supports batch query.
+     * @return a {@link Mono} receives complete signal.
+     */
+    static Mono<Void> createSavepoint(Client client, String name, boolean batchSupported) {
+        final CreateSavepointState savepointState = new CreateSavepointState(client, name);
         if (batchSupported) {
             return client.exchange(new TransactionBatchExchangeable(savepointState)).then();
         }
         return client.exchange(new TransactionMultiExchangeable(savepointState)).then();
+    }
+
+    /**
+     * Sets a session variable to the server.
+     *
+     * @param client   the {@link Client} to exchange messages with.
+     * @param variable the session variable to set, e.g. {@code "sql_mode='ANSI'"}.
+     * @return a {@link Mono} receives complete signal.
+     */
+    static Mono<Void> setSessionVariable(Client client, String variable) {
+        if (variable.isEmpty()) {
+            return Mono.empty();
+        } else if (variable.startsWith("@")) {
+            return executeVoid(client, "SET " + variable);
+        }
+
+        return executeVoid(client, "SET SESSION " + variable);
+    }
+
+    /**
+     * Sets multiple session variables to the server.
+     *
+     * @param client           the {@link Client} to exchange messages with.
+     * @param sessionVariables the session variables to set, e.g. {@code ["sql_mode='ANSI'", "time_zone='+09:00'"]}.
+     * @return a {@link Mono} receives complete signal.
+     */
+    static Mono<Void> setSessionVariables(Client client, List<String> sessionVariables) {
+        switch (sessionVariables.size()) {
+            case 0:
+                return Mono.empty();
+            case 1:
+                return setSessionVariable(client, sessionVariables.get(0));
+            default: {
+                StringBuilder query = new StringBuilder(sessionVariables.size() * 32 + 16).append("SET ");
+                boolean comma = false;
+
+                for (String variable : sessionVariables) {
+                    if (variable.isEmpty()) {
+                        continue;
+                    }
+
+                    if (comma) {
+                        query.append(',');
+                    } else {
+                        comma = true;
+                    }
+
+                    if (variable.startsWith("@")) {
+                        query.append(variable);
+                    } else {
+                        query.append("SESSION ").append(variable);
+                    }
+                }
+
+                return executeVoid(client, query.toString());
+            }
+        }
     }
 
     /**
@@ -544,7 +559,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
     private final Sinks.Many<ClientMessage> requests = Sinks.many().unicast()
         .onBackpressureBuffer(Queues.<ClientMessage>one().get());
 
-    private final PrepareCache cache;
+    private final Client client;
 
     private final String sql;
 
@@ -559,8 +574,8 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
 
     private boolean shouldClose;
 
-    PrepareExchangeable(PrepareCache cache, String sql, Iterator<Binding> bindings, int fetchSize) {
-        this.cache = cache;
+    PrepareExchangeable(Client client, String sql, Iterator<Binding> bindings, int fetchSize) {
+        this.client = client;
         this.sql = sql;
         this.bindings = bindings;
         this.fetchSize = fetchSize;
@@ -572,7 +587,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
         requests.asFlux().subscribe(actual);
 
         // After subscribe.
-        Integer statementId = cache.getIfPresent(sql);
+        Integer statementId = client.getContext().getPrepareCache().getIfPresent(sql);
         if (statementId == null) {
             logger.debug("Prepare cache mismatch, try to preparing");
             this.shouldClose = true;
@@ -713,7 +728,7 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
         boolean putSucceed;
 
         try {
-            putSucceed = cache.putIfAbsent(sql, statementId, evictId -> {
+            putSucceed = client.getContext().getPrepareCache().putIfAbsent(sql, statementId, evictId -> {
                 logger.debug("Prepare cache evicts statement {} when putting", evictId);
 
                 Sinks.EmitResult result = requests.tryEmitNext(new PreparedCloseMessage(evictId));
@@ -809,292 +824,9 @@ final class PrepareExchangeable extends FluxExchangeable<ServerMessage> {
     }
 }
 
-/**
- * An implementation of {@link FluxExchangeable} that considers login to the database.
- * <p>
- * Not like other {@link FluxExchangeable}s, it is started by a server-side message, which should be an implementation
- * of {@link HandshakeRequest}.
- */
-final class LoginExchangeable extends FluxExchangeable<Void> {
-
-    private static final InternalLogger logger = InternalLoggerFactory.getInstance(LoginExchangeable.class);
-
-    private static final Map<String, String> ATTRIBUTES = Collections.emptyMap();
-
-    private static final String CLI_SPECIFIC = "HY000";
-
-    private static final int HANDSHAKE_VERSION = 10;
-
-    private final Sinks.Many<SubsequenceClientMessage> requests = Sinks.many().unicast()
-        .onBackpressureBuffer(Queues.<SubsequenceClientMessage>one().get());
-
-    private final Client client;
-
-    private final SslMode sslMode;
-
-    private final String database;
-
-    private final String user;
-
-    @Nullable
-    private final CharSequence password;
-
-    private final Set<CompressionAlgorithm> compressions;
-
-    private final int zstdCompressionLevel;
-
-    private boolean handshake = true;
-
-    private MySqlAuthProvider authProvider;
-
-    private byte[] salt;
-
-    private boolean sslCompleted;
-
-    LoginExchangeable(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password, Set<CompressionAlgorithm> compressions,
-        int zstdCompressionLevel) {
-        this.client = client;
-        this.sslMode = sslMode;
-        this.database = database;
-        this.user = user;
-        this.password = password;
-        this.compressions = compressions;
-        this.zstdCompressionLevel = zstdCompressionLevel;
-        this.sslCompleted = sslMode == SslMode.TUNNEL;
-    }
-
-    @Override
-    public void subscribe(CoreSubscriber<? super ClientMessage> actual) {
-        requests.asFlux().subscribe(actual);
-    }
-
-    @Override
-    public void accept(ServerMessage message, SynchronousSink<Void> sink) {
-        if (message instanceof ErrorMessage) {
-            sink.error(((ErrorMessage) message).toException());
-            return;
-        }
-
-        // Ensures it will be initialized only once.
-        if (handshake) {
-            handshake = false;
-            if (message instanceof HandshakeRequest) {
-                HandshakeRequest request = (HandshakeRequest) message;
-                Capability capability = initHandshake(request);
-
-                if (capability.isSslEnabled()) {
-                    emitNext(SslRequest.from(capability, client.getContext().getClientCollation().getId()), sink);
-                } else {
-                    emitNext(createHandshakeResponse(capability), sink);
-                }
-            } else {
-                sink.error(new R2dbcPermissionDeniedException("Unexpected message type '" +
-                    message.getClass().getSimpleName() + "' in init phase"));
-            }
-
-            return;
-        }
-
-        if (message instanceof OkMessage) {
-            client.loginSuccess();
-            sink.complete();
-        } else if (message instanceof SyntheticSslResponseMessage) {
-            sslCompleted = true;
-            emitNext(createHandshakeResponse(client.getContext().getCapability()), sink);
-        } else if (message instanceof AuthMoreDataMessage) {
-            AuthMoreDataMessage msg = (AuthMoreDataMessage) message;
-
-            if (msg.isFailed()) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Connection (id {}) fast authentication failed, use full authentication",
-                        client.getContext().getConnectionId());
-                }
-
-                emitNext(createAuthResponse("full authentication"), sink);
-            }
-            // Otherwise success, wait until OK message or Error message.
-        } else if (message instanceof ChangeAuthMessage) {
-            ChangeAuthMessage msg = (ChangeAuthMessage) message;
-
-            authProvider = MySqlAuthProvider.build(msg.getAuthType());
-            salt = msg.getSalt();
-            emitNext(createAuthResponse("change authentication"), sink);
-        } else {
-            sink.error(new R2dbcPermissionDeniedException("Unexpected message type '" +
-                message.getClass().getSimpleName() + "' in login phase"));
-        }
-    }
-
-    @Override
-    public void dispose() {
-        // No particular error condition handling for complete signal.
-        this.requests.tryEmitComplete();
-    }
-
-    private void emitNext(SubsequenceClientMessage message, SynchronousSink<Void> sink) {
-        Sinks.EmitResult result = requests.tryEmitNext(message);
-
-        if (result != Sinks.EmitResult.OK) {
-            sink.error(new IllegalStateException("Fail to emit a login request due to " + result));
-        }
-    }
-
-    private AuthResponse createAuthResponse(String phase) {
-        MySqlAuthProvider authProvider = getAndNextProvider();
-
-        if (authProvider.isSslNecessary() && !sslCompleted) {
-            throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), phase), CLI_SPECIFIC);
-        }
-
-        return new AuthResponse(authProvider.authentication(password, salt, client.getContext().getClientCollation()));
-    }
-
-    private Capability clientCapability(Capability serverCapability) {
-        Capability.Builder builder = serverCapability.mutate();
-
-        builder.disableSessionTrack();
-        builder.disableDatabasePinned();
-        builder.disableIgnoreAmbiguitySpace();
-        builder.disableInteractiveTimeout();
-
-        if (sslMode == SslMode.TUNNEL) {
-            // Tunnel does not use MySQL SSL protocol, disable it.
-            builder.disableSsl();
-        } else if (!serverCapability.isSslEnabled()) {
-            // Server unsupported SSL.
-            if (sslMode.requireSsl()) {
-                // Before handshake, Client.context does not be initialized
-                throw new R2dbcPermissionDeniedException("Server does not support SSL but mode '" + sslMode +
-                    "' requires SSL", CLI_SPECIFIC);
-            } else if (sslMode.startSsl()) {
-                // SSL has start yet, and client can disable SSL, disable now.
-                client.sslUnsupported();
-            }
-        } else {
-            // The server supports SSL, but the user does not want to use SSL, disable it.
-            if (!sslMode.startSsl()) {
-                builder.disableSsl();
-            }
-        }
-
-        if (isZstdAllowed(serverCapability)) {
-            if (isZstdSupported()) {
-                builder.disableZlibCompression();
-            } else {
-                logger.warn("Server supports zstd, but zstd-jni dependency is missing");
-
-                if (isZlibAllowed(serverCapability)) {
-                    builder.disableZstdCompression();
-                } else if (compressions.contains(CompressionAlgorithm.UNCOMPRESSED)) {
-                    builder.disableCompression();
-                } else {
-                    throw new R2dbcNonTransientResourceException(
-                        "Environment does not support a compression algorithm in " + compressions +
-                            ", config does not allow uncompressed mode", CLI_SPECIFIC);
-                }
-            }
-        } else if (isZlibAllowed(serverCapability)) {
-            builder.disableZstdCompression();
-        } else if (compressions.contains(CompressionAlgorithm.UNCOMPRESSED)) {
-            builder.disableCompression();
-        } else {
-            throw new R2dbcPermissionDeniedException(
-                "Environment does not support a compression algorithm in " + compressions +
-                    ", config does not allow uncompressed mode", CLI_SPECIFIC);
-        }
-
-        if (database.isEmpty()) {
-            builder.disableConnectWithDatabase();
-        }
-
-        if (client.getContext().getLocalInfilePath() == null) {
-            builder.disableLoadDataLocalInfile();
-        }
-
-        if (ATTRIBUTES.isEmpty()) {
-            builder.disableConnectAttributes();
-        }
-
-        return builder.build();
-    }
-
-    private Capability initHandshake(HandshakeRequest message) {
-        HandshakeHeader header = message.getHeader();
-        int handshakeVersion = header.getProtocolVersion();
-        ServerVersion serverVersion = header.getServerVersion();
-
-        if (handshakeVersion < HANDSHAKE_VERSION) {
-            logger.warn("MySQL use handshake V{}, server version is {}, maybe most features are unavailable",
-                handshakeVersion, serverVersion);
-        }
-
-        Capability capability = clientCapability(message.getServerCapability());
-
-        // No need initialize server statuses because it has initialized by read filter.
-        this.client.getContext().init(header.getConnectionId(), serverVersion, capability);
-        this.authProvider = MySqlAuthProvider.build(message.getAuthType());
-        this.salt = message.getSalt();
-
-        return capability;
-    }
-
-    private MySqlAuthProvider getAndNextProvider() {
-        MySqlAuthProvider authProvider = this.authProvider;
-        this.authProvider = authProvider.next();
-        return authProvider;
-    }
-
-    private HandshakeResponse createHandshakeResponse(Capability capability) {
-        MySqlAuthProvider authProvider = getAndNextProvider();
-
-        if (authProvider.isSslNecessary() && !sslCompleted) {
-            throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), "handshake"),
-                CLI_SPECIFIC);
-        }
-
-        byte[] authorization = authProvider.authentication(password, salt, client.getContext().getClientCollation());
-        String authType = authProvider.getType();
-
-        if (MySqlAuthProvider.NO_AUTH_PROVIDER.equals(authType)) {
-            // Authentication type is not matter because of it has no authentication type.
-            // Server need send a Change Authentication Message after handshake response.
-            authType = MySqlAuthProvider.CACHING_SHA2_PASSWORD;
-        }
-
-        return HandshakeResponse.from(capability, client.getContext().getClientCollation().getId(), user, authorization,
-            authType, database, ATTRIBUTES, zstdCompressionLevel);
-    }
-
-    private boolean isZstdAllowed(Capability capability) {
-        return capability.isZstdCompression() && compressions.contains(CompressionAlgorithm.ZSTD);
-    }
-
-    private boolean isZlibAllowed(Capability capability) {
-        return capability.isZlibCompression() && compressions.contains(CompressionAlgorithm.ZLIB);
-    }
-
-    private static String authFails(String authType, String phase) {
-        return "Authentication type '" + authType + "' must require SSL in " + phase + " phase";
-    }
-
-    private static boolean isZstdSupported() {
-        try {
-            ClassLoader loader = AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> {
-                ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                return cl == null ? ClassLoader.getSystemClassLoader() : cl;
-            });
-            Class.forName("com.github.luben.zstd.Zstd", false, loader);
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-}
-
 abstract class AbstractTransactionState {
 
-    final ConnectionState state;
+    final Client client;
 
     final List<String> statements = new ArrayList<>(5);
 
@@ -1106,8 +838,8 @@ abstract class AbstractTransactionState {
     @Nullable
     private String sql;
 
-    protected AbstractTransactionState(ConnectionState state) {
-        this.state = state;
+    protected AbstractTransactionState(Client client) {
+        this.client = client;
     }
 
     final void setSql(String sql) {
@@ -1165,22 +897,24 @@ final class CommitRollbackState extends AbstractTransactionState {
 
     private final boolean commit;
 
-    CommitRollbackState(ConnectionState state, boolean commit) {
-        super(state);
+    CommitRollbackState(Client client, boolean commit) {
+        super(client);
         this.commit = commit;
     }
 
     @Override
     boolean cancelTasks() {
-        if (!state.isInTransaction()) {
+        ConnectionContext context = client.getContext();
+
+        if (!context.isInTransaction()) {
             tasks |= CANCEL;
             return true;
         }
 
-        if (state.isLockWaitTimeoutChanged()) {
+        if (context.isLockWaitTimeoutChanged()) {
             // If server does not support lock wait timeout, the state will not be changed, so it is safe.
             tasks |= LOCK_WAIT_TIMEOUT;
-            statements.add("SET innodb_lock_wait_timeout=" + state.getSessionLockWaitTimeout());
+            statements.add(StringUtils.lockWaitTimeoutStatement(context.getSessionLockWaitTimeout()));
         }
 
         tasks |= COMMIT_OR_ROLLBACK;
@@ -1193,10 +927,10 @@ final class CommitRollbackState extends AbstractTransactionState {
     protected boolean process(int task, SynchronousSink<Void> sink) {
         switch (task) {
             case LOCK_WAIT_TIMEOUT:
-                state.resetCurrentLockWaitTimeout();
+                client.getContext().resetCurrentLockWaitTimeout();
                 return true;
             case COMMIT_OR_ROLLBACK:
-                state.resetIsolationLevel();
+                client.getContext().resetCurrentIsolationLevel();
                 sink.complete();
                 return false;
             case CANCEL:
@@ -1222,26 +956,24 @@ final class StartTransactionState extends AbstractTransactionState {
 
     private final TransactionDefinition definition;
 
-    private final Client client;
-
-    StartTransactionState(ConnectionState state, TransactionDefinition definition, Client client) {
-        super(state);
+    StartTransactionState(Client client, TransactionDefinition definition) {
+        super(client);
         this.definition = definition;
-        this.client = client;
     }
 
     @Override
     boolean cancelTasks() {
-        if (state.isInTransaction()) {
+        final ConnectionContext context = client.getContext();
+        if (context.isInTransaction()) {
             tasks |= CANCEL;
             return true;
         }
+
         final Duration timeout = definition.getAttribute(TransactionDefinition.LOCK_WAIT_TIMEOUT);
         if (timeout != null) {
-            if (client.getContext().isLockWaitTimeoutSupported()) {
-                long lockWaitTimeout = timeout.getSeconds();
+            if (context.isLockWaitTimeoutSupported()) {
                 tasks |= LOCK_WAIT_TIMEOUT;
-                statements.add("SET innodb_lock_wait_timeout=" + lockWaitTimeout);
+                statements.add(StringUtils.lockWaitTimeoutStatement(timeout));
             } else {
                 QueryFlow.logger.warn(
                     "Lock wait timeout is not supported by server, transaction definition lockWaitTimeout is ignored");
@@ -1267,22 +999,19 @@ final class StartTransactionState extends AbstractTransactionState {
             case LOCK_WAIT_TIMEOUT:
                 final Duration timeout = definition.getAttribute(TransactionDefinition.LOCK_WAIT_TIMEOUT);
                 if (timeout != null) {
-                    final long lockWaitTimeout = timeout.getSeconds();
-                    state.setCurrentLockWaitTimeout(lockWaitTimeout);
+                    client.getContext().setCurrentLockWaitTimeout(timeout);
                 }
                 return true;
             case ISOLATION_LEVEL:
-                final IsolationLevel isolationLevel =
-                    definition.getAttribute(TransactionDefinition.ISOLATION_LEVEL);
+                final IsolationLevel isolationLevel = definition.getAttribute(TransactionDefinition.ISOLATION_LEVEL);
                 if (isolationLevel != null) {
-                    state.setIsolationLevel(isolationLevel);
+                    client.getContext().setCurrentIsolationLevel(isolationLevel);
                 }
                 return true;
             case START_TRANSACTION:
             case CANCEL:
                 sink.complete();
                 return false;
-
         }
 
         sink.error(new IllegalStateException("Undefined transaction task: " + task + ", remain: " + tasks));
@@ -1352,14 +1081,14 @@ final class CreateSavepointState extends AbstractTransactionState {
 
     private final String name;
 
-    CreateSavepointState(final ConnectionState state, final String name) {
-        super(state);
+    CreateSavepointState(final Client client, final String name) {
+        super(client);
         this.name = name;
     }
 
     @Override
     boolean cancelTasks() {
-        if (!state.isInTransaction()) {
+        if (!client.getContext().isInTransaction()) {
             tasks |= START_TRANSACTION;
             statements.add("BEGIN");
         }

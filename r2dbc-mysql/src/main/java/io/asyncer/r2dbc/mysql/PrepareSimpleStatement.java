@@ -18,7 +18,6 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.api.MySqlStatement;
-import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
@@ -36,19 +35,16 @@ final class PrepareSimpleStatement extends SimpleStatementSupport {
 
     private static final List<Binding> BINDINGS = Collections.singletonList(new Binding(0));
 
-    private final PrepareCache prepareCache;
-
     private int fetchSize = 0;
 
-    PrepareSimpleStatement(Client client, Codecs codecs, String sql, PrepareCache prepareCache) {
+    PrepareSimpleStatement(Client client, Codecs codecs, String sql) {
         super(client, codecs, sql);
-        this.prepareCache = prepareCache;
     }
 
     @Override
     public Flux<MySqlResult> execute() {
         return Flux.defer(() -> QueryFlow.execute(client,
-                StringUtils.extendReturning(sql, returningIdentifiers()), BINDINGS, fetchSize, prepareCache))
+                StringUtils.extendReturning(sql, returningIdentifiers()), BINDINGS, fetchSize))
             .map(messages -> MySqlSegmentResult.toResult(true, client, codecs, syntheticKeyName(), messages));
     }
 

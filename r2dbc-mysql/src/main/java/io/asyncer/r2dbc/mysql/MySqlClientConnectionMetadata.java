@@ -17,39 +17,31 @@
 package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlConnectionMetadata;
-import org.jetbrains.annotations.Nullable;
-
-import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+import io.asyncer.r2dbc.mysql.client.Client;
 
 /**
  * Connection metadata for a connection connected to MySQL database.
  */
-final class MySqlSimpleConnectionMetadata implements MySqlConnectionMetadata {
+final class MySqlClientConnectionMetadata implements MySqlConnectionMetadata {
 
-    private final String version;
+    private final Client client;
 
-    private final String product;
-
-    private final boolean isMariaDb;
-
-    MySqlSimpleConnectionMetadata(String version, @Nullable String product, boolean isMariaDb) {
-        this.version = requireNonNull(version, "version must not be null");
-        this.product = product == null ? "Unknown" : product;
-        this.isMariaDb = isMariaDb;
+    MySqlClientConnectionMetadata(Client client) {
+        this.client = client;
     }
 
     @Override
     public String getDatabaseVersion() {
-        return version;
+        return client.getContext().getServerVersion().toString();
     }
 
     @Override
     public boolean isMariaDb() {
-        return isMariaDb;
+        return client.getContext().isMariaDb();
     }
 
     @Override
     public String getDatabaseProductName() {
-        return product;
+        return client.getContext().getProduct();
     }
 }

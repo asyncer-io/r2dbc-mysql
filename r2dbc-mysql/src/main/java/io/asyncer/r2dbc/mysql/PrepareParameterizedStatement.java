@@ -18,7 +18,6 @@ package io.asyncer.r2dbc.mysql;
 
 import io.asyncer.r2dbc.mysql.api.MySqlResult;
 import io.asyncer.r2dbc.mysql.api.MySqlStatement;
-import io.asyncer.r2dbc.mysql.cache.PrepareCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
@@ -33,20 +32,17 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.require;
  */
 final class PrepareParameterizedStatement extends ParameterizedStatementSupport {
 
-    private final PrepareCache prepareCache;
-
     private int fetchSize = 0;
 
-    PrepareParameterizedStatement(Client client, Codecs codecs, Query query, PrepareCache prepareCache) {
+    PrepareParameterizedStatement(Client client, Codecs codecs, Query query) {
         super(client, codecs, query);
-        this.prepareCache = prepareCache;
     }
 
     @Override
     public Flux<MySqlResult> execute(List<Binding> bindings) {
         return Flux.defer(() -> QueryFlow.execute(client,
                 StringUtils.extendReturning(query.getFormattedSql(), returningIdentifiers()),
-                bindings, fetchSize, prepareCache
+                bindings, fetchSize
             ))
             .map(messages -> MySqlSegmentResult.toResult(true, client, codecs, syntheticKeyName(), messages));
     }

@@ -16,13 +16,14 @@
 
 package io.asyncer.r2dbc.mysql.internal.util;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonEmpty;
 
 /**
- * A utility for processing {@link String} in MySQL/MariaDB.
+ * A utility for processing {@link String} and simple statements in MySQL/MariaDB.
  */
 public final class StringUtils {
 
@@ -80,15 +81,47 @@ public final class StringUtils {
     }
 
     /**
+     * Generates a {@link String} indicating the statement timeout variable. e.g. {@code "max_statement_time=1.5"} for
+     * MariaDB or {@code "max_execution_time=1500"} for MySQL.
+     *
+     * @param timeout   the statement timeout
+     * @param isMariaDb whether the current server is MariaDB
+     * @return the statement timeout variable
+     */
+    public static String statementTimeoutVariable(Duration timeout, boolean isMariaDb) {
+        // mariadb: https://mariadb.com/kb/en/aborting-statements/
+        // mysql: https://dev.mysql.com/blog-archive/server-side-select-statement-timeouts/
+        // ref: https://github.com/mariadb-corporation/mariadb-connector-r2dbc
+        if (isMariaDb) {
+            // MariaDB supports fractional seconds with microsecond precision
+            double seconds = (timeout.getSeconds() + timeout.getNano() / 1_000_000_000.0);
+            return "max_statement_time=" + seconds;
+        }
+
+        return "max_execution_time=" + timeout.toMillis();
+    }
+
+    /**
+     * Generates a statement to set the lock wait timeout for the current session. It is using InnoDB-specific session
+     * variable {@code innodb_lock_wait_timeout}.
+     *
+     * @param timeout the lock wait timeout
+     * @return the lock wait timeout statement
+     */
+    public static String lockWaitTimeoutStatement(Duration timeout) {
+        return "SET innodb_lock_wait_timeout=" + timeout.getSeconds();
+    }
+
+    /**
      * Parses a normalized {@link ZoneId} from a time zone string of MySQL.
      * <p>
-     * Note: since java 14.0.2, 11.0.8, 8u261 and 7u271, America/Nuuk is already renamed from America/Godthab.
-     * See also <a href="https://mm.icann.org/pipermail/tz-announce/2020-April/000058.html">tzdata2020a</a>
+     * Note: since java 14.0.2, 11.0.8, 8u261 and 7u271, America/Nuuk is already renamed from America/Godthab. See also
+     * <a href="https://mm.icann.org/pipermail/tz-announce/2020-April/000058.html">tzdata2020a</a>
      *
      * @param zoneId the time zone string
      * @return the normalized {@link ZoneId}
-     * @throws IllegalArgumentException if the time zone string is {@code null} or empty
-     * @throws java.time.DateTimeException if the time zone string has an invalid format
+     * @throws IllegalArgumentException          if the time zone string is {@code null} or empty
+     * @throws java.time.DateTimeException       if the time zone string has an invalid format
      * @throws java.time.zone.ZoneRulesException if the time zone string cannot be found
      */
     public static ZoneId parseZoneId(String zoneId) {
