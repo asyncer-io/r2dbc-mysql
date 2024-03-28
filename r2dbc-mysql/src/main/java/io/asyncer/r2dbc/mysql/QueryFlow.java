@@ -63,6 +63,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -82,6 +83,18 @@ final class QueryFlow {
         if (message instanceof ErrorMessage) {
             throw ((ErrorMessage) message).toException();
         } else if (message instanceof ReferenceCounted) {
+            ReferenceCountUtil.safeRelease(message);
+        }
+    };
+
+    private static final BiConsumer<ServerMessage, SynchronousSink<ServerMessage>> PING = (message, sink) -> {
+        if (message instanceof ErrorMessage) {
+            sink.next(message);
+            sink.complete();
+        } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
+            sink.next(message);
+            sink.complete();
+        } else {
             ReferenceCountUtil.safeRelease(message);
         }
     };
@@ -250,6 +263,16 @@ final class QueryFlow {
             return client.exchange(new TransactionBatchExchangeable(savepointState)).then();
         }
         return client.exchange(new TransactionMultiExchangeable(savepointState)).then();
+    }
+
+    /**
+     * Executes a ping command to the server.
+     *
+     * @param client the {@link Client} to exchange messages with.
+     * @return complete or error messages received in response to this exchange.
+     */
+    static Flux<ServerMessage> ping(Client client) {
+        return client.exchange(PingMessage.INSTANCE, PING);
     }
 
     /**

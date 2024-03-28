@@ -25,7 +25,6 @@ import io.asyncer.r2dbc.mysql.cache.QueryCache;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
-import io.asyncer.r2dbc.mysql.message.client.PingMessage;
 import io.asyncer.r2dbc.mysql.message.server.CompleteMessage;
 import io.asyncer.r2dbc.mysql.message.server.ErrorMessage;
 import io.asyncer.r2dbc.mysql.message.server.ServerMessage;
@@ -38,12 +37,9 @@ import io.r2dbc.spi.TransactionDefinition;
 import io.r2dbc.spi.ValidationDepth;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SynchronousSink;
 
 import java.time.Duration;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -66,25 +62,12 @@ final class MySqlSimpleConnection implements MySqlConnection {
 
         if (message instanceof ErrorMessage) {
             ErrorMessage msg = (ErrorMessage) message;
-            logger.debug("Remote validate failed: [{}] [{}] {}", msg.getCode(), msg.getSqlState(),
-                msg.getMessage());
+            logger.debug("Remote validate failed: [{}] [{}] {}", msg.getCode(), msg.getSqlState(), msg.getMessage());
         } else {
             ReferenceCountUtil.safeRelease(message);
         }
 
         return false;
-    };
-
-    private static final BiConsumer<ServerMessage, SynchronousSink<ServerMessage>> PING = (message, sink) -> {
-        if (message instanceof ErrorMessage) {
-            sink.next(message);
-            sink.complete();
-        } else if (message instanceof CompleteMessage && ((CompleteMessage) message).isDone()) {
-            sink.next(message);
-            sink.complete();
-        } else {
-            ReferenceCountUtil.safeRelease(message);
-        }
     };
 
     private final Client client;
@@ -266,9 +249,9 @@ final class MySqlSimpleConnection implements MySqlConnection {
                 return Mono.just(false);
             }
 
-            return doPingInternal(client)
-                .last()
+            return QueryFlow.ping(client)
                 .map(VALIDATE)
+                .last()
                 .onErrorResume(e -> {
                     // `last` maybe emit a NoSuchElementException, exchange maybe emit exception by Netty.
                     // But should NEVER emit any exception, so logging exception and emit false.
@@ -333,9 +316,5 @@ final class MySqlSimpleConnection implements MySqlConnection {
     @TestOnly
     ConnectionContext context() {
         return client.getContext();
-    }
-
-    static Flux<ServerMessage> doPingInternal(Client client) {
-        return client.exchange(PingMessage.INSTANCE, PING);
     }
 }

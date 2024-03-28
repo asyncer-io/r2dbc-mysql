@@ -69,7 +69,7 @@ final class PingStatement implements MySqlStatement {
             client,
             codecs,
             null,
-            MySqlSimpleConnection.doPingInternal(client)
+            QueryFlow.ping(client)
         )));
     }
 }
