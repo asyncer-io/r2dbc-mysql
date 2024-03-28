@@ -16,10 +16,13 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.constant.ServerStatuses;
 import io.asyncer.r2dbc.mysql.constant.ZeroDateOption;
+import io.r2dbc.spi.IsolationLevel;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,15 +49,36 @@ public class ConnectionContextTest {
     void setTwiceTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
             8192, true, null);
-        context.initTimeZone(ZoneId.systemDefault());
-        assertThatIllegalStateException().isThrownBy(() -> context.initTimeZone(ZoneId.systemDefault()));
+
+        context.initSession(
+            Caches.createPrepareCache(0),
+            IsolationLevel.REPEATABLE_READ,
+            false, Duration.ZERO,
+            null,
+            ZoneId.systemDefault()
+        );
+        assertThatIllegalStateException().isThrownBy(() -> context.initSession(
+            Caches.createPrepareCache(0),
+            IsolationLevel.REPEATABLE_READ,
+            false,
+            Duration.ZERO,
+            null,
+            ZoneId.systemDefault()
+        ));
     }
 
     @Test
     void badSetTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
             8192, true, ZoneId.systemDefault());
-        assertThatIllegalStateException().isThrownBy(() -> context.initTimeZone(ZoneId.systemDefault()));
+        assertThatIllegalStateException().isThrownBy(() -> context.initSession(
+            Caches.createPrepareCache(0),
+            IsolationLevel.REPEATABLE_READ,
+            false,
+            Duration.ZERO,
+            null,
+            ZoneId.systemDefault()
+        ));
     }
 
     public static ConnectionContext mock() {
@@ -69,7 +93,7 @@ public class ConnectionContextTest {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
             8192, true, zoneId);
 
-        context.init(1, ServerVersion.parse(isMariaDB ? "11.2.22.MOCKED" : "8.0.11.MOCKED"),
+        context.initHandshake(1, ServerVersion.parse(isMariaDB ? "11.2.22.MOCKED" : "8.0.11.MOCKED"),
             Capability.of(~(isMariaDB ? 1 : 0)));
         context.setServerStatuses(ServerStatuses.AUTO_COMMIT);
 

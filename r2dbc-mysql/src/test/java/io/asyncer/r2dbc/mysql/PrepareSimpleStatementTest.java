@@ -16,7 +16,6 @@
 
 package io.asyncer.r2dbc.mysql;
 
-import io.asyncer.r2dbc.mysql.cache.Caches;
 import io.asyncer.r2dbc.mysql.client.Client;
 import io.asyncer.r2dbc.mysql.codec.Codecs;
 
@@ -64,12 +63,7 @@ class PrepareSimpleStatementTest implements StatementTestSupport<PrepareSimpleSt
 
         when(client.getContext()).thenReturn(ConnectionContextTest.mock(isMariaDB));
 
-        return new PrepareSimpleStatement(
-            client,
-            codecs,
-            sql,
-            Caches.createPrepareCache(0)
-        );
+        return new PrepareSimpleStatement(client, codecs, sql);
     }
 
     @Override

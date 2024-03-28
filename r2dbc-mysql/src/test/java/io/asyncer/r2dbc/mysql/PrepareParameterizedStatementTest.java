@@ -52,8 +52,7 @@ class PrepareParameterizedStatementTest implements StatementTestSupport<PrepareP
         return new PrepareParameterizedStatement(
             client,
             codecs,
-            Query.parse(sql),
-            Caches.createPrepareCache(0)
+            Query.parse(sql)
         );
     }
 
