@@ -138,6 +138,10 @@ public final class ConnectionContext implements CodecContext {
         return (capability != null && capability.isMariaDb()) || serverVersion.isMariaDb();
     }
 
+    public boolean isNoBackslashEscapes() {
+        return (serverStatuses & ServerStatuses.NO_BACKSLASH_ESCAPES) != 0;
+    }
+
     void initTimeZone(ZoneId timeZone) {
         if (isTimeZoneInitialized()) {
             throw new IllegalStateException("Connection timezone have been initialized");

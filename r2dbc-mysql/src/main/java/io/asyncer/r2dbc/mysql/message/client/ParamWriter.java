@@ -45,14 +45,17 @@ final class ParamWriter extends ParameterWriter {
 
     private final StringBuilder builder;
 
+    private final boolean noBackslashEscapes;
+
     private final Query query;
 
     private int index;
 
     private Mode mode;
 
-    private ParamWriter(Query query) {
+    private ParamWriter(boolean noBackslashEscapes, Query query) {
         this.builder = newBuilder(query);
+        this.noBackslashEscapes = noBackslashEscapes;
         this.query = query;
         this.index = 1;
         this.mode = 1 < query.getPartSize() ? Mode.AVAILABLE : Mode.FULL;
@@ -318,13 +321,23 @@ final class ParamWriter extends ParameterWriter {
     }
 
     private void escape(char c) {
+        if (noBackslashEscapes) {
+            // No backslash, but still can escape single quote.
+            // MySQL will auto-combine consecutive strings, like '1''2' -> '12'
+            if (c == '\'') {
+                builder.append('\'').append('\'');
+            } else {
+                builder.append(c);
+            }
+            return;
+        }
+
         switch (c) {
             case '\\':
                 builder.append('\\').append('\\');
                 break;
             case '\'':
-                // MySQL will auto-combine consecutive strings, like '1''2' -> '12'.
-                // Sure, there can use '1\'2', but this will be better. (For some logging systems)
+                // Sure, there can use '1\'2', but this will be better for compatibility.
                 builder.append('\'').append('\'');
                 break;
             // Maybe useful in the future, keep '"' here.
@@ -357,9 +370,9 @@ final class ParamWriter extends ParameterWriter {
         }
     }
 
-    static Mono<String> publish(Query query, Flux<MySqlParameter> values) {
+    static Mono<String> publish(boolean noBackslashEscapes, Query query, Flux<MySqlParameter> values) {
         return Mono.defer(() -> {
-            ParamWriter writer = new ParamWriter(query);
+            ParamWriter writer = new ParamWriter(noBackslashEscapes, query);
 
             return OperatorUtils.discardOnCancel(values)
                 .doOnDiscard(MySqlParameter.class, DISPOSE)

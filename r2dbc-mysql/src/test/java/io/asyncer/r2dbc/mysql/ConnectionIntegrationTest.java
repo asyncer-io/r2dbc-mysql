@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static io.r2dbc.spi.IsolationLevel.READ_COMMITTED;
 import static io.r2dbc.spi.IsolationLevel.READ_UNCOMMITTED;
@@ -78,6 +79,51 @@ class ConnectionIntegrationTest extends IntegrationTestSupport {
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isTrue())
             .then(connection.rollbackTransaction())
             .doOnSuccess(ignored -> assertThat(connection.isInTransaction()).isFalse()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "test",
+        "test`data",
+        "test\ndata",
+        "I'm feeling good",
+    })
+    void sqlModeNoBackslashEscapes(String value) {
+        String tdl = "CREATE TEMPORARY TABLE `test` (`id` INT NOT NULL PRIMARY KEY, `value` VARCHAR(50) NOT NULL)";
+
+        // Add NO_BACKSLASH_ESCAPES instead of replace
+        // TODO: get context from connection, check if NO_BACKSLASH_ESCAPES is already in server statuses
+        castedComplete(connection -> Flux.from(connection.createStatement(tdl).execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .thenMany(connection.createStatement("INSERT INTO test VALUES (1, ?)")
+                .bind(0, value)
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .thenMany(connection.createStatement("SELECT COUNT(0) FROM `test` WHERE `value` = ?")
+                .bind(0, value)
+                .execute())
+            .flatMap(result -> result.map((row, metadata) -> row.get(0, Integer.class)))
+            .collectList()
+            .doOnNext(counts -> assertThat(counts).isEqualTo(Collections.singletonList(1)))
+            .thenMany(connection.createStatement("SELECT @@sql_mode").execute())
+            .flatMap(result -> result.map((row, metadata) -> row.get(0, String.class)))
+            .map(modes -> Stream.concat(Stream.of(modes.split(",")), Stream.of("NO_BACKSLASH_ESCAPES"))
+                .toArray(String[]::new))
+            .last()
+            .flatMapMany(modes -> connection.createStatement("SET sql_mode = ?")
+                .bind(0, modes)
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .thenMany(connection.createStatement("INSERT INTO test VALUES (2, ?)")
+                .bind(0, value)
+                .execute())
+            .flatMap(MySqlResult::getRowsUpdated)
+            .thenMany(connection.createStatement("SELECT COUNT(0) FROM `test` WHERE `value` = ?")
+                .bind(0, value)
+                .execute())
+            .flatMap(result -> result.map((row, metadata) -> row.get(0, Integer.class)))
+            .collectList()
+            .doOnNext(counts -> assertThat(counts).isEqualTo(Collections.singletonList(2))));
     }
 
     @DisabledIf("envIsLessThanMySql56")
