@@ -563,7 +563,7 @@ final class MySqlSimpleConnection implements MySqlConnection, ConnectionState {
     }
 
     private static Mono<SessionData> loadInnoDbEngineStatus(SessionData data, Client client, Codecs codecs) {
-        return new TextSimpleStatement(client, codecs, "SHOW VARIABLES LIKE 'innodb\\\\_lock\\\\_wait\\\\_timeout'")
+        return new TextSimpleStatement(client, codecs, "SHOW VARIABLES LIKE 'innodb\\_lock\\_wait\\_timeout'")
             .execute()
             .flatMap(r -> r.map(readable -> {
                 String value = readable.get(1, String.class);
