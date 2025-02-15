@@ -2,14 +2,14 @@ name: Unit tests
 
 on:
   pull_request:
-    branches: [ "trunk", "0.9.x" ]
+    branches: ["trunk", "0.9.x"]
 
 jobs:
   unit-tests-pr:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        java-version: [ 8, 11, 17, 21 ]
+        java-version: [8, 11, 17, 21]
     name: linux-java-${{ matrix.java-version }}
     steps:
       - uses: actions/checkout@v3
@@ -20,7 +20,7 @@ jobs:
           java-version: ${{ matrix.java-version }}
           cache: maven
       - name: Unit test with Maven
-        run: | 
+        run: |
           set -o pipefail
           ./mvnw -B test -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN \
           -Dio.netty.leakDetectionLevel=paranoid \

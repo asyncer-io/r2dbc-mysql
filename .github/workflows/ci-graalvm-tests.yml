@@ -16,18 +16,18 @@ name: Native Image Build Test
 
 on:
   pull_request:
-    branches: [ "trunk", "0.9.x" ]
+    branches: ["trunk", "0.9.x"]
 
 jobs:
   graalvm-build-pr:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: 21
-          distribution: 'graalvm'
+          distribution: "graalvm"
           native-image-job-reports: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Build and run native image
         run: |
-            echo "JAVA_HOME=$JAVA_HOME"
-            echo "./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true"
-            ./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true
-            ./test-native-image/target/test-native-image
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true"
+          ./mvnw -Pgraalvm package -Dmaven.javadoc.skip=true
+          ./test-native-image/target/test-native-image

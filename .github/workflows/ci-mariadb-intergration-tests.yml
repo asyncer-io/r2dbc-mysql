@@ -2,14 +2,15 @@ name: Integration Tests for MariaDB
 
 on:
   pull_request:
-    branches: [ "trunk", "0.9.x" ]
+    branches: ["trunk", "0.9.x"]
 
 jobs:
   mariadb-integration-tests-pr:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        mariadb-version: [ 10.0, 10.1, 10.2.15, 10.2, 10.3.7, 10.3, 10.5.1, 10.5, 10.6, 10.11]
+        mariadb-version:
+          [10.0, 10.1, 10.2.15, 10.2, 10.3.7, 10.3, 10.5.1, 10.5, 10.6, 10.11]
     name: Integration test with MariaDB ${{ matrix.mariadb-version }}
     steps:
       - uses: actions/checkout@v3

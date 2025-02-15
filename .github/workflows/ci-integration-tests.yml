@@ -2,14 +2,15 @@ name: Integration Tests
 
 on:
   pull_request:
-    branches: [ "trunk", "0.9.x" ]
+    branches: ["trunk", "0.9.x"]
 
 jobs:
   integration-tests-pr:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        mysql-version: [ 5.5, 5.6.45, 5.6, 5.7.28, 5.7, 8.0, 8.1, 8.2, 8.3, 8.4, 9.0]
+        mysql-version:
+          [5.5, 5.6.45, 5.6, 5.7.28, 5.7, 8.0, 8.1, 8.2, 8.3, 8.4, 9.0]
     name: Integration test with MySQL ${{ matrix.mysql-version }}
     steps:
       - uses: actions/checkout@v3
