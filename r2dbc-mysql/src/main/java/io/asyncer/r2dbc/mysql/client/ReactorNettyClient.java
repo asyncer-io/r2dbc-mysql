@@ -131,6 +131,14 @@ final class ReactorNettyClient implements Client {
                     logger.debug("Request: {}", message);
                 }
 
+                if (message == ExitMessage.INSTANCE) {
+                    if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
+                        logger.debug("Exit message sent");
+                    } else {
+                        logger.debug("Exit message sent (duplicated / connection already closed)");
+                    }
+                }
+
                 if (message.isSequenceReset()) {
                     resetSequence(connection);
                 }
@@ -213,15 +221,8 @@ final class ReactorNettyClient implements Client {
 
             requestQueue.submit(RequestTask.wrap(sink, Mono.fromRunnable(() -> {
                 Sinks.EmitResult result = requests.tryEmitNext(ExitMessage.INSTANCE);
-
                 if (result != Sinks.EmitResult.OK) {
                     logger.error("Exit message sending failed due to {}, force closing", result);
-                } else {
-                    if (STATE_UPDATER.compareAndSet(this, ST_CONNECTED, ST_CLOSING)) {
-                        logger.debug("Exit message sent");
-                    } else {
-                        logger.debug("Exit message sent (duplicated / connection already closed)");
-                    }
                 }
             })));
         }).flatMap(Function.identity()).onErrorResume(e -> {
