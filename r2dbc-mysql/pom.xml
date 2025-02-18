@@ -73,8 +73,8 @@
     <maven.surefire.skip>false</maven.surefire.skip>
 
     <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
-    <reactor.version>2022.0.16</reactor.version>
-    <netty.version>4.1.106.Final</netty.version>
+    <reactor.version>2024.0.3</reactor.version>
+    <netty.version>4.1.118.Final</netty.version>
     <assertj.version>3.25.3</assertj.version>
     <jmh.version>1.37</jmh.version>
     <junit.version>5.10.2</junit.version>

@@ -15,9 +15,9 @@
     <maven.compiler.target>8</maven.compiler.target>
     <skipNativeImage>true</skipNativeImage>
 
-    <reactor.version>2022.0.16</reactor.version>
+    <reactor.version>2024.0.3</reactor.version>
     <r2dbc-spi.version>1.0.0.RELEASE</r2dbc-spi.version>
-    <graalvm.version>20.3.13</graalvm.version>
+    <graalvm.version>20.3.17</graalvm.version>
   </properties>
 
   <dependencies>
@@ -67,7 +67,12 @@
           <skip>${skipNativeImage}</skip>
           <imageName>${project.artifactId}</imageName>
           <mainClass>io.asyncer.Main</mainClass>
-          <buildArgs>--report-unsupported-elements-at-runtime --allow-incomplete-classpath --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils</buildArgs>
+          <buildArgs>
+            --report-unsupported-elements-at-runtime
+            --allow-incomplete-classpath
+            --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils
+            --initialize-at-run-time=io.netty.handler.ssl.JdkSslServerContext
+          </buildArgs>
         </configuration>
       </plugin>
     </plugins>
