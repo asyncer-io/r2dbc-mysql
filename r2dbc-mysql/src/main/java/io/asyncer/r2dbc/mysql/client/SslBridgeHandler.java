@@ -33,6 +33,7 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import reactor.core.Exceptions;
 import reactor.netty.tcp.SslProvider;
 
 import javax.net.ssl.HostnameVerifier;
@@ -40,7 +41,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import java.io.File;
 import java.net.InetSocketAddress;
-import java.util.function.Consumer;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
 import static io.netty.handler.ssl.SslProvider.JDK;
@@ -151,10 +151,16 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
         switch (state) {
             case BRIDGING:
                 logger.debug("SSL event triggered, enable SSL handler to pipeline");
-
-                SslProvider sslProvider = SslProvider.builder()
-                    .sslContext(MySqlSslContextSpec.forClient(ssl, context))
-                    .build();
+                final SslProvider sslProvider;
+                try {
+                    // Workaround for a forward incompatible change in reactor-netty version 1.2.0
+                    // See: https://github.com/reactor/reactor-netty/commit/6d0c24d83a7c5b15e403475272293f847415191c
+                    sslProvider = SslProvider.builder()
+                                             .sslContext(MySqlSslContextSpec.forClient(ssl, context).sslContext())
+                                             .build();
+                } catch (SSLException e) {
+                    throw Exceptions.propagate(e);
+                }
                 SslHandler sslHandler = sslProvider.getSslContext().newHandler(ctx.alloc());
 
                 this.sslEngine = sslHandler.engine();
@@ -195,7 +201,7 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             || (version.isGreaterThanOrEqualTo(MYSQL_5_6_0) && version.isEnterprise());
     }
 
-    private static final class MySqlSslContextSpec implements SslProvider.ProtocolSslContextSpec {
+    private static final class MySqlSslContextSpec {
 
         private final SslContextBuilder builder;
 
@@ -203,16 +209,6 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             this.builder = builder;
         }
 
-        @Override
-        public MySqlSslContextSpec configure(Consumer<SslContextBuilder> customizer) {
-            requireNonNull(customizer, "customizer must not be null");
-
-            customizer.accept(builder);
-
-            return this;
-        }
-
-        @Override
         public SslContext sslContext() throws SSLException {
             return builder.build();
         }
