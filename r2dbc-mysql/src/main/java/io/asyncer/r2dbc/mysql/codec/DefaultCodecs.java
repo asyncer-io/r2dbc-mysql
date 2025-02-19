@@ -45,8 +45,6 @@ import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
  */
 final class DefaultCodecs implements Codecs {
 
-    private static final Integer INTEGER_ONE = Integer.valueOf(1);
-
     private static final List<Codec<?>> DEFAULT_CODECS = InternalArrays.asImmutableList(
         ByteCodec.INSTANCE,
         ShortCodec.INSTANCE,
@@ -369,18 +367,22 @@ final class DefaultCodecs implements Codecs {
         return type.isAssignableFrom(javaType) ? javaType : type;
     }
 
+
+    private static boolean shouldBeTreatedAsBoolean(final @Nullable Integer precision, final MySqlType type,
+                                                    final CodecContext context) {
+        if (precision == null || precision != 1) {
+            return false;
+        }
+        // ref: https://github.com/asyncer-io/r2dbc-mysql/issues/277
+        // BIT(1) should be treated as Boolean by default.
+        return type == MySqlType.BIT || type == MySqlType.TINYINT && context.isTinyInt1isBit();
+    }
+
     private static Class<?> getDefaultJavaType(final MySqlReadableMetadata metadata, final CodecContext codecContext) {
         final MySqlType type = metadata.getType();
         final Integer precision = metadata.getPrecision();
 
-        if (INTEGER_ONE.equals(precision) && (type == MySqlType.TINYINT || type == MySqlType.TINYINT_UNSIGNED)
-         && codecContext.isTinyInt1isBit()) {
-            return Boolean.class;
-        }
-
-        // ref: https://github.com/asyncer-io/r2dbc-mysql/issues/277
-        // BIT(1) should be treated as Boolean by default.
-        if (INTEGER_ONE.equals(precision) && type == MySqlType.BIT) {
+        if (shouldBeTreatedAsBoolean(precision, type, codecContext)) {
             return Boolean.class;
         }
 

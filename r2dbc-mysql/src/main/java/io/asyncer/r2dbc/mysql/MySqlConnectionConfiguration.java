@@ -1220,8 +1220,10 @@ public final class MySqlConnectionConfiguration {
 
         /**
          * Option to whether the driver should interpret MySQL's TINYINT(1) as a BIT type.
-         * When enabled, TINYINT(1) columns (both SIGNED and UNSIGNED) will be treated as
-         * BIT. default to {@code true}.
+         * When enabled, TINYINT(1) columns will be treated as BIT. Defaults to {@code true}.
+         * <p>
+         * Note: Only signed TINYINT(1) columns can be treated as BIT or Boolean.
+         * Ref: https://bugs.mysql.com/bug.php?id=100309
          *
          * @param tinyInt1isBit {@code true} to treat TINYINT(1) as BIT
          * @return this {@link Builder}

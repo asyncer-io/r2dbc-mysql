@@ -32,6 +32,8 @@ import reactor.core.publisher.Mono;
  */
 final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
 
+    private static final Integer INTEGER_ONE = Integer.valueOf(1);
+
     static final BooleanCodec INSTANCE = new BooleanCodec();
 
     private BooleanCodec() {
@@ -86,7 +88,7 @@ final class BooleanCodec extends AbstractPrimitiveCodec<Boolean> {
     public boolean doCanDecode(MySqlReadableMetadata metadata) {
         MySqlType type = metadata.getType();
         return ((type == MySqlType.BIT || type == MySqlType.TINYINT) &&
-        Integer.valueOf(1).equals(metadata.getPrecision())) || type == MySqlType.VARCHAR;
+        INTEGER_ONE.equals(metadata.getPrecision())) || type == MySqlType.VARCHAR;
     }
 
     public Boolean createFromLong(long l) {
