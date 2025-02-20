@@ -418,7 +418,7 @@ public final class MySqlConnectionConfiguration {
                 ", passwordPublisher=" + passwordPublisher +
                 ", resolver=" + resolver +
                 ", metrics=" + metrics +
-                ", tinyint1isBit=" + tinyInt1isBit;
+                ", tinyInt1isBit=" + tinyInt1isBit;
     }
 
     /**
