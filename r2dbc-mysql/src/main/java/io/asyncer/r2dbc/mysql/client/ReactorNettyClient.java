@@ -379,17 +379,17 @@ final class ReactorNettyClient implements Client {
 
         @Override
         public void next(ServerMessage message) {
-            if (message instanceof WarningMessage) {
-                int warnings = ((WarningMessage) message).getWarnings();
-                if (warnings == 0) {
-                    if (DEBUG_ENABLED) {
+            if (DEBUG_ENABLED) {
+                if (message instanceof WarningMessage) {
+                    final int warnings = ((WarningMessage) message).getWarnings();
+                    if (warnings == 0) {
                         logger.debug("Response: {}", message);
+                    } else {
+                        logger.debug("Response: {}, reports {} warning(s)", message, warnings);
                     }
-                } else if (INFO_ENABLED) {
-                    logger.info("Response: {}, reports {} warning(s)", message, warnings);
+                } else {
+                    logger.debug("Response: {}", message);
                 }
-            } else if (DEBUG_ENABLED) {
-                logger.debug("Response: {}", message);
             }
 
             responseProcessor.emitNext(message, EmitFailureHandler.FAIL_FAST);
