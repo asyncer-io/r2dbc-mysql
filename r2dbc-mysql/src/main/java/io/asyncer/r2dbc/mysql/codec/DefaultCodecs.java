@@ -81,7 +81,8 @@ final class DefaultCodecs implements Codecs {
         BlobCodec.INSTANCE,
 
         ByteBufferCodec.INSTANCE,
-        ByteArrayCodec.INSTANCE
+        ByteArrayCodec.INSTANCE,
+        ByteArrayInputStreamCodec.INSTANCE
     );
 
     private final List<Codec<?>> codecs;
