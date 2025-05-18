@@ -82,7 +82,7 @@
     <mockito.version>4.11.0</mockito.version>
     <mysql.version>8.3.0</mysql.version>
     <mariadb.version>3.3.3</mariadb.version>
-    <testcontainers.version>1.19.7</testcontainers.version>
+    <testcontainers.version>1.21.0</testcontainers.version>
     <hikari-cp.version>4.0.3</hikari-cp.version>
     <spring-framework.version>5.3.32</spring-framework.version>
     <jackson.version>2.16.1</jackson.version>
