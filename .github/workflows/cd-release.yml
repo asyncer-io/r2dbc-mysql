@@ -118,9 +118,9 @@ jobs:
         with:
           servers: |
             [{
-              "id": "ossrh-staging",
-              "username": "${{ secrets.OSSRH_USERNAME }}",
-              "password": "${{ secrets.OSSRH_PASSWORD }}"
+              "id": "central",
+              "username": "${{ secrets.CENTRAL_USERNAME }}",
+              "password": "${{ secrets.CENTRAL_PASSWORD }}"
             }]
 
       - name: Create Local Deploy Directory
