@@ -46,9 +46,9 @@ jobs:
         with:
           servers: |
             [{
-              "id": "ossrh-snapshots",
-              "username": "${{ secrets.OSSRH_USERNAME }}",
-              "password": "${{ secrets.OSSRH_PASSWORD }}"
+              "id": "central-portal-snapshots",
+              "username": "${{ secrets.CENTRAL_USERNAME }}",
+              "password": "${{ secrets.CENTRAL_PASSWORD }}"
             }]
 
       - name: Prepare Internal Dependencies
