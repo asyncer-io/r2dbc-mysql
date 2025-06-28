@@ -86,16 +86,13 @@ final class ByteArrayInputStreamCodec extends AbstractClassedCodec<ByteArrayInpu
 
                 try {
                     VarIntUtils.writeVarInt(buf, size);
-
-                    byte[] byteArray = new byte[size];
-                    int readBytes = value.read(byteArray);
-
+                    int readBytes = buf.writeBytes(value, size);
                     if (readBytes != size) {
                         buf.release();
                         throw new IllegalStateException("Expected to read " + size + " bytes, but got " + readBytes);
                     }
 
-                    return buf.writeBytes(byteArray);
+                    return buf;
                 } catch (Exception e) {
                     buf.release();
                     throw new RuntimeException(e);
