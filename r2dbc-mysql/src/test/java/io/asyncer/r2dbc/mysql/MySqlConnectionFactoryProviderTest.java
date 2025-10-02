@@ -54,6 +54,7 @@ import java.util.stream.Stream;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.METRICS;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.PASSWORD_PUBLISHER;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.RESOLVER;
+import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.SERVER_RSA_PUBLIC_KEY_FILE;
 import static io.asyncer.r2dbc.mysql.MySqlConnectionFactoryProvider.USE_SERVER_PREPARE_STATEMENT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.CONNECT_TIMEOUT;
 import static io.r2dbc.spi.ConnectionFactoryOptions.DATABASE;
@@ -528,6 +529,18 @@ class MySqlConnectionFactoryProviderTest {
             .build();
 
         assertThat(MySqlConnectionFactoryProvider.setup(options).getSessionVariables()).isEqualTo(expected);
+    }
+
+    @Test
+    void validServerRSAPublicKeyFile() {
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+            .option(DRIVER, "mysql")
+            .option(HOST, "127.0.0.1")
+            .option(USER, "root")
+            .option(SERVER_RSA_PUBLIC_KEY_FILE, "/path/to/mysql/serverRSAPublicKey.pem")
+            .build();
+
+        assertThat(MySqlConnectionFactoryProvider.setup(options).getServerRSAPublicKeyFile()).isEqualTo("/path/to/mysql/serverRSAPublicKey.pem");
     }
 
     static Stream<Arguments> sessionVariables() {

@@ -126,10 +126,12 @@ final class InitFlow {
      * @param password              the password of the {@code user}.
      * @param compressionAlgorithms the list of compression algorithms.
      * @param zstdCompressionLevel  the zstd compression level.
+     * @param serverRSAPublicKeyFile the local file path of the MySQL server's public key
      * @return a {@link Mono} that indicates the initialization is done, or an error if the initialization failed.
      */
     static Mono<Void> initHandshake(Client client, SslMode sslMode, String database, String user,
-        @Nullable CharSequence password, Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel) {
+        @Nullable CharSequence password, Set<CompressionAlgorithm> compressionAlgorithms, int zstdCompressionLevel,
+        @Nullable String serverRSAPublicKeyFile) {
         return client.exchange(new HandshakeExchangeable(
             client,
             sslMode,
@@ -137,7 +139,8 @@ final class InitFlow {
             user,
             password,
             compressionAlgorithms,
-            zstdCompressionLevel
+            zstdCompressionLevel,
+            serverRSAPublicKeyFile
         )).then();
     }
 
@@ -511,9 +514,12 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
 
     private boolean sslCompleted;
 
+    @Nullable
+    private String serverRSAPublicKeyFile;
+
     HandshakeExchangeable(Client client, SslMode sslMode, String database, String user,
         @Nullable CharSequence password, Set<CompressionAlgorithm> compressions,
-        int zstdCompressionLevel) {
+        int zstdCompressionLevel, @Nullable String serverRSAPublicKeyFile) {
         this.client = client;
         this.sslMode = sslMode;
         this.database = database;
@@ -522,6 +528,7 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
         this.compressions = compressions;
         this.zstdCompressionLevel = zstdCompressionLevel;
         this.sslCompleted = sslMode == SslMode.TUNNEL;
+        this.serverRSAPublicKeyFile = serverRSAPublicKeyFile;
     }
 
     @Override
@@ -605,6 +612,11 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
         if (authProvider.isSslNecessary() && !sslCompleted) {
+            if (serverRSAPublicKeyFile != null && sslMode.equals(SslMode.DISABLED)) {
+                return new AuthResponse(MySqlAuthProvider.rsaEncryption(authProvider.authentication(
+                    password, salt, client.getContext().getClientCollation()), serverRSAPublicKeyFile,
+                    client.getContext().getServerVersion(), salt));
+            }
             throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), phase), CLI_SPECIFIC);
         }
 
@@ -709,12 +721,17 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
     private HandshakeResponse createHandshakeResponse(Capability capability) {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
-        if (authProvider.isSslNecessary() && !sslCompleted) {
-            throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), "handshake"),
-                CLI_SPECIFIC);
+        if (authProvider.isSslNecessary() && !sslCompleted && serverRSAPublicKeyFile == null) {
+            throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), "handshake"), CLI_SPECIFIC);
         }
 
         byte[] authorization = authProvider.authentication(password, salt, client.getContext().getClientCollation());
+
+        if (authProvider.isSslNecessary() && !sslCompleted && sslMode.equals(SslMode.DISABLED)) {
+            authorization = MySqlAuthProvider.rsaEncryption(authorization, serverRSAPublicKeyFile,
+            client.getContext().getServerVersion(), salt);
+        }
+
         String authType = authProvider.getType();
 
         if (MySqlAuthProvider.NO_AUTH_PROVIDER.equals(authType)) {

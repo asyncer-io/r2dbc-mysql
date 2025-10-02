@@ -162,7 +162,8 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 user,
                 password,
                 configuration.getCompressionAlgorithms(),
-                configuration.getZstdCompressionLevel()
+                configuration.getZstdCompressionLevel(),
+                configuration.getServerRSAPublicKeyFile()
             ).then(InitFlow.initSession(
                 client,
                 sessionDb,

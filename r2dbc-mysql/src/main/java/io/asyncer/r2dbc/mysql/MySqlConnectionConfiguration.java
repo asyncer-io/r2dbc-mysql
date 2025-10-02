@@ -136,6 +136,9 @@ public final class MySqlConnectionConfiguration {
 
     private final boolean tinyInt1isBit;
 
+    @Nullable
+    private final String serverRSAPublicKeyFile;
+
     private MySqlConnectionConfiguration(
             boolean isHost, String domain, int port, MySqlSslConfiguration ssl,
             boolean tcpKeepAlive, boolean tcpNoDelay, @Nullable Duration connectTimeout,
@@ -153,7 +156,7 @@ public final class MySqlConnectionConfiguration {
             Extensions extensions, @Nullable Publisher<String> passwordPublisher,
             @Nullable AddressResolverGroup<?> resolver,
             boolean metrics,
-            boolean tinyInt1isBit) {
+            boolean tinyInt1isBit, @Nullable String serverRSAPublicKeyFile) {
         this.isHost = isHost;
         this.domain = domain;
         this.port = port;
@@ -185,6 +188,7 @@ public final class MySqlConnectionConfiguration {
         this.resolver = resolver;
         this.metrics = metrics;
         this.tinyInt1isBit = tinyInt1isBit;
+        this.serverRSAPublicKeyFile = serverRSAPublicKeyFile;
     }
 
     /**
@@ -328,6 +332,11 @@ public final class MySqlConnectionConfiguration {
         return tinyInt1isBit;
     }
 
+    @Nullable
+    String getServerRSAPublicKeyFile() {
+        return serverRSAPublicKeyFile;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -367,7 +376,8 @@ public final class MySqlConnectionConfiguration {
             Objects.equals(passwordPublisher, that.passwordPublisher) &&
             Objects.equals(resolver, that.resolver) &&
             metrics == that.metrics &&
-            tinyInt1isBit == that.tinyInt1isBit;
+            tinyInt1isBit == that.tinyInt1isBit &&
+            Objects.equals(serverRSAPublicKeyFile, that.serverRSAPublicKeyFile);
     }
 
     @Override
@@ -382,7 +392,8 @@ public final class MySqlConnectionConfiguration {
             loadLocalInfilePath, localInfileBufferSize,
             queryCacheSize, prepareCacheSize,
             compressionAlgorithms, zstdCompressionLevel,
-            loopResources, extensions, passwordPublisher, resolver, metrics, tinyInt1isBit);
+            loopResources, extensions, passwordPublisher, resolver, metrics, tinyInt1isBit,
+            serverRSAPublicKeyFile);
     }
 
     @Override
@@ -418,7 +429,8 @@ public final class MySqlConnectionConfiguration {
                 ", passwordPublisher=" + passwordPublisher +
                 ", resolver=" + resolver +
                 ", metrics=" + metrics +
-                ", tinyInt1isBit=" + tinyInt1isBit;
+                ", tinyInt1isBit=" + tinyInt1isBit +
+                ", serverRSAPublicKeyFile=" + serverRSAPublicKeyFile;
     }
 
     /**
@@ -522,6 +534,9 @@ public final class MySqlConnectionConfiguration {
 
         private boolean tinyInt1isBit = true;
 
+        @Nullable
+        private String serverRSAPublicKeyFile;
+
         /**
          * Builds an immutable {@link MySqlConnectionConfiguration} with current options.
          *
@@ -556,7 +571,8 @@ public final class MySqlConnectionConfiguration {
                 loadLocalInfilePath,
                 localInfileBufferSize, queryCacheSize, prepareCacheSize,
                 compressionAlgorithms, zstdCompressionLevel, loopResources,
-                Extensions.from(extensions, autodetectExtensions), passwordPublisher, resolver, metrics, tinyInt1isBit);
+                Extensions.from(extensions, autodetectExtensions), passwordPublisher, resolver, metrics, tinyInt1isBit,
+                serverRSAPublicKeyFile);
         }
 
         /**
@@ -1231,6 +1247,21 @@ public final class MySqlConnectionConfiguration {
          */
         public Builder tinyInt1isBit(boolean tinyInt1isBit) {
             this.tinyInt1isBit = tinyInt1isBit;
+            return this;
+        }
+
+        /**
+         * Option to configure the database server's RSA Public Key file path on the local system if RSA encryption
+         * is desired such as when using caching_sha2_password authentication type while SSLMode is DISABLED. If
+         * serverRSAPublicKeyFile not null and SSLMode is not DISABLED, SSL encryption takes precedence.
+         *
+         * @param serverRSAPublicKeyFile the local file path of the database server's RSA Public Key file or
+         * {@code null} when RSA encryption not desired
+         * @return this {@link Builder}
+         * @since 1.4.2
+         */
+        public Builder serverRSAPublicKeyFile(@Nullable String serverRSAPublicKeyFile) {
+            this.serverRSAPublicKeyFile = serverRSAPublicKeyFile;
             return this;
         }
 

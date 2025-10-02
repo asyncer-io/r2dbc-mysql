@@ -16,11 +16,29 @@
 
 package io.asyncer.r2dbc.mysql.authentication;
 
+import io.asyncer.r2dbc.mysql.ServerVersion;
 import io.asyncer.r2dbc.mysql.collation.CharCollation;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import org.jetbrains.annotations.Nullable;
 
 import static io.asyncer.r2dbc.mysql.internal.util.AssertUtils.requireNonNull;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
  * An abstraction of the MySQL authorization plugin provider for connection phase. More information for MySQL
@@ -124,4 +142,57 @@ public interface MySqlAuthProvider {
      * @return the next provider
      */
     MySqlAuthProvider next();
+
+    /**
+     * Encrypts data with the RSA Public Key of MySQL server
+     * @param bytesToEncrypt the data to encrypt
+     * @param serverRSAPublicKeyFile the file path on the local system of the database server's RSA Public Key
+     * @param serverVersion the version of the MySQL server
+     * @param seed the seed bytes for rotating XOR obfuscation
+     * @return the encrypted bytes
+     */
+    static byte[] rsaEncryption(byte[] bytesToEncrypt, String serverRsaPublicKeyFile, ServerVersion serverVersion,
+    byte[] seed) {
+        try {
+            bytesToEncrypt = AuthUtils.rotatingXor(bytesToEncrypt, seed);
+
+            String key = new String(Files.readAllBytes(Paths.get(serverRsaPublicKeyFile)), Charset.defaultCharset());
+
+            int startIndex = key.indexOf("-----BEGIN PUBLIC KEY-----") + 26;
+            int endIndex = key.indexOf("-----END PUBLIC KEY-----");
+            key = key.substring(startIndex, endIndex);
+            String publicKeyPEM = key.replaceAll(System.lineSeparator(), "");
+
+            byte[] encoded = Base64.getDecoder().decode(publicKeyPEM);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
+            RSAPublicKey pk = (RSAPublicKey) keyFactory.generatePublic(keySpec);
+
+            Cipher cipher;
+            if (serverVersion.isGreaterThanOrEqualTo(ServerVersion.create(8, 0, 5))) {
+                cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+            } else {
+                cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            }
+            cipher.init(Cipher.ENCRYPT_MODE, pk);
+            return cipher.doFinal(bytesToEncrypt);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (InvalidKeySpecException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (NoSuchPaddingException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (InvalidKeyException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (IllegalBlockSizeException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (BadPaddingException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(e.getLocalizedMessage(), e);
+        }
+    }
 }

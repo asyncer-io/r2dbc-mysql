@@ -113,5 +113,17 @@ final class AuthUtils {
         return left;
     }
 
+    static byte[] rotatingXor(byte[] password, byte[] seedBytes) {
+        int seedLength = seedBytes.length;
+        int passwordLength = password.length;
+        byte[] buffer = new byte[passwordLength];
+
+        for (int i = 0; i < passwordLength; i++) {
+            buffer[i] = (byte) (password[i] ^ seedBytes[i % seedLength]);
+        }
+
+        return buffer;
+    }
+
     private AuthUtils() { }
 }

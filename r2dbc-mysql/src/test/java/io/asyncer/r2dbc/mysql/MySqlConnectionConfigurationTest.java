@@ -282,6 +282,7 @@ class MySqlConnectionConfigurationTest {
             .lockWaitTimeout(Duration.ofSeconds(5))
             .statementTimeout(Duration.ofSeconds(10))
             .autodetectExtensions(false)
+            .serverRSAPublicKeyFile("/path/to/mysql/serverRSAPublicKey.pem")
             .build();
     }
 }

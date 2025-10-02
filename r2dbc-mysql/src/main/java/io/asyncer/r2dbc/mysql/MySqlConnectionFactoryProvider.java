@@ -341,6 +341,17 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
      */
     public static final Option<Boolean> TINY_INT_1_IS_BIT = Option.valueOf("tinyInt1isBit");
 
+    /**
+     * Option to configure the database server's RSA Public Key file path on the local system if RSA encryption
+     * is desired such as when using caching_sha2_password authentication type while
+     * {@link io.asyncer.r2dbc.mysql.constant.SslMode} is DISABLED. If serverRSAPublicKeyFile not
+     * {@code null} and {@link io.asyncer.r2dbc.mysql.constant.SslMode} is not DISABLED, SSL encryption
+     * takes precedence.
+     *
+     * @since 1.4.2
+     */
+    public static final Option<String> SERVER_RSA_PUBLIC_KEY_FILE = Option.valueOf("serverRSAPublicKeyFile");
+
     @Override
     public ConnectionFactory create(ConnectionFactoryOptions options) {
         requireNonNull(options, "connectionFactoryOptions must not be null");
@@ -438,6 +449,8 @@ public final class MySqlConnectionFactoryProvider implements ConnectionFactoryPr
                 .to(builder::metrics);
         mapper.optional(TINY_INT_1_IS_BIT).asBoolean()
                 .to(builder::tinyInt1isBit);
+        mapper.optional(SERVER_RSA_PUBLIC_KEY_FILE).asString()
+            .to(builder::serverRSAPublicKeyFile);
 
         return builder.build();
     }
