@@ -56,9 +56,12 @@ public final class DefinitionMetadataMessage implements ServerMessage {
 
     private final short decimals;
 
+    @Nullable
+    private final String extendedMetadata;
+
     private DefinitionMetadataMessage(@Nullable String database, String table, @Nullable String originTable,
         String column, @Nullable String originColumn, int collationId, long size, short typeId,
-        int definitions, short decimals) {
+        int definitions, short decimals, @Nullable String extendedMetadata) {
         require(size >= 0, "size must not be a negative integer");
 
         this.database = database;
@@ -71,6 +74,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         this.typeId = typeId;
         this.definitions = definitions;
         this.decimals = decimals;
+        this.extendedMetadata = extendedMetadata;
     }
 
     public String getColumn() {
@@ -97,6 +101,11 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         return decimals;
     }
 
+    @Nullable
+    public String getExtendedMetadata() {
+        return extendedMetadata;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -115,13 +124,14 @@ public final class DefinitionMetadataMessage implements ServerMessage {
             table.equals(that.table) &&
             Objects.equals(originTable, that.originTable) &&
             column.equals(that.column) &&
-            Objects.equals(originColumn, that.originColumn);
+            Objects.equals(originColumn, that.originColumn) &&
+            Objects.equals(extendedMetadata, that.extendedMetadata);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(database, table, originTable, column, originColumn, collationId, size, typeId,
-            definitions, decimals);
+            definitions, decimals, extendedMetadata);
     }
 
     @Override
@@ -129,7 +139,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         return "DefinitionMetadataMessage{database='" + database + "', table='" + table + "' (origin:'" +
             originTable + "'), column='" + column + "' (origin:'" + originColumn + "'), collationId=" +
             collationId + ", size=" + size + ", type=" + typeId + ", definitions=" + definitions +
-            ", decimals=" + decimals + '}';
+            ", decimals=" + decimals + ", extendedMetadata='" + extendedMetadata + "'}";
     }
 
     static DefinitionMetadataMessage decode(ByteBuf buf, ConnectionContext context) {
@@ -157,7 +167,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         short decimals = buf.readUnsignedByte();
 
         return new DefinitionMetadataMessage(null, table, null, column, null, 0, size, typeId,
-            definitions, decimals);
+            definitions, decimals, null);
     }
 
     private static DefinitionMetadataMessage decode41(ByteBuf buf, ConnectionContext context) {
@@ -171,6 +181,13 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         String column = readVarIntSizedString(buf, charset);
         String originColumn = readVarIntSizedString(buf, charset);
 
+        String extendMetadata = null;
+        if (context.getCapability().isMariaDb() && context.getCapability().isExtendedMetadata() &&
+        buf.readUnsignedByte() != 0) {
+            buf.readUnsignedByte();
+            extendMetadata = readVarIntSizedString(buf, charset);
+        }
+
         // Skip constant 0x0c encoded by var integer
         VarIntUtils.readVarInt(buf);
 
@@ -180,7 +197,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         int definitions = buf.readUnsignedShortLE();
 
         return new DefinitionMetadataMessage(database, table, originTable, column, originColumn, collationId,
-            size, typeId, definitions, buf.readUnsignedByte());
+            size, typeId, definitions, buf.readUnsignedByte(), extendMetadata);
     }
 
     private static String readVarIntSizedString(ByteBuf buf, Charset charset) {
