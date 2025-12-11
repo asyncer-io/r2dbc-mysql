@@ -182,8 +182,7 @@ public final class DefinitionMetadataMessage implements ServerMessage {
         String originColumn = readVarIntSizedString(buf, charset);
 
         String extendMetadata = null;
-        if (context.getCapability().isMariaDb() && context.getCapability().isExtendedMetadata() &&
-        buf.readUnsignedByte() != 0) {
+        if (context.getCapability().isExtendedMetadata() && buf.readUnsignedByte() != 0) {
             buf.readUnsignedByte();
             extendMetadata = readVarIntSizedString(buf, charset);
         }
