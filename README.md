@@ -52,6 +52,7 @@ This driver provides the following features:
 ![MySQL 9.0 status](https://img.shields.io/badge/MySQL%209.0-pass-blue)
 ![MariaDB 10.6 status](https://img.shields.io/badge/MariaDB%2010.6-pass-blue)
 ![MariaDB 10.11 status](https://img.shields.io/badge/MariaDB%2010.11-pass-blue)
+[![libs.tech recommends](https://libs.tech/project/612503164/badge.svg)](https://libs.tech/project/612503164/r2dbc-mysql)
 
 In fact, it supports lower versions, in the theory, such as 4.1, 4.0, etc.
 
