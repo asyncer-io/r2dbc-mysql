@@ -222,9 +222,14 @@ final class InitFlow {
             if (value == null || value.isEmpty()) {
                 return data;
             } else {
-                return data.lockWaitTimeout(Duration.ofSeconds(Long.parseLong(value)));
+                try {
+                    return data.lockWaitTimeout(Duration.ofSeconds(Long.parseLong(value)));
+                } catch (NumberFormatException e) {
+                    logger.warn("Unexpected innodb_lock_wait_timeout value '{}', ignoring", value);
+                    return data;
+                }
             }
-        })).single(data).flatMap(d -> {
+        })).last(data).flatMap(d -> {
             if (lockWaitTimeout != null) {
                 // Do not use context.isLockWaitTimeoutSupported() here, because its session variable is not set
                 if (d.lockWaitTimeoutSupported) {
