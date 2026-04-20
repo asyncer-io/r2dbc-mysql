@@ -39,7 +39,7 @@ public class ConnectionContextTest {
             String id = i < 0 ? "UTC" + i : "UTC+" + i;
             ConnectionContext context = new ConnectionContext(
                 ZeroDateOption.USE_NULL, null,
-                8192, true, true, ZoneId.of(id));
+                8192, true, true, ZoneId.of(id), false);
 
             assertThat(context.getTimeZone()).isEqualTo(ZoneId.of(id));
         }
@@ -48,7 +48,7 @@ public class ConnectionContextTest {
     @Test
     void setTwiceTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
-            8192, true, true, null);
+            8192, true, true, null, false);
 
         context.initSession(
             Caches.createPrepareCache(0),
@@ -70,7 +70,7 @@ public class ConnectionContextTest {
     @Test
     void badSetTimeZone() {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
-            8192, true, true, ZoneId.systemDefault());
+            8192, true, true, ZoneId.systemDefault(), false);
         assertThatIllegalStateException().isThrownBy(() -> context.initSession(
             Caches.createPrepareCache(0),
             IsolationLevel.REPEATABLE_READ,
@@ -90,8 +90,12 @@ public class ConnectionContextTest {
     }
 
     public static ConnectionContext mock(boolean isMariaDB, ZoneId zoneId) {
+        return mock(isMariaDB, zoneId, false);
+    }
+
+    public static ConnectionContext mock(boolean isMariaDB, ZoneId zoneId, boolean unixSocket) {
         ConnectionContext context = new ConnectionContext(ZeroDateOption.USE_NULL, null,
-            8192, true, true, zoneId);
+            8192, true, true, zoneId, unixSocket);
 
         context.initHandshake(1, ServerVersion.parse(isMariaDB ? "11.2.22.MOCKED" : "8.0.11.MOCKED"),
             Capability.of(~(isMariaDB ? 1 : 0)));

@@ -611,7 +611,7 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
     private AuthResponse createAuthResponse(String phase) {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
-        if (authProvider.isSslNecessary() && !sslCompleted) {
+        if (authProvider.isSslNecessary() && !sslCompleted && !client.getContext().isUnixSocket()) {
             if (serverRSAPublicKeyFile != null && sslMode.equals(SslMode.DISABLED)) {
                 return new AuthResponse(MySqlAuthProvider.rsaEncryption(authProvider.authentication(
                     password, salt, client.getContext().getClientCollation()), serverRSAPublicKeyFile,
@@ -721,13 +721,15 @@ final class HandshakeExchangeable extends FluxExchangeable<Void> {
     private HandshakeResponse createHandshakeResponse(Capability capability) {
         MySqlAuthProvider authProvider = getAndNextProvider();
 
-        if (authProvider.isSslNecessary() && !sslCompleted && serverRSAPublicKeyFile == null) {
+        if (authProvider.isSslNecessary() && !sslCompleted && serverRSAPublicKeyFile == null
+            && !client.getContext().isUnixSocket()) {
             throw new R2dbcPermissionDeniedException(authFails(authProvider.getType(), "handshake"), CLI_SPECIFIC);
         }
 
         byte[] authorization = authProvider.authentication(password, salt, client.getContext().getClientCollation());
 
-        if (authProvider.isSslNecessary() && !sslCompleted && sslMode.equals(SslMode.DISABLED)) {
+        if (authProvider.isSslNecessary() && !sslCompleted && sslMode.equals(SslMode.DISABLED)
+            && !client.getContext().isUnixSocket()) {
             authorization = MySqlAuthProvider.rsaEncryption(authorization, serverRSAPublicKeyFile,
             client.getContext().getServerVersion(), salt);
         }

@@ -55,6 +55,8 @@ public final class ConnectionContext implements CodecContext {
 
     private final boolean preserveInstants;
 
+    private final boolean unixSocket;
+
     private int connectionId = -1;
 
     private ServerVersion serverVersion = NONE_VERSION;
@@ -111,7 +113,8 @@ public final class ConnectionContext implements CodecContext {
         int localInfileBufferSize,
         boolean tinyInt1isBit,
         boolean preserveInstants,
-        @Nullable ZoneId timeZone
+        @Nullable ZoneId timeZone,
+        boolean unixSocket
     ) {
         this.zeroDateOption = requireNonNull(zeroDateOption, "zeroDateOption must not be null");
         this.localInfilePath = localInfilePath;
@@ -119,6 +122,18 @@ public final class ConnectionContext implements CodecContext {
         this.tinyInt1isBit = tinyInt1isBit;
         this.preserveInstants = preserveInstants;
         this.timeZone = timeZone;
+        this.unixSocket = unixSocket;
+    }
+
+    /**
+     * Checks whether the underlying transport is a Unix domain socket, which MySQL treats as a secure channel
+     * and therefore permits {@code caching_sha2_password} full authentication to send the password in
+     * plaintext without TLS, matching the behaviour of {@code libmysqlclient} and other drivers.
+     *
+     * @return {@code true} if connected over a Unix domain socket; {@code false} otherwise.
+     */
+    boolean isUnixSocket() {
+        return unixSocket;
     }
 
     /**

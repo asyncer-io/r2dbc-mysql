@@ -136,7 +136,8 @@ public final class MySqlConnectionFactory implements ConnectionFactory {
                 configuration.getLocalInfileBufferSize(),
                 configuration.isTinyInt1isBit(),
                 configuration.isPreserveInstants(),
-                connectionTimeZone
+                connectionTimeZone,
+                !configuration.isHost()
             );
         }).flatMap(context -> Client.connect(
             ssl,
