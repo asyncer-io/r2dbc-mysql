@@ -17,6 +17,7 @@ name: DEPLOY_SNAPSHOT
 on:
   push:
     branches: [ "trunk", "0.9.x" ]
+  workflow_dispatch:
 
 
 jobs:
