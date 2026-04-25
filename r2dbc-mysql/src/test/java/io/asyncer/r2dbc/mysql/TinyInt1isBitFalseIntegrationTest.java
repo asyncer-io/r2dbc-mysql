@@ -22,8 +22,8 @@ import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TinyInt1isBitFalseTest extends IntegrationTestSupport{
-    TinyInt1isBitFalseTest() {
+class TinyInt1isBitFalseIntegrationTest extends IntegrationTestSupport{
+    TinyInt1isBitFalseIntegrationTest() {
         super(configuration(builder -> builder.tinyInt1isBit(false)));
     }
 
