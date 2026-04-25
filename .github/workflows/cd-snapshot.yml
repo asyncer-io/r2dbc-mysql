@@ -42,7 +42,7 @@ jobs:
         run: mkdir -p ~/local-staging
 
       - name: Set Up Maven Settings
-        uses: s4u/maven-settings-action@v2.8.0
+        uses: s4u/maven-settings-action@v4
         with:
           servers: |
             [{
