@@ -12,7 +12,7 @@ jobs:
         java-version: [8, 11, 17, 21]
     name: linux-java-${{ matrix.java-version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Set up Java ${{ matrix.java-version }}
         uses: actions/setup-java@v3
         with:
