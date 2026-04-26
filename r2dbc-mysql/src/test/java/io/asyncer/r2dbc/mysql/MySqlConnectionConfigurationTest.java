@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 /**
  * Unit tests for {@link MySqlConnectionConfiguration}.
  */
-class MySqlConnectionConfigurationTest {
+public class MySqlConnectionConfigurationTest {
 
     private static final String HOST = "localhost";
 
@@ -233,6 +233,11 @@ class MySqlConnectionConfigurationTest {
                 .metrics(true)
                 .build()
         );
+    }
+
+    public static MySqlSslConfiguration newSsl(SslMode sslMode) {
+        return MySqlConnectionConfiguration.builder()
+            .host(HOST).user(USER).sslMode(sslMode).build().getSsl();
     }
 
     private static MySqlConnectionConfiguration unixSocketSslMode(SslMode sslMode) {

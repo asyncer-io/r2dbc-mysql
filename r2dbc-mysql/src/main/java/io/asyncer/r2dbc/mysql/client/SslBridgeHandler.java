@@ -33,6 +33,7 @@ import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import org.jetbrains.annotations.VisibleForTesting;
 import reactor.core.Exceptions;
 import reactor.netty.tcp.SslProvider;
 
@@ -201,7 +202,8 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             || (version.isGreaterThanOrEqualTo(MYSQL_5_6_0) && version.isEnterprise());
     }
 
-    private static final class MySqlSslContextSpec {
+    @VisibleForTesting
+    static final class MySqlSslContextSpec {
 
         private final SslContextBuilder builder;
 
@@ -218,7 +220,11 @@ final class SslBridgeHandler extends ChannelDuplexHandler {
             SslContextBuilder builder = SslContextBuilder.forClient()
                 .sslProvider(OpenSsl.isAvailable() ? OPENSSL : JDK)
                 .ciphers(null, IdentityCipherSuiteFilter.INSTANCE)
-                .applicationProtocolConfig(null);
+                .applicationProtocolConfig(null)
+                // Netty 4.2 flips the default from null to "HTTPS", which forces hostname verification
+                // during the handshake and would break SslMode.VERIFY_CA. Hostname is checked manually
+                // in handleSslCompleted via the configured HostnameVerifier. Ref: #335.
+                .endpointIdentificationAlgorithm(null);
             String[] tlsProtocols = ssl.getTlsVersion();
 
             if (tlsProtocols.length > 0 || ssl.getSslMode() == SslMode.TUNNEL) {
