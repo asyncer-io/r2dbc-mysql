@@ -111,6 +111,8 @@ final class HandshakeResponse41 extends ScalarClientMessage implements Handshake
 
         if (capability.isVarIntSizedAuthAllowed()) {
             writeVarIntSizedBytes(buf, authentication);
+        } else if (!capability.isSaltSecured()) {
+            buf.writeBytes(authentication).writeByte(0);
         } else if (authentication.length <= ONE_BYTE_MAX_INT) {
             buf.writeByte(authentication.length).writeBytes(authentication);
         } else {

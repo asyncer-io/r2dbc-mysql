@@ -70,6 +70,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -91,6 +92,8 @@ final class InitFlow {
     private static final ServerVersion MYSQL_5_7_20 = ServerVersion.create(5, 7, 20);
 
     private static final ServerVersion MYSQL_8 = ServerVersion.create(8, 0, 0);
+
+    private static final String INNODB_LOCK_WAIT_TIMEOUT = "innodb_lock_wait_timeout";
 
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> INIT_DB = (message, sink) -> {
         if (message instanceof ErrorMessage) {
@@ -216,15 +219,10 @@ final class InitFlow {
             client,
             codecs,
             "SHOW VARIABLES LIKE 'innodb_lock_wait_timeout'"
-        ).execute().flatMap(r -> r.map(readable -> {
-            String value = readable.get(1, String.class);
-
-            if (value == null || value.isEmpty()) {
-                return data;
-            } else {
-                return data.lockWaitTimeout(Duration.ofSeconds(Long.parseLong(value)));
-            }
-        })).single(data).flatMap(d -> {
+        ).execute().flatMap(r -> r.map(InitFlow::readInnoDbLockWaitTimeout)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(data::lockWaitTimeout)).last(data).flatMap(d -> {
             if (lockWaitTimeout != null) {
                 // Do not use context.isLockWaitTimeoutSupported() here, because its session variable is not set
                 if (d.lockWaitTimeoutSupported) {
@@ -237,6 +235,27 @@ final class InitFlow {
             }
             return Mono.just(d);
         });
+    }
+
+    static Optional<Duration> readInnoDbLockWaitTimeout(Readable readable) {
+        String name = readable.get(0, String.class);
+
+        if (!INNODB_LOCK_WAIT_TIMEOUT.equalsIgnoreCase(name)) {
+            return Optional.empty();
+        }
+
+        String value = readable.get(1, String.class);
+
+        if (value == null || value.isEmpty()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(Duration.ofSeconds(Long.parseLong(value)));
+        } catch (NumberFormatException e) {
+            logger.warn("Unexpected innodb_lock_wait_timeout value '{}', ignoring", value);
+            return Optional.empty();
+        }
     }
 
     private static Mono<SessionState> loadSessionVariables(Client client, Codecs codecs) {
