@@ -163,19 +163,26 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
 
             if (capability.isPluginAuthAllowed()) {
                 // See also MySQL bug 59453, auth type native name has no terminal character in
-                // version less than 5.5.10, or version greater than 5.6.0 and less than 5.6.2
-                // And MySQL only support "mysql_native_password" in those versions that has the
-                // bug, maybe just use constant "mysql_native_password" without read?
+                // version less than 5.5.10, or version greater than 5.6.0 and less than 5.6.2.
+                // Some old or customized MySQL-compatible servers (e.g. pre-5.5.10 forks, certain
+                // proxy layers) advertise PLUGIN_AUTH but leave the auth plugin name empty. In that
+                // case MySQL's own client libraries fall back to mysql_native_password (or
+                // mysql_old_password for pre-4.1 servers) rather than abandoning authentication.
                 int length = buf.bytesBefore(TERMINAL);
 
                 if (length < 0) {
                     builder.authType(buf.toString(StandardCharsets.US_ASCII));
+                } else if (length == 0) {
+                    builder.authType(capability.isSaltSecured() ?
+                        MySqlAuthProvider.MYSQL_NATIVE_PASSWORD :
+                        MySqlAuthProvider.MYSQL_OLD_PASSWORD);
                 } else {
-                    builder.authType(length == 0 ? MySqlAuthProvider.NO_AUTH_PROVIDER :
-                        buf.toString(buf.readerIndex(), length, StandardCharsets.US_ASCII));
+                    builder.authType(buf.toString(buf.readerIndex(), length, StandardCharsets.US_ASCII));
                 }
             } else {
-                builder.authType(MySqlAuthProvider.NO_AUTH_PROVIDER);
+                builder.authType(capability.isSaltSecured() ?
+                    MySqlAuthProvider.MYSQL_NATIVE_PASSWORD :
+                    MySqlAuthProvider.MYSQL_OLD_PASSWORD);
             }
 
             return builder.build();
