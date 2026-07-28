@@ -175,7 +175,9 @@ final class HandshakeV10Request implements HandshakeRequest, ServerStatusMessage
                         buf.toString(buf.readerIndex(), length, StandardCharsets.US_ASCII));
                 }
             } else {
-                builder.authType(MySqlAuthProvider.NO_AUTH_PROVIDER);
+                builder.authType(capability.isSaltSecured() ?
+                    MySqlAuthProvider.MYSQL_NATIVE_PASSWORD :
+                    MySqlAuthProvider.NO_AUTH_PROVIDER);
             }
 
             return builder.build();
