@@ -92,6 +92,8 @@ final class InitFlow {
 
     private static final ServerVersion MYSQL_8 = ServerVersion.create(8, 0, 0);
 
+    private static final Duration DEFAULT_LOCK_WAIT_TIMEOUT = Duration.ofSeconds(50);
+
     private static final BiConsumer<ServerMessage, SynchronousSink<Boolean>> INIT_DB = (message, sink) -> {
         if (message instanceof ErrorMessage) {
             ErrorMessage msg = (ErrorMessage) message;
@@ -222,7 +224,7 @@ final class InitFlow {
             if (value == null || value.isEmpty()) {
                 return data;
             } else {
-                return data.lockWaitTimeout(Duration.ofSeconds(Long.parseLong(value)));
+                return data.lockWaitTimeout(parseLockWaitTimeout(value));
             }
         })).single(data).flatMap(d -> {
             if (lockWaitTimeout != null) {
@@ -237,6 +239,16 @@ final class InitFlow {
             }
             return Mono.just(d);
         });
+    }
+
+    static Duration parseLockWaitTimeout(String value) {
+        try {
+            return Duration.ofSeconds(Long.parseLong(value.trim()));
+        } catch (NumberFormatException e) {
+            logger.warn("Lock wait timeout {} is not a number, fallback to {} seconds",
+                value, DEFAULT_LOCK_WAIT_TIMEOUT.getSeconds());
+            return DEFAULT_LOCK_WAIT_TIMEOUT;
+        }
     }
 
     private static Mono<SessionState> loadSessionVariables(Client client, Codecs codecs) {
