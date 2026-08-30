@@ -179,33 +179,59 @@ final class ReactorNettyClient implements Client {
     public <T> Flux<T> exchange(FluxExchangeable<T> exchangeable) {
         requireNonNull(exchangeable, "exchangeable must not be null");
 
-        return Mono.<Flux<T>>create(sink -> {
+        return Flux.defer(() -> {
             if (!isConnected()) {
                 exchangeable.subscribe(request -> {
                     if (request instanceof Disposable) {
                         ((Disposable) request).dispose();
                     }
                 }, e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST));
-                sink.error(ClientExceptions.exchangeClosed());
-                return;
+                return Flux.error(ClientExceptions.exchangeClosed());
             }
 
+            Sinks.Empty<Void> cancellationSignal = Sinks.empty(); // tracks if we should stop sending requests
+            Sinks.Empty<Void> noRequestSignal = Sinks.empty(); // tracks if we need to await a response (for a request)
+            Flux<ClientMessage> outbound = exchangeable
+                .takeUntilOther(cancellationSignal.asMono())
+                .doOnError(e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
+                .switchOnFirst((signal, requests) -> {
+                    if (!signal.hasValue()) {
+                        // source closed without emitting any elements at all
+                        Throwable error = signal.getThrowable();
+                        if (error == null) {
+                            noRequestSignal.tryEmitEmpty();
+                        } else {
+                            noRequestSignal.tryEmitError(error);
+                        }
+                    }
+
+                    return requests;
+                });
             Flux<T> responses = responseProcessor
                 .asFlux()
-                .doOnSubscribe(ignored -> exchangeable.subscribe(
-                    this::emitNextRequest,
-                    e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST)
-                ))
+                .takeUntilOther(noRequestSignal.asMono())
+                .doOnSubscribe(ignored -> outbound.subscribe(this::emitNextRequest, e -> { }))
                 .handle(exchangeable)
                 .doOnTerminate(() -> {
                     exchangeable.dispose();
                     requestQueue.run();
                 });
 
-            requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
+            Mono<Void> acquire = Mono.<Void>create(sink ->
+                requestQueue.submit(RequestTask.wrap(sink, null))
+            )
+                .doOnError(ignored -> exchangeable.dispose());
+
+            return OperatorUtils.discardOnCancel(acquire.thenMany(responses))
                 .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
-                .doOnCancel(exchangeable::dispose)));
-        }).flatMapMany(Function.identity());
+                .doOnCancel(() -> {
+                    try {
+                        exchangeable.dispose();
+                    } finally {
+                        cancellationSignal.tryEmitEmpty();
+                    }
+                });
+        });
     }
 
     @Override

@@ -19,7 +19,6 @@ package io.asyncer.r2dbc.mysql.client;
 import io.asyncer.r2dbc.mysql.message.client.ClientMessage;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.MonoSink;
 
 /**
@@ -83,33 +82,9 @@ final class RequestTask<T> {
         return task;
     }
 
-    static <T> RequestTask<T> wrap(Flux<? extends ClientMessage> messages, MonoSink<T> sink, T supplier) {
-        final RequestTask<T> task =  new RequestTask<>(new DisposableFlux(messages), sink, supplier);
-        sink.onCancel(task::cancel0);
-        return task;
-    }
-
     static <T> RequestTask<T> wrap(MonoSink<T> sink, T supplier) {
         final RequestTask<T> task = new RequestTask<>(null, sink, supplier);
         sink.onCancel(task::cancel0);
         return task;
-    }
-
-    private static final class DisposableFlux implements Disposable {
-
-        private final Flux<? extends ClientMessage> messages;
-
-        private DisposableFlux(Flux<? extends ClientMessage> messages) {
-            this.messages = messages;
-        }
-
-        @Override
-        public void dispose() {
-            Flux.from(messages).subscribe(it -> {
-                if (it instanceof Disposable) {
-                    ((Disposable) it).dispose();
-                }
-            });
-        }
     }
 }
