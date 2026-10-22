@@ -432,7 +432,9 @@ final class SimpleQueryExchangeable extends BaseFluxExchangeable {
                 return;
             }
 
-            QueryFlow.logger.error("Emit request failed due to {}", result);
+            if (result != Sinks.EmitResult.FAIL_CANCELLED) {
+                QueryFlow.logger.error("Emit request failed due to {}", result);
+            }
         }
 
         if (sink != null) {

@@ -44,6 +44,7 @@ import reactor.netty.FutureMono;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -155,57 +156,99 @@ final class ReactorNettyClient implements Client {
         BiConsumer<ServerMessage, SynchronousSink<T>> handler) {
         requireNonNull(request, "request must not be null");
 
-        return Mono.<Flux<T>>create(sink -> {
+        return Flux.defer(() -> {
             if (!isConnected()) {
                 if (request instanceof Disposable) {
                     ((Disposable) request).dispose();
                 }
-                sink.error(ClientExceptions.exchangeClosed());
-                return;
+                return Flux.error(ClientExceptions.exchangeClosed());
             }
 
-            Flux<T> responses = OperatorUtils.discardOnCancel(
-                responseProcessor.asFlux()
-                    .doOnSubscribe(ignored -> emitNextRequest(request))
-                    .handle(handler)
-                    .doOnTerminate(requestQueue)
-            ).doOnDiscard(ReferenceCounted.class, ReferenceCounted::release);
+            // Either sending or cancellation takes ownership of the request, never both.
+            AtomicBoolean requestClaimed = new AtomicBoolean();
+            Runnable discardRequest = () -> {
+                if (requestClaimed.compareAndSet(false, true) && request instanceof Disposable) {
+                    ((Disposable) request).dispose();
+                }
+            };
+            Sinks.Empty<Void> noRequestSignal = Sinks.empty();
+            Flux<T> responses = responseProcessor.asFlux()
+                .takeUntilOther(noRequestSignal.asMono())
+                .doOnSubscribe(ignored -> {
+                    if (requestClaimed.compareAndSet(false, true)) {
+                        emitNextRequest(request);
+                    } else {
+                        noRequestSignal.tryEmitEmpty();
+                    }
+                })
+                .handle(handler);
 
-            requestQueue.submit(RequestTask.wrap(request, sink, responses));
-        }).flatMapMany(Function.identity());
+            return executeQueuedExchange(responses, discardRequest, discardRequest);
+        });
     }
 
     @Override
     public <T> Flux<T> exchange(FluxExchangeable<T> exchangeable) {
         requireNonNull(exchangeable, "exchangeable must not be null");
 
-        return Mono.<Flux<T>>create(sink -> {
+        return Flux.defer(() -> {
             if (!isConnected()) {
                 exchangeable.subscribe(request -> {
                     if (request instanceof Disposable) {
                         ((Disposable) request).dispose();
                     }
                 }, e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST));
-                sink.error(ClientExceptions.exchangeClosed());
-                return;
+                return Flux.error(ClientExceptions.exchangeClosed());
             }
 
+            Sinks.Empty<Void> cancellationSignal = Sinks.empty(); // tracks if we should stop sending requests
+            Sinks.Empty<Void> noRequestSignal = Sinks.empty(); // tracks if we need to await a response (for a request)
+            Flux<ClientMessage> outbound = exchangeable
+                .takeUntilOther(cancellationSignal.asMono())
+                .doOnError(e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST))
+                .switchOnFirst((signal, requests) -> {
+                    if (!signal.hasValue()) {
+                        // source closed without emitting any elements at all
+                        Throwable error = signal.getThrowable();
+                        if (error == null) {
+                            noRequestSignal.tryEmitEmpty();
+                        } else {
+                            noRequestSignal.tryEmitError(error);
+                        }
+                    }
+
+                    return requests;
+                });
             Flux<T> responses = responseProcessor
                 .asFlux()
-                .doOnSubscribe(ignored -> exchangeable.subscribe(
-                    this::emitNextRequest,
-                    e -> requests.emitError(e, Sinks.EmitFailureHandler.FAIL_FAST)
-                ))
-                .handle(exchangeable)
-                .doOnTerminate(() -> {
-                    exchangeable.dispose();
-                    requestQueue.run();
-                });
+                .takeUntilOther(noRequestSignal.asMono())
+                .doOnSubscribe(ignored -> outbound.subscribe(this::emitNextRequest, e -> { }))
+                .handle(exchangeable);
 
-            requestQueue.submit(RequestTask.wrap(exchangeable, sink, OperatorUtils.discardOnCancel(responses)
-                .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
-                .doOnCancel(exchangeable::dispose)));
-        }).flatMapMany(Function.identity());
+            return executeQueuedExchange(responses, exchangeable::dispose, () -> {
+                try {
+                    exchangeable.dispose();
+                } finally {
+                    cancellationSignal.tryEmitEmpty();
+                }
+            });
+        });
+    }
+
+    private <T> Flux<T> executeQueuedExchange(Flux<T> responses, Runnable dispose, Runnable cancel) {
+        Mono<Void> acquire = Mono.<Void>create(sink ->
+            requestQueue.submit(RequestTask.wrap(sink, null))
+        ).doOnError(ignored -> dispose.run());
+
+        Flux<T> exchange = responses.doOnTerminate(() -> {
+            dispose.run();
+            requestQueue.run();
+        });
+
+        // Cancellation must drain acquisition as well as responses to avoid losing an active queue slot.
+        return OperatorUtils.discardOnCancel(acquire.thenMany(exchange))
+            .doOnDiscard(ReferenceCounted.class, ReferenceCounted::release)
+            .doOnCancel(cancel);
     }
 
     @Override
