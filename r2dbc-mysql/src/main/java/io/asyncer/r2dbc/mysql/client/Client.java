@@ -158,6 +158,6 @@ public interface Client {
         }
 
         return tcpClient.remoteAddress(() -> address).connect()
-            .map(conn -> new ReactorNettyClient(conn, ssl, context));
+            .map(conn -> new ReactorNettyClient(conn, ssl, context, address));
     }
 }

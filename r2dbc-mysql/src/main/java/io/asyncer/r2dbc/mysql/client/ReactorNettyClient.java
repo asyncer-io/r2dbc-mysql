@@ -44,6 +44,7 @@ import reactor.netty.FutureMono;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
+import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -84,10 +85,12 @@ final class ReactorNettyClient implements Client {
 
     private final RequestQueue requestQueue = new RequestQueue();
 
-    ReactorNettyClient(Connection connection, MySqlSslConfiguration ssl, ConnectionContext context) {
+    ReactorNettyClient(Connection connection, MySqlSslConfiguration ssl, ConnectionContext context,
+        SocketAddress address) {
         requireNonNull(connection, "connection must not be null");
         requireNonNull(context, "context must not be null");
         requireNonNull(ssl, "ssl must not be null");
+        requireNonNull(address, "address must not be null");
         require(responseProcessor.asFlux() instanceof Subscriber,
             "responseProcessor(" + responseProcessor + ") must be a Subscriber");
 
@@ -98,7 +101,7 @@ final class ReactorNettyClient implements Client {
         connection.addHandlerLast(MessageDuplexCodec.NAME, new MessageDuplexCodec(context));
 
         if (ssl.getSslMode().startSsl()) {
-            connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl));
+            connection.addHandlerFirst(SslBridgeHandler.NAME, new SslBridgeHandler(context, ssl, address));
         }
 
         if (logger.isTraceEnabled()) {
