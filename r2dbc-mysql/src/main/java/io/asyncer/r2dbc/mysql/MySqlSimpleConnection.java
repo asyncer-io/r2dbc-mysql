@@ -97,7 +97,7 @@ final class MySqlSimpleConnection implements MySqlConnection {
         if (this.batchSupported) {
             logger.debug("Batch is supported by server");
         } else {
-            logger.warn("The MySQL server does not support batch, fallback to executing one-by-one");
+            logger.debug("Multi-statements capability is not enabled, fallback to executing batch one-by-one");
         }
     }
 
