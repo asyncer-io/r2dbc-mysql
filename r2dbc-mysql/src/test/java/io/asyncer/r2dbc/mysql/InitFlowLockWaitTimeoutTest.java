@@ -45,7 +45,8 @@ class InitFlowLockWaitTimeoutTest {
     @ParameterizedTest
     @ValueSource(booleans = { false, true })
     void missingVariableKeepsTimeoutUnsupported(boolean configured) throws Exception {
-        Client client = failingClient(new R2dbcNonTransientResourceException("Unknown system variable", "HY000", 1193));
+        Client client = failingClient(
+            new R2dbcNonTransientResourceException("Unknown system variable", "HY000", 1193));
         Object state = newSessionState();
 
         load(state, client, configured ? Duration.ofSeconds(10) : null)
