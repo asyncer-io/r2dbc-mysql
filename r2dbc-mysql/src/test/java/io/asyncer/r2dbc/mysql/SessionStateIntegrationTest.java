@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.internal.util.TestContainerExtension;
 import io.asyncer.r2dbc.mysql.internal.util.TestServerUtil;
