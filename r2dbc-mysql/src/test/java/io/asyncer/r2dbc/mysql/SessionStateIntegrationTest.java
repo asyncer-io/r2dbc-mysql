@@ -150,14 +150,16 @@ class SessionStateIntegrationTest {
     void initLockWaitTimeoutUsesSessionValue() {
         connectionFactory(builder -> builder.sessionVariables("innodb_lock_wait_timeout=57"))
             .create()
-            .flatMapMany(connection -> connection.setLockWaitTimeout(Duration.ofSeconds(50))
+            .flatMapMany(connection -> connection.beginTransaction(
+                MySqlTransactionDefinition.empty().lockWaitTimeout(Duration.ofSeconds(10)))
+                .then(connection.rollbackTransaction())
                 .thenMany(connection.createStatement("SELECT @@SESSION.innodb_lock_wait_timeout").execute())
                 .flatMap(result -> result.map(r -> r.get(0, Long.class)))
                 .onErrorResume(e -> connection.close().then(Mono.error(e)))
                 .concatWith(connection.close().then(Mono.empty()))
             )
             .as(StepVerifier::create)
-            .expectNext(50L)
+            .expectNext(57L)
             .verifyComplete();
     }
 
