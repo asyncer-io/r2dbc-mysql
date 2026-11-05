@@ -146,6 +146,21 @@ class SessionStateIntegrationTest {
             .verifyComplete();
     }
 
+    @Test
+    void initLockWaitTimeoutUsesSessionValue() {
+        connectionFactory(builder -> builder.sessionVariables("innodb_lock_wait_timeout=57"))
+            .create()
+            .flatMapMany(connection -> connection.setLockWaitTimeout(Duration.ofSeconds(50))
+                .thenMany(connection.createStatement("SELECT @@SESSION.innodb_lock_wait_timeout").execute())
+                .flatMap(result -> result.map(r -> r.get(0, Long.class)))
+                .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .expectNext(50L)
+            .verifyComplete();
+    }
+
     @EnabledIf("isGreaterThanOrEqualToMariaDB10_1_1MySql5_7_4")
     @ParameterizedTest
     @ValueSource(strings = { "PT0.1S", "PT0.5S" })
