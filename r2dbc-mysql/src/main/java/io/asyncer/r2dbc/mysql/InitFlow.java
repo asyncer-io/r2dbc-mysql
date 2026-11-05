@@ -48,6 +48,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.r2dbc.spi.IsolationLevel;
+import io.r2dbc.spi.R2dbcException;
 import io.r2dbc.spi.R2dbcNonTransientResourceException;
 import io.r2dbc.spi.R2dbcPermissionDeniedException;
 import io.r2dbc.spi.Readable;
@@ -215,16 +216,17 @@ final class InitFlow {
         return new TextSimpleStatement(
             client,
             codecs,
-            "SHOW VARIABLES LIKE 'innodb_lock_wait_timeout'"
+            "SELECT CAST(@@SESSION.innodb_lock_wait_timeout AS CHAR)"
         ).execute().flatMap(r -> r.map(readable -> {
-            String value = readable.get(1, String.class);
+            String value = readable.get(0, String.class);
 
             if (value == null || value.isEmpty()) {
                 return data;
             } else {
                 return data.lockWaitTimeout(Duration.ofSeconds(Long.parseLong(value)));
             }
-        })).single(data).flatMap(d -> {
+        })).onErrorResume(R2dbcException.class, e -> e.getErrorCode() == 1193 ? Flux.empty() : Flux.error(e))
+            .single(data).flatMap(d -> {
             if (lockWaitTimeout != null) {
                 // Do not use context.isLockWaitTimeoutSupported() here, because its session variable is not set
                 if (d.lockWaitTimeoutSupported) {

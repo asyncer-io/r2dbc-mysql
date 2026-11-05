@@ -16,6 +16,7 @@
 
 package io.asyncer.r2dbc.mysql;
 
+import io.asyncer.r2dbc.mysql.api.MySqlTransactionDefinition;
 import io.asyncer.r2dbc.mysql.internal.util.StringUtils;
 import io.asyncer.r2dbc.mysql.internal.util.TestContainerExtension;
 import io.asyncer.r2dbc.mysql.internal.util.TestServerUtil;
@@ -143,6 +144,23 @@ class SessionStateIntegrationTest {
             )
             .as(StepVerifier::create)
             .expectNext(lockWaitTimeout.getSeconds())
+            .verifyComplete();
+    }
+
+    @Test
+    void initLockWaitTimeoutUsesSessionValue() {
+        connectionFactory(builder -> builder.sessionVariables("innodb_lock_wait_timeout=57"))
+            .create()
+            .flatMapMany(connection -> connection.beginTransaction(
+                MySqlTransactionDefinition.empty().lockWaitTimeout(Duration.ofSeconds(10)))
+                .then(connection.rollbackTransaction())
+                .thenMany(connection.createStatement("SELECT @@SESSION.innodb_lock_wait_timeout").execute())
+                .flatMap(result -> result.map(r -> r.get(0, Long.class)))
+                .onErrorResume(e -> connection.close().then(Mono.error(e)))
+                .concatWith(connection.close().then(Mono.empty()))
+            )
+            .as(StepVerifier::create)
+            .expectNext(57L)
             .verifyComplete();
     }
 
