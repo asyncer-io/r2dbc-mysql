@@ -235,6 +235,20 @@ class MySqlSimpleConnectionTest {
         assertThat(client.getContext().getSessionIsolationLevel()).isEqualTo(sessionLevel);
     }
 
+    @Test
+    void createBatch() {
+        MySqlSimpleConnection connectionWithBatch = newNoPrepare(mockClient());
+        assertThat(connectionWithBatch.createBatch()).isExactlyInstanceOf(MySqlBatchingBatch.class);
+
+        ConnectionContext contextWithoutBatch = ConnectionContextTest.mock();
+        contextWithoutBatch.initHandshake(1, ServerVersion.parse("8.0.11.MOCKED"), Capability.of(0));
+        Client clientWithoutBatch = mock(Client.class);
+        when(clientWithoutBatch.getContext()).thenReturn(contextWithoutBatch);
+
+        MySqlSimpleConnection connectionWithoutBatch = newNoPrepare(clientWithoutBatch);
+        assertThat(connectionWithoutBatch.createBatch()).isExactlyInstanceOf(MySqlSyntheticBatch.class);
+    }
+
     @SuppressWarnings("ConstantConditions")
     @Test
     void badValidate() {
